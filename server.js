@@ -6763,6 +6763,22 @@ app.get('/api/admin/reinit-database', async (req, res) => {
     }
 });
 
+// Test pool connection
+app.get('/api/admin/test-connection', async (req, res) => {
+    try {
+        console.log('Testing database connection...');
+        const result = await pool.query('SELECT NOW() as current_time, version() as db_version');
+        res.json({
+            success: true,
+            time: result.rows[0].current_time,
+            version: result.rows[0].db_version
+        });
+    } catch (err) {
+        console.error('Connection error:', err);
+        res.status(500).json({ success: false, error: err.message, code: err.code });
+    }
+});
+
 // Debug endpoint to check early_registration records
 app.get('/api/debug/early-registrations', async (req, res) => {
     try {
@@ -6770,7 +6786,8 @@ app.get('/api/debug/early-registrations', async (req, res) => {
         const tableCheck = await pool.query(`
             SELECT EXISTS(
                 SELECT 1 FROM information_schema.tables 
-                WHERE table_name = 'early_registration'
+                WHERE table_schema = 'public'
+                AND table_name = 'early_registration'
             ) as table_exists
         `);
         
@@ -6778,7 +6795,8 @@ app.get('/api/debug/early-registrations', async (req, res) => {
             return res.json({ 
                 success: false, 
                 error: 'early_registration table does not exist',
-                table_exists: false
+                table_exists: false,
+                hint: 'Database initialization may have failed. Visit /api/admin/test-connection to check DB connection.'
             });
         }
         
@@ -6786,7 +6804,8 @@ app.get('/api/debug/early-registrations', async (req, res) => {
         const columnCheck = await pool.query(`
             SELECT column_name 
             FROM information_schema.columns 
-            WHERE table_name = 'early_registration'
+            WHERE table_schema = 'public'
+            AND table_name = 'early_registration'
             ORDER BY column_name
         `);
         
@@ -6805,7 +6824,7 @@ app.get('/api/debug/early-registrations', async (req, res) => {
             success: false, 
             error: err.message,
             details: err.toString(),
-            stack: err.stack
+            hint: 'Visit /api/admin/test-connection to verify DB connection works'
         });
     }
 });
