@@ -2719,6 +2719,16 @@ app.get('/ictcoorLanding', async (req, res) => {
         const allStudents = [...studentsResult.rows, ...enrolleesResult.rows];
         
         console.log(`✅ Total: ${allStudents.length} students (${studentsResult.rows.length} enrolled + ${enrolleesResult.rows.length} pending)`);
+        
+        // Debug: log the data being sent to template
+        if (allStudents.length > 0) {
+            console.log('📤 Sending to template:');
+            allStudents.forEach((s, i) => {
+                console.log(`   [${i}] ${s.full_name || 'Unknown'} (${s.enrollment_status || 'unknown status'})`);
+            });
+        } else {
+            console.log('⚠️  WARNING: No students to display!');
+        }
 
         res.render('ictcoorLanding', { students: allStudents });
     } catch (err) {
