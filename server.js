@@ -6748,22 +6748,29 @@ app.post('/api/test-email', async (req, res) => {
     }
 });
 
-// Manual database initialization endpoint (for troubleshooting)
-app.get('/api/admin/reinit-database', async (req, res) => {
+// Minimal test - just count records
+app.get('/api/admin/test-count', async (req, res) => {
     try {
-        console.log('Manual database reinitialization requested...');
-        const result = await initializeDatabase();
-        res.json({ 
-            success: result,
-            message: result ? 'Database reinitialized successfully' : 'Database reinitialization encountered errors'
-        });
+        // Test each table
+        const tables = ['users', 'students', 'early_registration', 'sections', 'teachers'];
+        const counts = {};
+        
+        for (const table of tables) {
+            try {
+                const result = await pool.query(`SELECT COUNT(*) as count FROM ${table}`);
+                counts[table] = parseInt(result.rows[0].count);
+            } catch (e) {
+                counts[table] = `Error: ${e.message}`;
+            }
+        }
+        
+        res.json({ success: true, table_counts: counts });
     } catch (err) {
-        console.error('Error during manual reinitialization:', err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// Test pool connection
+// Minimal test - just count records
 app.get('/api/admin/test-connection', async (req, res) => {
     try {
         console.log('Testing database connection...');
@@ -6776,6 +6783,21 @@ app.get('/api/admin/test-connection', async (req, res) => {
     } catch (err) {
         console.error('Connection error:', err);
         res.status(500).json({ success: false, error: err.message, code: err.code });
+    }
+});
+
+// Manual database initialization endpoint (for troubleshooting)
+app.get('/api/admin/reinit-database', async (req, res) => {
+    try {
+        console.log('Manual database reinitialization requested...');
+        const result = await initializeDatabase();
+        res.json({ 
+            success: result,
+            message: result ? 'Database reinitialized successfully' : 'Database reinitialization encountered errors'
+        });
+    } catch (err) {
+        console.error('Error during manual reinitialization:', err);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
