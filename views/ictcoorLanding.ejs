@@ -2838,19 +2838,49 @@ q<!DOCTYPE html>
                 `Save current section counts as snapshot "${escapeHtml(name)}"?`,
                 async () => {
                     try {
-                        // Use the correct endpoint to save the snapshot
-                        const res = await fetch('/api/sections/snapshots', {
+                        // Fetch current students with their assignments using correct endpoint
+                        const studentsRes = await fetch('/api/students/all');
+                        const studentsData = await studentsRes.json();
+                        
+                        if (!studentsData.success || !studentsData.students) {
+                            alert('Failed to fetch student data for snapshot');
+                            return;
+                        }
+                        
+                        // Extract only assigned students (exclude unassigned)
+                        const assignedStudents = studentsData.students.filter(s => s.assigned_section && s.assigned_section !== 'Unassigned');
+                        
+                        // Extract the necessary student data in the format expected by the API
+                        const studentsForSnapshot = assignedStudents.map(s => ({
+                            name: s.full_name,
+                            barangay: s.barangay,
+                            sectionLevel: s.assigned_section,
+                            adviser: s.adviser_name
+                        }));
+                        
+                        if (studentsForSnapshot.length === 0) {
+                            alert('No assigned students found to save in snapshot');
+                            return;
+                        }
+                        
+                        // Save snapshot with student data using the dataset endpoint
+                        const res = await fetch('/api/snapshots/dataset', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ name: name })
+                            body: JSON.stringify({ 
+                                snapshotName: name,
+                                students: studentsForSnapshot
+                            })
                         });
                         
                         const data = await res.json();
                         if (data && data.success) {
-                            try { showToast(data.message || `Snapshot "${name}" saved successfully`, 'success'); } catch (e) { alert(data.message || 'Snapshot saved'); }
+                            try { showToast(data.message || `Snapshot saved with ${studentsForSnapshot.length} assigned students`, 'success'); } catch (e) { alert(data.message || 'Snapshot saved'); }
                             // Clear input
                             if (nameInput) nameInput.value = '';
-                            // Refresh snapshots list
+                            // Refresh dashboard/sections
+                            try { loadSections(); } catch (e) {}
+                            try { loadDashboard(); } catch (e) {}
                             try { loadSnapshots(); } catch (e) {}
                         } else {
                             alert('Error: ' + (data.message || 'Failed to save snapshot'));
@@ -3304,19 +3334,19 @@ q<!DOCTYPE html>
                             if (!student.is_archived) {
                                 // Active unassigned: can assign or archive
                                 actions = `
-                                    <button class="action-btn action-edit assign-btn" title="Assign to section" data-student-id="${student.id}" data-student-name="${escapeHtml(student.full_name)}">
+                                    <button class="action-btn action-edit" title="Assign to section" onclick="assignUnassignedStudent(${student.id}, '${student.full_name.replace(/'/g, "\\'")}')">
                                         <i class="fas fa-user-plus"></i> Assign
                                     </button>
-                                    <button class="action-btn action-delete archive-btn" title="Archive student" data-student-id="${student.id}" data-student-name="${escapeHtml(student.full_name)}">
+                                    <button class="action-btn action-delete" title="Archive student" onclick="archiveStudent(${student.id}, '${student.full_name.replace(/'/g, "\\'")}')">
                                         <i class="fas fa-archive"></i> Archive
                                     </button>`;
                             } else {
                                 // Archived unassigned: can recover or permanently delete
                                 actions = `
-                                    <button class="action-btn action-edit recover-btn" title="Recover student" data-student-id="${student.id}" data-student-name="${escapeHtml(student.full_name)}">
+                                    <button class="action-btn action-edit" title="Recover student" onclick="recoverStudent(${student.id}, '${student.full_name.replace(/'/g, "\\'")}')">
                                         <i class="fas fa-undo"></i> Recover
                                     </button>
-                                    <button class="action-btn action-delete delete-btn" title="Permanently delete student" data-student-id="${student.id}" data-student-name="${escapeHtml(student.full_name)}">
+                                    <button class="action-btn action-delete" title="Permanently delete student" onclick="permanentlyDeleteStudent(${student.id}, '${student.full_name.replace(/'/g, "\\'")}', true)">
                                         <i class="fas fa-trash"></i> Delete
                                     </button>`;
                             }
@@ -3332,28 +3362,6 @@ q<!DOCTYPE html>
                                 <td class="table-actions">${actions}</td>
                             `;
                             tbody.appendChild(row);
-                        });
-                        
-                        // Attach event listeners after rendering
-                        document.querySelectorAll('.assign-btn').forEach(btn => {
-                            btn.addEventListener('click', function() {
-                                assignUnassignedStudent(this.dataset.studentId, this.dataset.studentName);
-                            });
-                        });
-                        document.querySelectorAll('.archive-btn').forEach(btn => {
-                            btn.addEventListener('click', function() {
-                                archiveStudent(this.dataset.studentId, this.dataset.studentName);
-                            });
-                        });
-                        document.querySelectorAll('.recover-btn').forEach(btn => {
-                            btn.addEventListener('click', function() {
-                                recoverStudent(this.dataset.studentId, this.dataset.studentName);
-                            });
-                        });
-                        document.querySelectorAll('.delete-btn').forEach(btn => {
-                            btn.addEventListener('click', function() {
-                                permanentlyDeleteStudent(this.dataset.studentId, this.dataset.studentName, true);
-                            });
                         });
                     }
                 })
@@ -3439,22 +3447,22 @@ q<!DOCTYPE html>
 
                 // Actions: View always; if unassigned show Assign; if assigned show Reassign + Remove; if archived show Restore
                 let actions = `
-                    <button class="action-btn action-view view-student-btn" data-student-id="${sid}" title="View details">
+                    <button class="action-btn action-view" onclick="openStudentDetails(${sid})" title="View details">
                         <i class="fas fa-eye"></i> View
                     </button>`;
 
                 if (!student.is_archived && (!student.assigned_section || student.enrollment_status === 'pending')) {
                     actions += `
-                        <button class="action-btn action-edit assign-section-btn" data-student-id="${sid}" data-student-name="${escapeHtml(student.full_name || '')}" data-assigned-section="${escapeHtml(student.assigned_section || '')}" title="Assign to section">
+                        <button class="action-btn action-edit" onclick="openAssignSectionModal(${sid}, '${name}', '${assignedSectionName}')" title="Assign to section">
                             <i class="fas fa-users"></i> Assign
                         </button>`;
                 } else if (!student.is_archived && student.assigned_section) {
                     // Reassign and Remove for assigned students
                     actions += `
-                        <button type="button" class="action-btn action-edit reassign-section-btn" data-student-id="${sid}" data-student-name="${escapeHtml(student.full_name || '')}" data-assigned-section="${escapeHtml(student.assigned_section || '')}" title="Reassign to another section">
+                        <button type="button" class="action-btn action-edit" onclick="openReassignModal(${sid}, '${name}', '', '${assignedSectionName}')" title="Reassign to another section">
                             <i class="fas fa-exchange-alt"></i> Reassign
                         </button>
-                        <button class="action-btn action-delete remove-section-btn" data-student-id="${sid}" data-student-name="${escapeHtml(student.full_name || '')}" title="Remove from section">
+                        <button class="action-btn action-delete" onclick="openConfirmRemoveFromSectionModal(${sid}, '${name}', '')" title="Remove from section">
                             <i class="fas fa-user-minus"></i> Remove
                         </button>`;
                 }
@@ -3471,28 +3479,6 @@ q<!DOCTYPE html>
                         <td class="table-actions">${actions}</td>
                     </tr>`;
             }).join('');
-
-            // Attach event listeners for the action buttons
-            document.querySelectorAll('.view-student-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    openStudentDetails(this.dataset.studentId);
-                });
-            });
-            document.querySelectorAll('.assign-section-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    openAssignSectionModal(this.dataset.studentId, this.dataset.studentName, this.dataset.assignedSection);
-                });
-            });
-            document.querySelectorAll('.reassign-section-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    openReassignModal(this.dataset.studentId, this.dataset.studentName, '', this.dataset.assignedSection);
-                });
-            });
-            document.querySelectorAll('.remove-section-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    openConfirmRemoveFromSectionModal(this.dataset.studentId, this.dataset.studentName, '');
-                });
-            });
         }
 
         // Load all students on page load
@@ -3835,55 +3821,84 @@ q<!DOCTYPE html>
 
         async function viewSnapshotItems(groupId, name) {
             try {
-                // Fetch snapshot items (section counts)
-                const itemsRes = await fetch(`/api/sections/snapshots/${groupId}/items`);
+                // Fetch both summary items and detailed students
+                const [itemsRes, studentsRes] = await Promise.all([
+                    fetch(`/api/sections/snapshots/${groupId}/items`),
+                    fetch(`/api/snapshots/${groupId}/students`)
+                ]);
+                
                 const itemsData = await itemsRes.json();
-                
-                if (!itemsData.success) return alert('Failed to load snapshot items');
-                
-                // Fetch students from snapshot
-                const studentsRes = await fetch(`/api/sections/snapshots/${groupId}/students`);
                 const studentsData = await studentsRes.json();
                 
-                // Store students globally for filtering
-                window.snapshotStudentsData = studentsData.success ? studentsData.students : [];
+                if (!itemsData.success) return alert('Failed to load snapshot items');
                 
                 // Populate summary section
                 const tb = document.getElementById('snapshot-items-body');
                 if (tb) {
                     tb.innerHTML = '';
-                    let totalStudents = 0;
                     itemsData.items.forEach(it => {
-                        const count = it.count != null ? parseInt(it.count) : 0;
-                        totalStudents += count;
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
                             <td>${escapeHtml(it.grade_level || '')}</td>
                             <td>${escapeHtml(it.section_name || '')}</td>
-                            <td>${count}</td>
+                            <td>${it.count != null ? String(it.count) : '0'}</td>
                             <td>${escapeHtml(it.adviser_name || '-')}</td>
                         `;
                         tb.appendChild(tr);
                     });
-                    
-                    // Update total in header
-                    const header = document.querySelector('.snapshot-items-header');
-                    if (header) {
-                        header.textContent = `${name} - Total Students: ${totalStudents}`;
-                    }
-                }
-                
-                // Render students grouped by barangay
-                if (window.snapshotStudentsData && window.snapshotStudentsData.length > 0) {
-                    renderSnapshotStudentsByBarangay(window.snapshotStudentsData);
                 }
 
-                // Show the modal
+                // Populate barangay view with students grouped by barangay
+                if (studentsData.success && studentsData.students && studentsData.students.length > 0) {
+                    // Store full student data globally for filtering
+                    window.snapshotStudentsData = studentsData.students;
+                    
+                    // Get unique barangays and grade/sections
+                    const barangays = [...new Set(studentsData.students.map(s => s.barangay || 'Unknown'))].sort();
+                    const gradeLevels = [...new Set(studentsData.students.map(s => s.section_level || 'Unknown'))].sort();
+                    
+                    // Populate filter dropdowns
+                    const barangaySelect = document.getElementById('snapshotBarangayFilter');
+                    const gradeLevelSelect = document.getElementById('snapshotGradeLevelFilter');
+                    
+                    if (barangaySelect) {
+                        barangaySelect.innerHTML = '<option value="">All Barangays</option>';
+                        barangays.forEach(b => {
+                            const opt = document.createElement('option');
+                            opt.value = b;
+                            opt.textContent = b;
+                            barangaySelect.appendChild(opt);
+                        });
+                    }
+                    
+                    if (gradeLevelSelect) {
+                        gradeLevelSelect.innerHTML = '<option value="">All Grades/Sections</option>';
+                        gradeLevels.forEach(g => {
+                            const opt = document.createElement('option');
+                            opt.value = g;
+                            opt.textContent = g;
+                            gradeLevelSelect.appendChild(opt);
+                        });
+                    }
+                    
+                    // Clear search
+                    const searchInput = document.getElementById('snapshotStudentSearch');
+                    if (searchInput) searchInput.value = '';
+                    
+                    // Render all students initially
+                    renderSnapshotStudentsByBarangay(studentsData.students);
+                }
+
+                document.getElementById('snapshotItemsModalTitle').textContent = `Snapshot: ${name}`;
+                
+                // Reset to summary tab
+                const summaryTab = document.getElementById('snapshot-summary-tab');
+                const studentsTab = document.getElementById('snapshot-students-tab');
+                if (summaryTab) summaryTab.style.display = 'block';
+                if (studentsTab) studentsTab.style.display = 'none';
+                
                 openModal('snapshotItemsModal');
-            } catch (err) {
-                console.error('Error viewing snapshot items:', err);
-                alert('Failed to load snapshot: ' + err.message);
-            }
+            } catch (err) { console.error('View snapshot items error', err); alert('Error loading items'); }
         }
 
         function renderSnapshotStudentsByBarangay(students) {
