@@ -2659,83 +2659,71 @@ app.get('/ictcoorLanding', async (req, res) => {
     }
     
     try {
+        console.log('📋 Fetching students for ICT Coordinator...');
+        
         // Fetch officially enrolled students from students table (joined with sections)
-        const studentsResult = await pool.query(`
-            SELECT 
-                st.id,
-                st.enrollment_id,
-                CONCAT(st.last_name, ', ', st.first_name, ' ', COALESCE(st.middle_name, ''), ' ', COALESCE(st.ext_name, '')) as full_name,
-                st.lrn,
-                st.grade_level,
-                COALESCE(st.sex, 'N/A') as sex,
-                COALESCE(st.age, 0) as age,
-                st.contact_number,
-                sec.section_name as assigned_section,
-                st.school_year,
-                COALESCE(st.created_at, CURRENT_TIMESTAMP)::date as enrollment_date,
-                st.enrollment_status
-            FROM students st
-            LEFT JOIN sections sec ON st.section_id = sec.id
-            WHERE st.enrollment_status = 'active' 
-                AND (st.is_archived IS NULL OR st.is_archived = false)
-            ORDER BY 
-                CASE 
-                    WHEN st.grade_level = 'Kindergarten' THEN 1
-                    WHEN st.grade_level = 'Grade 1' THEN 2
-                    WHEN st.grade_level = 'Grade 2' THEN 3
-                    WHEN st.grade_level = 'Grade 3' THEN 4
-                    WHEN st.grade_level = 'Grade 4' THEN 5
-                    WHEN st.grade_level = 'Grade 5' THEN 6
-                    WHEN st.grade_level = 'Grade 6' THEN 7
-                    WHEN st.grade_level = 'Non-Graded' THEN 8
-                    ELSE 9
-                END,
-                st.last_name, st.first_name
-        `);
+        let studentsResult = { rows: [] };
+        try {
+            studentsResult = await pool.query(`
+                SELECT 
+                    st.id,
+                    st.enrollment_id,
+                    (st.last_name || ', ' || st.first_name) as full_name,
+                    st.lrn,
+                    st.grade_level,
+                    COALESCE(st.sex, 'N/A') as sex,
+                    COALESCE(st.age, 0) as age,
+                    COALESCE(st.contact_number, '') as contact_number,
+                    COALESCE(sec.section_name, '') as assigned_section,
+                    st.school_year,
+                    COALESCE(st.created_at, CURRENT_TIMESTAMP)::date as enrollment_date,
+                    st.enrollment_status
+                FROM students st
+                LEFT JOIN sections sec ON st.section_id = sec.id
+                WHERE st.enrollment_status = 'active' 
+                    AND (st.is_archived IS NULL OR st.is_archived = false)
+                ORDER BY st.last_name, st.first_name
+            `);
+            console.log(`✅ Found ${studentsResult.rows.length} enrolled students`);
+        } catch (studentErr) {
+            console.error('⚠️  Error fetching students:', studentErr.message);
+        }
 
-        // Also fetch enrollees who haven't been assigned yet (for backward compatibility)
-        const enrolleesResult = await pool.query(`
-            SELECT 
-                'ER' || er.id::text as id,
-                er.id as enrollment_id,
-                CONCAT(er.last_name, ', ', er.first_name, ' ', COALESCE(er.middle_name, ''), ' ', COALESCE(er.ext_name, '')) as full_name,
-                er.lrn,
-                er.grade_level,
-                COALESCE(er.sex, 'N/A') as sex,
-                COALESCE(er.age, 0) as age,
-                er.contact_number,
-                NULL as assigned_section,
-                er.school_year,
-                er.created_at as enrollment_date,
-                'pending' as enrollment_status
-            FROM early_registration er
-            WHERE NOT EXISTS (
-                SELECT 1 FROM students st WHERE st.enrollment_id = er.id::text
-            )
-            ORDER BY 
-                CASE 
-                    WHEN er.grade_level = 'Kindergarten' THEN 1
-                    WHEN er.grade_level = 'Grade 1' THEN 2
-                    WHEN er.grade_level = 'Grade 2' THEN 3
-                    WHEN er.grade_level = 'Grade 3' THEN 4
-                    WHEN er.grade_level = 'Grade 4' THEN 5
-                    WHEN er.grade_level = 'Grade 5' THEN 6
-                    WHEN er.grade_level = 'Grade 6' THEN 7
-                    WHEN er.grade_level = 'Non-Graded' THEN 8
-                    ELSE 9
-                END,
-                er.last_name, er.first_name
-        `);
+        // Fetch pending enrollees from early_registration
+        let enrolleesResult = { rows: [] };
+        try {
+            enrolleesResult = await pool.query(`
+                SELECT 
+                    'ER' || er.id::text as id,
+                    er.id::text as enrollment_id,
+                    (er.last_name || ', ' || er.first_name) as full_name,
+                    er.lrn,
+                    er.grade_level,
+                    COALESCE(er.sex, 'N/A') as sex,
+                    COALESCE(er.age, 0) as age,
+                    COALESCE(er.contact_number, '') as contact_number,
+                    NULL as assigned_section,
+                    er.school_year,
+                    er.created_at as enrollment_date,
+                    'pending' as enrollment_status
+                FROM early_registration er
+                WHERE status = 'pending'
+                ORDER BY er.last_name, er.first_name
+            `);
+            console.log(`✅ Found ${enrolleesResult.rows.length} pending enrollees`);
+        } catch (enrolleeErr) {
+            console.error('⚠️  Error fetching pending enrollees:', enrolleeErr.message);
+        }
 
         // Combine both lists: officially enrolled students first, then pending enrollees
         const allStudents = [...studentsResult.rows, ...enrolleesResult.rows];
         
-        console.log(`✅ Loaded ${studentsResult.rows.length} students and ${enrolleesResult.rows.length} pending enrollees for ICT Coordinator`);
+        console.log(`✅ Total: ${allStudents.length} students (${studentsResult.rows.length} enrolled + ${enrolleesResult.rows.length} pending)`);
 
         res.render('ictcoorLanding', { students: allStudents });
     } catch (err) {
-        console.error('❌ ERROR fetching students:', err.message);
-        console.error('Full error:', err);
+        console.error('❌ CRITICAL ERROR in ictcoorLanding:', err.message);
+        console.error('Stack:', err.stack);
         res.render('ictcoorLanding', { students: [] });
     }
 });
