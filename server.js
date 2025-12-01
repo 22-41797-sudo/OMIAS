@@ -1875,10 +1875,14 @@ app.post('/delete-registrar-account', async (req, res) => {
     
     if (!id) {
         console.error('No ID provided for deletion');
-        const result = await pool.query(
-            'SELECT ra.id, u.username, ra.office_name, ra.is_active FROM registrar_accounts ra JOIN users u ON ra.user_id = u.id ORDER BY ra.id'
-        );
-        return res.render('registraracc', { registrarAccounts: result.rows, error: 'Error: No account ID provided.' });
+        try {
+            const result = await pool.query(
+                'SELECT ra.id, u.username, ra.office_name, ra.is_active FROM registrar_accounts ra JOIN users u ON ra.user_id = u.id ORDER BY ra.id'
+            );
+            return res.render('registraracc', { registrarAccounts: result.rows, error: 'Error: No account ID provided.', success: null });
+        } catch (err) {
+            return res.render('registraracc', { registrarAccounts: [], error: 'Error: No account ID provided.', success: null });
+        }
     }
 
     try {
@@ -1898,10 +1902,14 @@ app.post('/delete-registrar-account', async (req, res) => {
         res.redirect('/registraracc');
     } catch (err) {
         console.error('Error deleting registrar account:', err);
-        const result = await pool.query(
-            'SELECT ra.id, u.username, ra.office_name, ra.is_active FROM registrar_accounts ra JOIN users u ON ra.user_id = u.id ORDER BY ra.id'
-        );
-        res.render('registraracc', { registrarAccounts: result.rows, error: 'Error deleting account: ' + err.message });
+        try {
+            const result = await pool.query(
+                'SELECT ra.id, u.username, ra.office_name, ra.is_active FROM registrar_accounts ra JOIN users u ON ra.user_id = u.id ORDER BY ra.id'
+            );
+            res.render('registraracc', { registrarAccounts: result.rows, error: 'Error deleting account: ' + err.message, success: null });
+        } catch (loadErr) {
+            res.render('registraracc', { registrarAccounts: [], error: 'Error deleting account: ' + err.message, success: null });
+        }
     }
 });
 // Settings page (Registrar Account Management)
@@ -1914,12 +1922,20 @@ app.get('/registraracc', async (req, res) => {
         return res.redirect('/');
     }
     try {
-        const result = await pool.query(
-            'SELECT ra.id, u.username, ra.office_name, ra.registrar_id, ra.is_active FROM registrar_accounts ra JOIN users u ON ra.user_id = u.id ORDER BY ra.id'
-        );
-        res.render('registraracc', { registrarAccounts: result.rows, error: null, success: null });
+        let registrarAccounts = [];
+        try {
+            const result = await pool.query(
+                'SELECT ra.id, u.username, ra.office_name, ra.registrar_id, ra.is_active FROM registrar_accounts ra JOIN users u ON ra.user_id = u.id ORDER BY ra.id'
+            );
+            registrarAccounts = result.rows;
+        } catch (queryErr) {
+            console.warn('Registrar accounts query error (table may not exist yet):', queryErr.message);
+            // Table might not exist yet, return empty list
+            registrarAccounts = [];
+        }
+        res.render('registraracc', { registrarAccounts: registrarAccounts, error: null, success: null });
     } catch (err) {
-        console.error('Error loading registrar accounts:', err);
+        console.error('Error loading registrar accounts page:', err);
         res.render('registraracc', { registrarAccounts: [], error: 'Error loading accounts.', success: null });
     }
 });
@@ -1964,10 +1980,16 @@ app.post('/create-registrar-account', async (req, res) => {
             console.log('✅ Registrar account created successfully - Username:', username);
             
             // Reload the list
-            const result = await pool.query(
-                'SELECT ra.id, u.username, ra.office_name, ra.registrar_id, ra.is_active FROM registrar_accounts ra JOIN users u ON ra.user_id = u.id ORDER BY ra.id'
-            );
-            res.render('registraracc', { registrarAccounts: result.rows, success: 'Registrar account created successfully!', error: null });
+            let registrarAccounts = [];
+            try {
+                const result = await pool.query(
+                    'SELECT ra.id, u.username, ra.office_name, ra.registrar_id, ra.is_active FROM registrar_accounts ra JOIN users u ON ra.user_id = u.id ORDER BY ra.id'
+                );
+                registrarAccounts = result.rows;
+            } catch (queryErr) {
+                console.warn('Query error loading accounts:', queryErr.message);
+            }
+            res.render('registraracc', { registrarAccounts: registrarAccounts, success: 'Registrar account created successfully!', error: null });
         } catch (err) {
             await client.query('ROLLBACK');
             throw err;
