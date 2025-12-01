@@ -426,6 +426,8 @@ async function initializeDatabase() {
         await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS section_code VARCHAR(50) UNIQUE');
         await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS academic_year VARCHAR(20)');
         await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS semester VARCHAR(20)');
+        await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS room_number VARCHAR(50)');
+        await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true');
 
         await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS lrn VARCHAR(20)');
         await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS enrollment_id VARCHAR(50)');
@@ -437,6 +439,8 @@ async function initializeDatabase() {
         await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS province VARCHAR(100)');
         await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS guardian_name VARCHAR(255)');
         await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS guardian_contact VARCHAR(20)');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS ext_name VARCHAR(20)');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true');
 
         await pool.query('ALTER TABLE behavior_reports ADD COLUMN IF NOT EXISTS severity VARCHAR(50)');
         await pool.query('ALTER TABLE behavior_reports ADD COLUMN IF NOT EXISTS action_taken TEXT');
