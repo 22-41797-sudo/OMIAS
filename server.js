@@ -2729,10 +2729,13 @@ app.get('/ictcoorLanding', async (req, res) => {
 
         // Combine both lists: officially enrolled students first, then pending enrollees
         const allStudents = [...studentsResult.rows, ...enrolleesResult.rows];
+        
+        console.log(`✅ Loaded ${studentsResult.rows.length} students and ${enrolleesResult.rows.length} pending enrollees for ICT Coordinator`);
 
         res.render('ictcoorLanding', { students: allStudents });
     } catch (err) {
-        console.error('ERROR fetching students:', err);
+        console.error('❌ ERROR fetching students:', err.message);
+        console.error('Full error:', err);
         res.render('ictcoorLanding', { students: [] });
     }
 });
