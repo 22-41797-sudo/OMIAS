@@ -12,9 +12,14 @@ console.log('   DATABASE_URL set:', !!process.env.DATABASE_URL);
 console.log('   NODE_ENV:', process.env.NODE_ENV);
 if (process.env.DATABASE_URL) {
     console.log('   Using DATABASE_URL for connection');
+    // Check if this is a Render database URL (contains .render.com)
+    const isRenderDB = process.env.DATABASE_URL.includes('.render.com');
+    console.log('   Is Render DB:', isRenderDB);
+    
     pool = new Pool({
         connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+        // Render always requires SSL, even in development when accessed externally
+        ssl: isRenderDB ? { rejectUnauthorized: false } : (process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false)
     });
 } else {
     console.log('   Using individual DB parameters (localhost)');
@@ -542,7 +547,22 @@ async function initializeDatabase() {
         console.error('❌ Database initialization error:', err.message);
         console.error(err);
         return false;
+    } finally {
+        // Close the pool connection if running as standalone script
+        if (require.main === module) {
+            await pool.end();
+        }
     }
+}
+
+// If this script is run directly (not imported), initialize and exit
+if (require.main === module) {
+    initializeDatabase().then(success => {
+        process.exit(success ? 0 : 1);
+    }).catch(err => {
+        console.error('Fatal error:', err);
+        process.exit(1);
+    });
 }
 
 module.exports = { initializeDatabase, pool };

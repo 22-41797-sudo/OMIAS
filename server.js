@@ -1198,9 +1198,15 @@ if (process.env.DATABASE_URL) {
     console.log('   Using individual DB parameters (localhost)');
 }
 
+// Check if this is a Render database (requires SSL)
+const isRenderDB = process.env.DATABASE_URL && process.env.DATABASE_URL.includes('.render.com');
+const ssl = process.env.DATABASE_URL 
+    ? (isRenderDB ? { rejectUnauthorized: false } : (process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false))
+    : undefined;
+
 const pool = new Pool({
     ...(process.env.DATABASE_URL 
-        ? { connectionString: process.env.DATABASE_URL, ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false }
+        ? { connectionString: process.env.DATABASE_URL, ssl: ssl }
         : {
             user: process.env.DB_USER || 'postgres',
             host: process.env.DB_HOST || 'localhost',
