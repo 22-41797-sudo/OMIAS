@@ -6762,23 +6762,42 @@ app.listen(port, async () => {
     }
 });
 
-// Debug endpoint to manually trigger database initialization (for troubleshooting)
-app.get('/api/debug/init-db', async (req, res) => {
-    // Only allow from localhost in development
-    const isLocalhost = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === 'localhost';
-    if (process.env.NODE_ENV === 'production' && !isLocalhost) {
-        return res.status(403).json({ success: false, message: 'Not allowed in production' });
-    }
-    
+// Debug endpoint to check early_registration records
+app.get('/api/debug/early-registrations', async (req, res) => {
     try {
-        console.log('🔄 Manually triggering database initialization...');
-        const result = await initializeDatabase();
+        const result = await pool.query(`
+            SELECT id, last_name, first_name, grade_level, email, school_year, created_at
+            FROM early_registration
+            ORDER BY created_at DESC
+            LIMIT 20
+        `);
         res.json({ 
-            success: result, 
-            message: result ? 'Database initialized successfully' : 'Database initialization encountered issues'
+            success: true, 
+            count: result.rows.length,
+            records: result.rows 
         });
     } catch (err) {
-        console.error('Error during manual init:', err);
+        console.error('Error fetching early registrations:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Debug endpoint to check students records
+app.get('/api/debug/students', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT id, enrollment_id, last_name, first_name, grade_level, enrollment_status, created_at
+            FROM students
+            ORDER BY created_at DESC
+            LIMIT 20
+        `);
+        res.json({ 
+            success: true, 
+            count: result.rows.length,
+            records: result.rows 
+        });
+    } catch (err) {
+        console.error('Error fetching students:', err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
