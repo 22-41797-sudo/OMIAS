@@ -6766,7 +6766,7 @@ app.listen(port, async () => {
 app.get('/api/debug/early-registrations', async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT id, last_name, first_name, grade_level, gmail_address, school_year, created_at
+            SELECT id, last_name, first_name, grade_level, school_year, created_at
             FROM early_registration
             ORDER BY created_at DESC
             LIMIT 20
@@ -6778,7 +6778,7 @@ app.get('/api/debug/early-registrations', async (req, res) => {
         });
     } catch (err) {
         console.error('Error fetching early registrations:', err);
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, error: err.message, details: err.toString() });
     }
 });
 
@@ -6789,12 +6789,11 @@ app.get('/api/debug/pending-students', async (req, res) => {
             SELECT 
                 'ER' || er.id::text as id,
                 er.id as enrollment_id,
-                CONCAT(er.last_name, ', ', er.first_name, ' ', COALESCE(er.middle_name, ''), ' ', COALESCE(er.ext_name, '')) as full_name,
+                CONCAT(er.last_name, ', ', er.first_name) as full_name,
                 er.lrn,
                 er.grade_level,
                 COALESCE(er.sex, 'N/A') as sex,
                 COALESCE(er.age, 0) as age,
-                er.contact_number,
                 NULL as assigned_section,
                 er.school_year,
                 er.created_at as enrollment_date,
@@ -6813,7 +6812,7 @@ app.get('/api/debug/pending-students', async (req, res) => {
         });
     } catch (err) {
         console.error('Error fetching pending students:', err);
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, error: err.message, details: err.toString() });
     }
 });
 
