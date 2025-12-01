@@ -1423,7 +1423,7 @@ async function ensureEnrollmentRequestsSchema() {
         
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        reviewed_by INTEGER REFERENCES registraraccount(id),
+        reviewed_by INTEGER REFERENCES registrar_accounts(id),
         reviewed_at TIMESTAMP,
         rejection_reason TEXT
     );
@@ -1851,10 +1851,14 @@ app.get('/registrarlogin', (req, res) => {
 app.post('/registrarlogin', async (req, res) => {
     const { username, password } = req.body;
     try {
-        const result = await pool.query('SELECT * FROM registraraccount WHERE username = $1', [username]);
+        // Find user by username and role
+        const result = await pool.query(
+            'SELECT u.*, ra.registrar_id, ra.office_name FROM users u LEFT JOIN registrar_accounts ra ON u.id = ra.user_id WHERE u.username = $1 AND u.role = $2',
+            [username, 'registrar']
+        );
         const user = result.rows[0];
         if (user && await bcrypt.compare(password, user.password)) {
-            req.session.user = { id: user.id, role: 'registrar' };
+            req.session.user = { id: user.id, username: user.username, role: user.role };
             return res.redirect('/registrar');
         } else {
             return res.render('registrarlogin', { error: 'Invalid username or password.' });
@@ -1871,17 +1875,32 @@ app.post('/delete-registrar-account', async (req, res) => {
     
     if (!id) {
         console.error('No ID provided for deletion');
-        const result = await pool.query('SELECT id, fullname, username FROM registraraccount');
+        const result = await pool.query(
+            'SELECT ra.id, u.username, ra.office_name, ra.is_active FROM registrar_accounts ra JOIN users u ON ra.user_id = u.id ORDER BY ra.id'
+        );
         return res.render('registraracc', { registrarAccounts: result.rows, error: 'Error: No account ID provided.' });
     }
 
     try {
-        const deleteResult = await pool.query('DELETE FROM registraraccount WHERE id = $1', [id]);
-        console.log('Delete result:', deleteResult);
+        // First get the user_id from registrar_accounts
+        const raResult = await pool.query('SELECT user_id FROM registrar_accounts WHERE id = $1', [id]);
+        if (raResult.rows.length === 0) {
+            throw new Error('Registrar account not found');
+        }
+        const userId = raResult.rows[0].user_id;
+        
+        // Delete registrar account record
+        await pool.query('DELETE FROM registrar_accounts WHERE id = $1', [id]);
+        // Delete user account
+        await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+        
+        console.log('Deleted registrar account and user');
         res.redirect('/registraracc');
     } catch (err) {
         console.error('Error deleting registrar account:', err);
-        const result = await pool.query('SELECT id, fullname, username FROM registraraccount');
+        const result = await pool.query(
+            'SELECT ra.id, u.username, ra.office_name, ra.is_active FROM registrar_accounts ra JOIN users u ON ra.user_id = u.id ORDER BY ra.id'
+        );
         res.render('registraracc', { registrarAccounts: result.rows, error: 'Error deleting account: ' + err.message });
     }
 });
@@ -1895,27 +1914,76 @@ app.get('/registraracc', async (req, res) => {
         return res.redirect('/');
     }
     try {
-        const result = await pool.query('SELECT id, fullname, username FROM registraraccount');
+        const result = await pool.query(
+            'SELECT ra.id, u.username, ra.office_name, ra.registrar_id, ra.is_active FROM registrar_accounts ra JOIN users u ON ra.user_id = u.id ORDER BY ra.id'
+        );
         res.render('registraracc', { registrarAccounts: result.rows });
     } catch (err) {
+        console.error('Error loading registrar accounts:', err);
         res.render('registraracc', { registrarAccounts: [], error: 'Error loading accounts.' });
     }
 });
 
 // Create registrar account (POST)
 app.post('/create-registrar-account', async (req, res) => {
-    const { fullname, username, password } = req.body;
+    const { username, password, office_name, registrar_id } = req.body;
     try {
+        if (!username || !password) {
+            throw new Error('Username and password are required');
+        }
+        
+        // Check if username already exists
+        const existingUser = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
+        if (existingUser.rows.length > 0) {
+            throw new Error('Username already exists');
+        }
+        
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
-        await pool.query('INSERT INTO registraraccount (fullname, username, password) VALUES ($1, $2, $3)', [fullname, username, hashedPassword]);
-        // After creation, reload the list and stay on the same page
-        const result = await pool.query('SELECT id, fullname, username FROM registraraccount');
-        res.render('registraracc', { registrarAccounts: result.rows });
+        
+        // Start a transaction
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            // Create user account
+            const userResult = await client.query(
+                'INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING id',
+                [username, hashedPassword, 'registrar']
+            );
+            const userId = userResult.rows[0].id;
+            
+            // Create registrar account
+            await client.query(
+                'INSERT INTO registrar_accounts (user_id, registrar_id, office_name, is_active) VALUES ($1, $2, $3, $4)',
+                [userId, registrar_id || null, office_name || null, true]
+            );
+            
+            await client.query('COMMIT');
+            
+            console.log('✅ Registrar account created successfully - Username:', username);
+            
+            // Reload the list
+            const result = await pool.query(
+                'SELECT ra.id, u.username, ra.office_name, ra.registrar_id, ra.is_active FROM registrar_accounts ra JOIN users u ON ra.user_id = u.id ORDER BY ra.id'
+            );
+            res.render('registraracc', { registrarAccounts: result.rows, success: 'Registrar account created successfully!' });
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
+        }
     } catch (err) {
-        // Optionally, handle duplicate username error
-        const result = await pool.query('SELECT id, fullname, username FROM registraraccount');
-        res.render('registraracc', { registrarAccounts: result.rows, error: 'Error creating account. Username may already exist.' });
+        console.error('Error creating registrar account:', err);
+        try {
+            const result = await pool.query(
+                'SELECT ra.id, u.username, ra.office_name, ra.registrar_id, ra.is_active FROM registrar_accounts ra JOIN users u ON ra.user_id = u.id ORDER BY ra.id'
+            );
+            res.render('registraracc', { registrarAccounts: result.rows, error: err.message || 'Error creating account. Username may already exist.' });
+        } catch (loadErr) {
+            res.render('registraracc', { registrarAccounts: [], error: err.message || 'Error creating account.' });
+        }
     }
 });
 

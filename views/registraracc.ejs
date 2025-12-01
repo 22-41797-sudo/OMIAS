@@ -202,10 +202,6 @@
             <h4 style="color:var(--gray-800);margin-bottom:18px;">Create Registrar Account</h4>
             <form id="registrarAccountForm" method="POST" action="/create-registrar-account">
                 <div style="margin-bottom:18px;">
-                    <label class="form-label">Full Name</label>
-                    <input type="text" class="form-control" name="fullname" required style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--gray-300);margin-top:4px;">
-                </div>
-                <div style="margin-bottom:18px;">
                     <label class="form-label">Username</label>
                     <input type="text" class="form-control" name="username" required style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--gray-300);margin-top:4px;">
                 </div>
@@ -213,16 +209,35 @@
                     <label class="form-label">Password</label>
                     <input type="password" class="form-control" name="password" required style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--gray-300);margin-top:4px;">
                 </div>
+                <div style="margin-bottom:18px;">
+                    <label class="form-label">Office Name</label>
+                    <input type="text" class="form-control" name="office_name" placeholder="e.g., Main Registrar Office" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--gray-300);margin-top:4px;">
+                </div>
+                <div style="margin-bottom:18px;">
+                    <label class="form-label">Registrar ID</label>
+                    <input type="text" class="form-control" name="registrar_id" placeholder="e.g., REG-001" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--gray-300);margin-top:4px;">
+                </div>
                 <button type="submit" class="btn-primary">Create Account</button>
             </form>
         </div>
         <div class="table-section">
             <h4 style="color:var(--gray-800);margin-bottom:18px;">Registrar Accounts</h4>
+            <% if (error) { %>
+                <div style="padding:12px;background-color:#FEE2E2;border:1px solid #FCA5A5;color:#991B1B;border-radius:8px;margin-bottom:18px;">
+                    <%= error %>
+                </div>
+            <% } %>
+            <% if (success) { %>
+                <div style="padding:12px;background-color:#DCFCE7;border:1px solid #86EFAC;color:#166534;border-radius:8px;margin-bottom:18px;">
+                    <%= success %>
+                </div>
+            <% } %>
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Full Name</th>
                         <th>Username</th>
+                        <th>Office Name</th>
+                        <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -230,8 +245,9 @@
                     <% if (registrarAccounts && registrarAccounts.length > 0) { %>
                         <% registrarAccounts.forEach(function(account) { %>
                             <tr>
-                                <td><%= account.fullname %></td>
                                 <td><%= account.username %></td>
+                                <td><%= account.office_name || 'N/A' %></td>
+                                <td><span style="padding:4px 8px;border-radius:4px;background:<%= account.is_active ? '#DCFCE7' : '#FEE2E2' %>;color:<%= account.is_active ? '#166534' : '#991B1B' %>;"><%= account.is_active ? 'Active' : 'Inactive' %></span></td>
                                 <td>
                                     <form method="POST" action="/delete-registrar-account" style="display:inline;">
                                         <input type="hidden" name="id" value="<%= account.id %>">
@@ -241,7 +257,7 @@
                             </tr>
                         <% }); %>
                     <% } else { %>
-                        <tr><td colspan="3">No registrar accounts found.</td></tr>
+                        <tr><td colspan="4">No registrar accounts found.</td></tr>
                     <% } %>
                 </tbody>
             </table>
