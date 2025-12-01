@@ -163,10 +163,12 @@ async function initializeDatabase() {
                 contact_number VARCHAR(20),
                 printed_name VARCHAR(255),
                 signature_image_path VARCHAR(255),
+                assigned_section VARCHAR(255),
                 registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 status VARCHAR(50) DEFAULT 'pending',
                 submission_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
@@ -181,8 +183,17 @@ async function initializeDatabase() {
                 middle_name VARCHAR(100),
                 last_name VARCHAR(100),
                 grade_level VARCHAR(50),
+                gmail_address VARCHAR(100),
+                age INTEGER,
+                sex VARCHAR(20),
+                birthday DATE,
+                religion VARCHAR(50),
+                current_address TEXT,
+                contact_number VARCHAR(20),
                 status VARCHAR(50) DEFAULT 'pending',
                 rejection_reason TEXT,
+                reviewed_by INTEGER,
+                reviewed_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -483,12 +494,23 @@ async function initializeDatabase() {
         await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS printed_name VARCHAR(255)');
         await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS signature_image_path VARCHAR(255)');
         await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS religion VARCHAR(50)');
+        await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS assigned_section VARCHAR(255)');
+        await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
 
         await pool.query('ALTER TABLE behavior_reports ADD COLUMN IF NOT EXISTS severity VARCHAR(50)');
         await pool.query('ALTER TABLE behavior_reports ADD COLUMN IF NOT EXISTS action_taken TEXT');
         await pool.query('ALTER TABLE behavior_reports ADD COLUMN IF NOT EXISTS follow_up_date DATE');
 
         await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS request_token VARCHAR(20) UNIQUE');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS gmail_address VARCHAR(100)');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS age INTEGER');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS sex VARCHAR(20)');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS birthday DATE');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS religion VARCHAR(50)');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS current_address TEXT');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS contact_number VARCHAR(20)');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS reviewed_by INTEGER');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP');
         await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS request_token VARCHAR(20) UNIQUE');
         await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS contact_number VARCHAR(50)');
         await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS additional_notes TEXT');
