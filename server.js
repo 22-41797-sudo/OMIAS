@@ -6748,20 +6748,6 @@ app.post('/api/test-email', async (req, res) => {
     }
 });
 
-// Start the server
-app.listen(port, async () => {
-    console.log(`\n🚀 Server running at http://localhost:${port}\n`);
-    
-    // Initialize database and create default ictcoor account if needed
-    console.log('═'.repeat(60));
-    const dbInitialized = await initializeDatabase();
-    console.log('═'.repeat(60));
-    
-    if (!dbInitialized) {
-        console.warn('⚠️  Database initialization encountered issues. Some features may not work correctly.');
-    }
-});
-
 // Manual database initialization endpoint (for troubleshooting)
 app.get('/api/admin/reinit-database', async (req, res) => {
     try {
@@ -6858,7 +6844,7 @@ app.get('/api/debug/pending-students', async (req, res) => {
     }
 });
 
-// Debug endpoint to check students records
+// Debug endpoint to check students table
 app.get('/api/debug/students', async (req, res) => {
     try {
         const result = await pool.query(`
@@ -6875,5 +6861,19 @@ app.get('/api/debug/students', async (req, res) => {
     } catch (err) {
         console.error('Error fetching students:', err);
         res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Start the server
+app.listen(port, async () => {
+    console.log(`\n🚀 Server running at http://localhost:${port}\n`);
+    
+    // Initialize database and create default ictcoor account if needed
+    console.log('═'.repeat(60));
+    const dbInitialized = await initializeDatabase();
+    console.log('═'.repeat(60));
+    
+    if (!dbInitialized) {
+        console.warn('⚠️  Database initialization encountered issues. Some features may not work correctly.');
     }
 });
