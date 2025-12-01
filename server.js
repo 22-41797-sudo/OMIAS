@@ -6770,19 +6770,70 @@ app.get('/api/admin/test-count', async (req, res) => {
     }
 });
 
-// Minimal test - just count records
-app.get('/api/admin/test-connection', async (req, res) => {
+// Show actual early registration data
+app.get('/api/admin/show-early-registrations', async (req, res) => {
     try {
-        console.log('Testing database connection...');
-        const result = await pool.query('SELECT NOW() as current_time, version() as db_version');
-        res.json({
+        const result = await pool.query(`
+            SELECT * FROM early_registration ORDER BY id DESC LIMIT 10
+        `);
+        
+        res.json({ 
             success: true,
-            time: result.rows[0].current_time,
-            version: result.rows[0].db_version
+            count: result.rows.length,
+            columns: result.fields ? result.fields.map(f => f.name) : [],
+            records: result.rows
         });
     } catch (err) {
-        console.error('Connection error:', err);
-        res.status(500).json({ success: false, error: err.message, code: err.code });
+        res.status(500).json({ 
+            success: false, 
+            error: err.message,
+            hint: 'Table may not exist or may not have records'
+        });
+    }
+});
+
+// Test the pending students query step by step
+app.get('/api/admin/test-pending-query', async (req, res) => {
+    const debug = [];
+    
+    try {
+        // Step 1: Count early_registration
+        const erCount = await pool.query('SELECT COUNT(*) as count FROM early_registration');
+        debug.push(`early_registration count: ${erCount.rows[0].count}`);
+        
+        // Step 2: Count students
+        const stCount = await pool.query('SELECT COUNT(*) as count FROM students');
+        debug.push(`students count: ${stCount.rows[0].count}`);
+        
+        // Step 3: Get early_registration IDs
+        const erIds = await pool.query('SELECT id, last_name, first_name FROM early_registration ORDER BY id DESC LIMIT 5');
+        debug.push(`Sample early_registration records: ${JSON.stringify(erIds.rows)}`);
+        
+        // Step 4: Run the pending students query
+        const pendingQuery = `
+            SELECT 
+                'ER' || er.id::text as id,
+                er.id as enrollment_id,
+                CONCAT(er.last_name, ', ', er.first_name) as full_name,
+                er.grade_level,
+                er.school_year
+            FROM early_registration er
+            WHERE NOT EXISTS (
+                SELECT 1 FROM students st WHERE st.enrollment_id = er.id::text
+            )
+            ORDER BY er.id DESC
+        `;
+        
+        const pending = await pool.query(pendingQuery);
+        debug.push(`Pending students from query: ${pending.rows.length} records`);
+        if (pending.rows.length > 0) {
+            debug.push(`First record: ${JSON.stringify(pending.rows[0])}`);
+        }
+        
+        res.json({ success: true, debug_info: debug, results: pending.rows });
+    } catch (err) {
+        debug.push(`Error: ${err.message}`);
+        res.status(500).json({ success: false, error: err.message, debug_info: debug });
     }
 });
 
