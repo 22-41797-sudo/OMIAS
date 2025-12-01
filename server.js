@@ -6762,6 +6762,21 @@ app.listen(port, async () => {
     }
 });
 
+// Manual database initialization endpoint (for troubleshooting)
+app.get('/api/admin/reinit-database', async (req, res) => {
+    try {
+        console.log('Manual database reinitialization requested...');
+        const result = await initializeDatabase();
+        res.json({ 
+            success: result,
+            message: result ? 'Database reinitialized successfully' : 'Database reinitialization encountered errors'
+        });
+    } catch (err) {
+        console.error('Error during manual reinitialization:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // Debug endpoint to check early_registration records
 app.get('/api/debug/early-registrations', async (req, res) => {
     try {
