@@ -276,16 +276,163 @@ async function initializeDatabase() {
             CREATE TABLE IF NOT EXISTS section_snapshot_students (
                 id SERIAL PRIMARY KEY,
                 group_id INTEGER REFERENCES section_snapshot_groups(id) ON DELETE CASCADE,
-                section_id INTEGER,
+                student_id INTEGER REFERENCES students(id),
+                section_id INTEGER REFERENCES sections(id),
                 section_name VARCHAR(100),
                 student_name VARCHAR(255),
+                lrn VARCHAR(20),
                 current_address TEXT,
                 barangay VARCHAR(100),
+                grade_level VARCHAR(50),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
-        console.log('✅ All essential tables are ready');
+        // ============= TEACHERS ROLE SPECIFIC TABLES =============
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS teachers (
+                id SERIAL PRIMARY KEY,
+                teacher_id VARCHAR(50) UNIQUE,
+                user_id INTEGER REFERENCES users(id),
+                first_name VARCHAR(100),
+                last_name VARCHAR(100),
+                email VARCHAR(100) UNIQUE,
+                phone VARCHAR(20),
+                specialization VARCHAR(100),
+                department VARCHAR(100),
+                is_active BOOLEAN DEFAULT true,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS teacher_sections (
+                id SERIAL PRIMARY KEY,
+                teacher_id INTEGER REFERENCES teachers(id),
+                section_id INTEGER,
+                academic_year VARCHAR(20),
+                is_current BOOLEAN DEFAULT true,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // ============= REGISTRAR ROLE SPECIFIC TABLES =============
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS registrar_accounts (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id),
+                registrar_id VARCHAR(50) UNIQUE,
+                office_name VARCHAR(100),
+                is_active BOOLEAN DEFAULT true,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // ============= GUIDANCE ROLE SPECIFIC TABLES =============
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS guidance_accounts (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id),
+                guidance_id VARCHAR(50) UNIQUE,
+                counselor_name VARCHAR(255),
+                email VARCHAR(100),
+                phone VARCHAR(20),
+                is_active BOOLEAN DEFAULT true,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // ============= BEHAVIOR ARCHIVES (GUIDANCE) =============
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS behavior_report_archives (
+                id SERIAL PRIMARY KEY,
+                original_report_id INTEGER REFERENCES behavior_reports(id),
+                student_id INTEGER REFERENCES students(id),
+                section_id INTEGER REFERENCES sections(id),
+                report_data JSON,
+                archived_by INTEGER REFERENCES guidance_accounts(id),
+                school_year VARCHAR(20),
+                archive_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // ============= COMMUNICATION TABLES =============
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS notifications (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id),
+                user_role VARCHAR(50),
+                notification_type VARCHAR(100),
+                title VARCHAR(255),
+                message TEXT,
+                is_read BOOLEAN DEFAULT false,
+                link VARCHAR(255),
+                read_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // ============= SECURITY & LOGGING TABLES =============
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS login_logs (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id),
+                username VARCHAR(255),
+                role VARCHAR(50),
+                ip_address VARCHAR(50),
+                user_agent TEXT,
+                login_status VARCHAR(50),
+                failed_attempts INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS audit_logs (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id),
+                username VARCHAR(255),
+                user_role VARCHAR(50),
+                action VARCHAR(100),
+                table_name VARCHAR(100),
+                record_id INTEGER,
+                changes JSON,
+                ip_address VARCHAR(50),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // ============= UPDATE EXISTING TABLES WITH MISSING COLUMNS =============
+        await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS adviser_name VARCHAR(255)');
+        await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS max_capacity INTEGER DEFAULT 50');
+        await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS current_count INTEGER DEFAULT 0');
+        await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS section_code VARCHAR(50) UNIQUE');
+        await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS academic_year VARCHAR(20)');
+        await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS semester VARCHAR(20)');
+
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS lrn VARCHAR(20)');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS enrollment_id VARCHAR(50)');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS student_id VARCHAR(50) UNIQUE');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS date_of_birth DATE');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS gender VARCHAR(20)');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS barangay VARCHAR(100)');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS city VARCHAR(100)');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS province VARCHAR(100)');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS guardian_name VARCHAR(255)');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS guardian_contact VARCHAR(20)');
+
+        await pool.query('ALTER TABLE behavior_reports ADD COLUMN IF NOT EXISTS severity VARCHAR(50)');
+        await pool.query('ALTER TABLE behavior_reports ADD COLUMN IF NOT EXISTS action_taken TEXT');
+        await pool.query('ALTER TABLE behavior_reports ADD COLUMN IF NOT EXISTS follow_up_date DATE');
+
+        await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1');
+        await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMP');
+        await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS processed_at TIMESTAMP');
+
+        console.log('   ✅ All missing columns added');
 
         console.log('\n✨ Database initialization completed successfully!');
         console.log('📍 You can now log in at /login');
