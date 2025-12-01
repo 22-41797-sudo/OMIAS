@@ -2707,7 +2707,7 @@ app.get('/ictcoorLanding', async (req, res) => {
                     er.created_at as enrollment_date,
                     'pending' as enrollment_status
                 FROM early_registration er
-                WHERE status = 'pending'
+                WHERE (status = 'pending' OR status IS NULL)
                 ORDER BY er.last_name, er.first_name
             `);
             console.log(`✅ Found ${enrolleesResult.rows.length} pending enrollees`);
