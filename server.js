@@ -1189,11 +1189,16 @@ const upload = multer({
 
 // PostgreSQL connection pool
 const pool = new Pool({
-    user: process.env.DB_USER || 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'ICTCOORdb',
-    password: process.env.DB_PASSWORD || 'bello0517',
-    port: parseInt(process.env.DB_PORT) || 5432,
+    ...(process.env.DATABASE_URL 
+        ? { connectionString: process.env.DATABASE_URL, ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false }
+        : {
+            user: process.env.DB_USER || 'postgres',
+            host: process.env.DB_HOST || 'localhost',
+            database: process.env.DB_NAME || 'ICTCOORdb',
+            password: process.env.DB_PASSWORD || 'bello0517',
+            port: parseInt(process.env.DB_PORT) || 5432,
+        }
+    ),
     // ============= PERFORMANCE: CONNECTION POOL TUNING =============
     max: 15, // Maximum number of clients in the pool (reduced for stability)
     idleTimeoutMillis: 60000, // Close idle clients after 60 seconds
