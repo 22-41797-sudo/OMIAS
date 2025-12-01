@@ -1,0 +1,144 @@
+<!-- http://localhost:3000/check-status -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Check Enrollment Status - Mainaga San Francisco Integrated School</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="check-status.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="navbar-container">
+        <div class="school-logo">
+            <img src="../pictures/SchoolLogo-removebg-preview.png" alt="Mainaga San Francisco Integrated School Logo">
+            <span class="school-name-text">Mainaga San Francisco Integrated School</span>
+        </div>
+        <nav class="nav-links">
+            <ul>
+                <li><a href="index.html">HOME</a></li>
+                <li><a href="about-us.html">ABOUT US</a></li>
+                <li class="dropdown">
+                    <a href="#">DOCUMENT REQUEST</a>
+                    <div class="dropdown-content">
+                        <a href="document-request.html">Request Document</a>
+                        <a href="check-document-status.html">Check Status</a>
+                    </div>
+                </li>
+                <li class="dropdown">
+                    <a href="#">ENROLLMENT</a>
+                    <div class="dropdown-content">
+                        <a href="enrollment.html">Enroll Now</a>
+                        <a href="check-status.html" class="active">Check Enrollment Status</a>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="status-container">
+        <h1>Check Enrollment Status</h1>
+        
+        <div class="token-input-section">
+            <p>Enter your request token to view your enrollment status.</p>
+            <p class="help-text">You received this token after submitting the online enrollment form.</p>
+            <form id="status-form">
+                <div class="token-input-group">
+                    <input 
+                        type="text" 
+                        class="token-input" 
+                        id="token" 
+                        name="token" 
+                        placeholder="XXXX-XXXX-XXXX" 
+                        maxlength="14"
+                        required 
+                    />
+                    <button class="check-btn" type="submit">Check Status</button>
+                </div>
+            </form>
+            <p class="help-text">
+                Need to enroll? <a href="enrollment.html" class="help-link">Go to Enrollment Form</a>
+            </p>
+        </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+    <p>&copy; 2023 Mainaga San Francisco Integrated School. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Auto-format token input
+    document.getElementById('token').addEventListener('input', function(e) {
+        let value = e.target.value.replace(/[^A-Za-z0-9]/g, '');
+        let formatted = '';
+        for (let i = 0; i < value.length && i < 12; i++) {
+            if (i > 0 && i % 4 === 0) {
+                formatted += '-';
+            }
+            formatted += value[i];
+        }
+        e.target.value = formatted.toUpperCase();
+    });
+
+    // Handle form submit
+    document.getElementById('status-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const t = document.getElementById('token').value.trim();
+      if (t) {
+        window.location.href = '/check-status/' + encodeURIComponent(t);
+      } else {
+        alert('Please enter your request token');
+      }
+    });
+
+    // Handle Enter key
+    document.getElementById('token').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('status-form').dispatchEvent(new Event('submit'));
+        }
+    });
+
+    // Dropdown functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropdowns = document.querySelectorAll('.dropdown');
+        
+        dropdowns.forEach(dropdown => {
+            const toggle = dropdown.querySelector('a');
+            
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                dropdown.classList.toggle('active');
+                
+                // Close other dropdowns
+                dropdowns.forEach(other => {
+                    if (other !== dropdown) {
+                        other.classList.remove('active');
+                    }
+                });
+            });
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown')) {
+                dropdowns.forEach(dropdown => {
+                    dropdown.classList.remove('active');
+                });
+            }
+        });
+    });
+  </script>
+        <script src="/js/toast.js"></script>
+</body>
+</html>

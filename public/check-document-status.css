@@ -1,0 +1,542 @@
+/* Check Document Status Page Styles */
+
+/* Status Check Styles */
+.status-container {
+    max-width: 800px;
+    margin: 80px auto 40px;
+    padding: 40px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.status-container h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 30px;
+    font-size: 2em;
+}
+
+.status-container > main > div > h1 {
+    font-size: 2em;
+}
+
+.token-input-section {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.token-input-section > p {
+    color: #666;
+    font-size: 1em;
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.token-input-group {
+    display: flex;
+    gap: 10px;
+    max-width: 500px;
+    margin: 20px auto;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.token-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 15px;
+    font-size: 18px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    box-sizing: border-box;
+}
+
+.token-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.check-btn {
+    padding: 15px 30px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    min-height: 44px;
+    white-space: nowrap;
+}
+
+.check-btn:hover {
+    background-color: #45a049;
+}
+
+.check-btn:active {
+    background-color: #3d8b40;
+}
+
+.check-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+/* Status Result Styles */
+.status-result {
+    display: none;
+    margin-top: 30px;
+    padding: 30px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.status-result.show {
+    display: block;
+}
+
+.status-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.status-header h2 {
+    color: #333;
+    margin-bottom: 15px;
+    font-size: 1.6em;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 16px;
+    margin: 10px 0;
+}
+
+.status-pending {
+    background-color: #ffc107;
+    color: #333;
+}
+
+.status-processing {
+    background-color: #2196F3;
+    color: white;
+}
+
+.status-ready {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.status-completed {
+    background-color: #9C27B0;
+    color: white;
+}
+
+.status-rejected {
+    background-color: #f44336;
+    color: white;
+}
+
+.status-header > p {
+    margin-top: 15px;
+    color: #666;
+    line-height: 1.6;
+}
+
+.request-details {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.request-details h3 {
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 1.1em;
+}
+
+.detail-row {
+    display: flex;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+    flex-wrap: wrap;
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #666;
+    min-width: 200px;
+    flex: 0 0 200px;
+}
+
+.detail-value {
+    color: #333;
+    flex: 1;
+    word-break: break-word;
+}
+
+.error-message {
+    text-align: center;
+    padding: 20px;
+    background-color: #ffebee;
+    color: #c62828;
+    border-radius: 8px;
+    margin-top: 20px;
+    font-size: 0.95em;
+}
+
+.hidden {
+    display: none;
+}
+
+.timeline {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+}
+
+.timeline h3 {
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 1.1em;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 30px;
+    margin-bottom: 20px;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #4CAF50;
+}
+
+.timeline-item::after {
+    content: '';
+    position: absolute;
+    left: 13px;
+    top: 20px;
+    width: 2px;
+    height: calc(100% + 10px);
+    background-color: #ddd;
+}
+
+.timeline-item:last-child::after {
+    display: none;
+}
+
+.timeline-date {
+    font-size: 12px;
+    color: #666;
+}
+
+.timeline-title {
+    font-weight: 600;
+    color: #333;
+    margin: 5px 0;
+}
+
+/* Dropdown menu styles */
+.nav-links ul li {
+    position: relative;
+}
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: white;
+    min-width: 200px;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    top: 100%;
+    left: 0;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+.dropdown-content a {
+    color: #333;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.dropdown-content a:hover {
+    background-color: #f1f1f1;
+}
+
+.dropdown.active .dropdown-content {
+    display: block;
+}
+
+.dropdown > a {
+    cursor: pointer;
+}
+
+.dropdown > a::after {
+    content: ' ▼';
+    font-size: 10px;
+    margin-left: 5px;
+    transition: transform 0.3s;
+}
+
+.dropdown.active > a::after {
+    transform: rotate(180deg);
+}
+
+/* Tablet Responsive */
+@media (max-width: 1024px) {
+    .status-container {
+        margin: 60px auto 30px;
+        padding: 30px 25px;
+    }
+
+    .status-container h1 {
+        font-size: 1.8em;
+    }
+
+    .token-input {
+        font-size: 16px;
+    }
+
+    .check-btn {
+        font-size: 15px;
+    }
+
+    .detail-label {
+        min-width: 180px;
+        flex: 0 0 180px;
+    }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .status-container {
+        margin: 40px 12px 30px;
+        padding: 25px 20px;
+        border-radius: 10px;
+    }
+
+    .status-container h1 {
+        font-size: 1.6em;
+        margin-bottom: 20px;
+    }
+
+    .token-input-section > p {
+        font-size: 0.95em;
+        margin-bottom: 12px;
+    }
+
+    .token-input-group {
+        margin: 16px auto;
+        gap: 8px;
+    }
+
+    .token-input {
+        padding: 12px;
+        font-size: 16px;
+        min-width: 150px;
+    }
+
+    .check-btn {
+        padding: 12px 24px;
+        font-size: 0.95em;
+    }
+
+    .status-header h2 {
+        font-size: 1.4em;
+    }
+
+    .status-badge {
+        font-size: 0.95em;
+        padding: 8px 16px;
+    }
+
+    .request-details {
+        padding: 16px;
+    }
+
+    .request-details h3 {
+        font-size: 1em;
+        margin-bottom: 12px;
+    }
+
+    .detail-row {
+        padding: 10px 0;
+    }
+
+    .detail-label {
+        min-width: 150px;
+        flex: 0 0 150px;
+        font-size: 0.95em;
+    }
+
+    .detail-value {
+        font-size: 0.95em;
+    }
+
+    .error-message {
+        padding: 16px;
+        font-size: 0.9em;
+    }
+
+    .timeline {
+        padding: 16px;
+    }
+
+    .timeline h3 {
+        font-size: 1em;
+        margin-bottom: 16px;
+    }
+
+    .timeline-item {
+        margin-bottom: 16px;
+        padding-left: 28px;
+    }
+
+    .timeline-date {
+        font-size: 0.9em;
+    }
+
+    .timeline-title {
+        font-size: 0.95em;
+    }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+    .status-container {
+        margin: 30px 8px 20px;
+        padding: 20px 16px;
+        border-radius: 8px;
+    }
+
+    .status-container h1 {
+        font-size: 1.4em;
+        margin-bottom: 16px;
+    }
+
+    .token-input-section > p {
+        font-size: 0.9em;
+        margin-bottom: 10px;
+    }
+
+    .token-input-group {
+        flex-direction: column;
+        margin: 14px auto;
+        gap: 10px;
+    }
+
+    .token-input {
+        width: 100%;
+        padding: 11px;
+        font-size: 16px;
+        border-radius: 6px;
+    }
+
+    .check-btn {
+        width: 100%;
+        padding: 11px 20px;
+        font-size: 0.95em;
+        border-radius: 6px;
+    }
+
+    .status-header h2 {
+        font-size: 1.3em;
+    }
+
+    .status-badge {
+        font-size: 0.9em;
+        padding: 8px 14px;
+    }
+
+    .request-details {
+        padding: 14px;
+    }
+
+    .request-details h3 {
+        font-size: 0.95em;
+    }
+
+    .detail-row {
+        flex-direction: column;
+        padding: 10px 0;
+    }
+
+    .detail-label {
+        flex: 0 0 100%;
+        min-width: auto;
+        margin-bottom: 4px;
+        font-size: 0.9em;
+    }
+
+    .detail-value {
+        font-size: 0.9em;
+        margin-left: 0;
+    }
+
+    .error-message {
+        padding: 14px;
+        font-size: 0.85em;
+    }
+
+    .timeline {
+        padding: 14px;
+    }
+
+    .timeline h3 {
+        font-size: 0.95em;
+    }
+
+    .timeline-item {
+        margin-bottom: 14px;
+        padding-left: 26px;
+    }
+
+    .timeline-item::before {
+        width: 10px;
+        height: 10px;
+        left: 6px;
+    }
+
+    .timeline-item::after {
+        left: 11px;
+    }
+
+    .timeline-date {
+        font-size: 0.85em;
+    }
+
+    .timeline-title {
+        font-size: 0.9em;
+    }
+}
