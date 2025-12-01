@@ -6765,20 +6765,47 @@ app.listen(port, async () => {
 // Debug endpoint to check early_registration records
 app.get('/api/debug/early-registrations', async (req, res) => {
     try {
-        const result = await pool.query(`
-            SELECT id, last_name, first_name, grade_level, school_year, created_at
-            FROM early_registration
-            ORDER BY created_at DESC
-            LIMIT 20
+        // First check if table exists
+        const tableCheck = await pool.query(`
+            SELECT EXISTS(
+                SELECT 1 FROM information_schema.tables 
+                WHERE table_name = 'early_registration'
+            ) as table_exists
         `);
+        
+        if (!tableCheck.rows[0].table_exists) {
+            return res.json({ 
+                success: false, 
+                error: 'early_registration table does not exist',
+                table_exists: false
+            });
+        }
+        
+        // Get all columns
+        const columnCheck = await pool.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'early_registration'
+            ORDER BY column_name
+        `);
+        
+        // Get data
+        const result = await pool.query(`SELECT * FROM early_registration ORDER BY id DESC LIMIT 5`);
+        
         res.json({ 
             success: true, 
             count: result.rows.length,
+            columns: columnCheck.rows.map(r => r.column_name),
             records: result.rows 
         });
     } catch (err) {
         console.error('Error fetching early registrations:', err);
-        res.status(500).json({ success: false, error: err.message, details: err.toString() });
+        res.status(500).json({ 
+            success: false, 
+            error: err.message,
+            details: err.toString(),
+            stack: err.stack
+        });
     }
 });
 
