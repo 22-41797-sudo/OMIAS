@@ -13,6 +13,7 @@ const dssEngine = require('./dss-engine'); // Import DSS Engine
 const PDFDocument = require('pdfkit'); // Import pdfkit for PDF generation
 const emailService = require('./email-service'); // Import email service for notifications
 const compression = require('compression'); // Import compression middleware
+const { initializeDatabase } = require('./init-db'); // Import database initialization
 
 const app = express();
 const port = 3000;
@@ -2586,7 +2587,7 @@ app.get('/ictcoorLanding', async (req, res) => {
                 'pending' as enrollment_status
             FROM early_registration er
             WHERE NOT EXISTS (
-                SELECT 1 FROM students st WHERE st.enrollment_id = er.id
+                SELECT 1 FROM students st WHERE st.enrollment_id = er.id::text
             )
             ORDER BY 
                 CASE 
@@ -3680,9 +3681,9 @@ app.post('/assign-section/:id', async (req, res) => {
                 });
             }
 
-            // Assign student to section and mark as assigned
+            // Assign student to section
             await client.query(`
-                UPDATE students SET section_id = $1, has_been_assigned = true WHERE id = $2
+                UPDATE students SET section_id = $1 WHERE id = $2
             `, [section, studentId]);
 
             // Increment section current_count
@@ -3818,6 +3819,14 @@ app.post('/api/sections/snapshots', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Snapshot name is required' });
     }
 
+    // Helper function to extract barangay from address
+    const extractBarangay = (address) => {
+        if (!address) return null;
+        // Extract first word as barangay name (e.g., "Manaiga Mabini Batangas" → "Manaiga")
+        const parts = String(address).trim().split(/\s+/);
+        return parts.length > 0 ? parts[0] : null;
+    };
+
     const snapshotName = String(name).trim();
     const client = await pool.connect();
     try {
@@ -3842,19 +3851,13 @@ app.post('/api/sections/snapshots', async (req, res) => {
                 section_name TEXT,
                 grade_level TEXT,
                 count INTEGER,
-                adviser_name TEXT
-            )
-        `);
-
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS section_snapshot_students (
-                id SERIAL PRIMARY KEY,
-                group_id INTEGER REFERENCES section_snapshot_groups(id) ON DELETE CASCADE,
-                section_id INTEGER,
-                section_name TEXT,
+                adviser_name TEXT,
                 student_name TEXT,
+                last_name TEXT,
+                first_name TEXT,
                 current_address TEXT,
-                barangay TEXT
+                barangay_extracted TEXT,
+                teacher_name TEXT
             )
         `);
 
@@ -3862,7 +3865,27 @@ app.post('/api/sections/snapshots', async (req, res) => {
         const g = await client.query(`INSERT INTO section_snapshot_groups (snapshot_name, created_by) VALUES ($1, $2) RETURNING id, snapshot_name, created_at`, [snapshotName, req.session.user.id || null]);
         const groupId = g.rows[0].id;
 
-        // Get current section counts
+        // Get all students with their sections, sorted by section and name
+        const students = await client.query(`
+            SELECT 
+                s.id,
+                s.last_name,
+                s.first_name,
+                s.middle_name,
+                s.ext_name,
+                CONCAT(s.last_name, ', ', s.first_name, ' ', COALESCE(s.middle_name, ''), ' ', COALESCE(s.ext_name, '')) AS full_name,
+                s.current_address,
+                s.section_id,
+                sec.section_name,
+                sec.grade_level,
+                sec.adviser_name
+            FROM students s
+            LEFT JOIN sections sec ON s.section_id = sec.id
+            WHERE s.enrollment_status = 'active' AND s.section_id IS NOT NULL
+            ORDER BY sec.section_name, s.last_name, s.first_name
+        `);
+
+        // Get current section counts (still save them for summary)
         const counts = await client.query(`
             SELECT s.id AS section_id, s.section_name, s.grade_level, COALESCE(cnt.cnt, 0) AS count, s.adviser_name
             FROM sections s
@@ -3874,44 +3897,43 @@ app.post('/api/sections/snapshots', async (req, res) => {
             ) cnt ON cnt.section_id = s.id
         `);
 
+        // Insert section summary rows (for backward compatibility)
         for (const r of counts.rows) {
             await client.query(`
-                INSERT INTO section_snapshot_items (group_id, section_id, section_name, grade_level, count, adviser_name)
-                VALUES ($1,$2,$3,$4,$5,$6)
-            `, [groupId, r.section_id, r.section_name, r.grade_level, r.count, r.adviser_name || null]);
+                INSERT INTO section_snapshot_items 
+                (group_id, section_id, section_name, grade_level, count, adviser_name, teacher_name)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `, [groupId, r.section_id, r.section_name, r.grade_level, r.count, r.adviser_name || null, null]);
         }
 
-        // Get and save individual student data
-        const students = await client.query(`
-            SELECT 
-                st.id,
-                st.section_id,
-                s.section_name,
-                CONCAT(st.last_name, ', ', st.first_name, ' ', COALESCE(st.middle_name, '')) as student_name,
-                st.current_address,
-                CASE 
-                    WHEN st.current_address ~ '^[A-Za-z]+' THEN split_part(st.current_address, ' ', 1)
-                    ELSE 'Unknown'
-                END as barangay
-            FROM students st
-            LEFT JOIN sections s ON st.section_id = s.id
-            WHERE st.enrollment_status = 'active' AND st.section_id IS NOT NULL
-            ORDER BY s.section_name, st.last_name, st.first_name
-        `);
-
+        // Insert individual student records
         for (const student of students.rows) {
+            const barangay = extractBarangay(student.current_address);
             await client.query(`
-                INSERT INTO section_snapshot_students (group_id, section_id, section_name, student_name, current_address, barangay)
-                VALUES ($1, $2, $3, $4, $5, $6)
-            `, [groupId, student.section_id || null, student.section_name || null, student.student_name, student.current_address, student.barangay]);
+                INSERT INTO section_snapshot_items 
+                (group_id, section_id, section_name, grade_level, student_name, last_name, first_name, current_address, barangay_extracted, adviser_name, teacher_name)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            `, [
+                groupId,
+                student.section_id,
+                student.section_name,
+                student.grade_level,
+                student.full_name,
+                student.last_name,
+                student.first_name,
+                student.current_address,
+                barangay,
+                student.adviser_name,
+                student.adviser_name  // Using adviser_name as teacher_name for now
+            ]);
         }
 
         await client.query('COMMIT');
-        res.json({ success: true, message: `Snapshot '${snapshotName}' saved`, group: g.rows[0] });
+        res.json({ success: true, message: `Snapshot '${snapshotName}' saved with ${students.rows.length} students`, group: g.rows[0] });
     } catch (err) {
         await client.query('ROLLBACK');
         console.error('Error creating snapshot group:', err);
-        res.status(500).json({ success: false, message: 'Error creating snapshot' });
+        res.status(500).json({ success: false, message: 'Error creating snapshot: ' + err.message });
     } finally {
         client.release();
     }
@@ -3940,18 +3962,13 @@ app.get('/api/sections/snapshots', async (req, res) => {
                 section_name TEXT,
                 grade_level TEXT,
                 count INTEGER,
-                adviser_name TEXT
-            )
-        `);
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS section_snapshot_students (
-                id SERIAL PRIMARY KEY,
-                group_id INTEGER REFERENCES section_snapshot_groups(id) ON DELETE CASCADE,
-                section_id INTEGER,
-                section_name TEXT,
+                adviser_name TEXT,
                 student_name TEXT,
+                last_name TEXT,
+                first_name TEXT,
                 current_address TEXT,
-                barangay TEXT
+                barangay_extracted TEXT,
+                teacher_name TEXT
             )
         `);
 
@@ -3978,35 +3995,49 @@ app.get('/api/sections/snapshots/:id/items', async (req, res) => {
     }
 });
 
-// Get students from snapshot
+// Get student-level details for a snapshot group with barangay count per section
 app.get('/api/sections/snapshots/:id/students', async (req, res) => {
     if (!req.session.user || req.session.user.role !== 'ictcoor') {
         return res.status(403).json({ success: false, message: 'Access denied' });
     }
     const gid = req.params.id;
     try {
-        // Ensure table exists
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS section_snapshot_students (
-                id SERIAL PRIMARY KEY,
-                group_id INTEGER REFERENCES section_snapshot_groups(id) ON DELETE CASCADE,
-                section_id INTEGER,
-                section_name VARCHAR(100),
-                student_name VARCHAR(255),
-                current_address TEXT,
-                barangay VARCHAR(100),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-        
-        const students = await pool.query(
-            `SELECT section_id, section_name, student_name, current_address, barangay 
-             FROM section_snapshot_students 
-             WHERE group_id = $1 
-             ORDER BY section_name, barangay, student_name`,
-            [gid]
-        );
-        res.json({ success: true, students: students.rows });
+        // Get all student records from snapshot
+        const students = await pool.query(`
+            SELECT 
+                id,
+                section_id,
+                section_name,
+                grade_level,
+                student_name,
+                last_name,
+                first_name,
+                current_address,
+                barangay_extracted,
+                adviser_name,
+                teacher_name
+            FROM section_snapshot_items 
+            WHERE group_id = $1 AND student_name IS NOT NULL
+            ORDER BY section_name, last_name, first_name
+        `, [gid]);
+
+        // Get barangay count per section
+        const barangayCounts = await pool.query(`
+            SELECT 
+                section_name,
+                barangay_extracted,
+                COUNT(*) as barangay_count
+            FROM section_snapshot_items 
+            WHERE group_id = $1 AND student_name IS NOT NULL AND barangay_extracted IS NOT NULL
+            GROUP BY section_name, barangay_extracted
+            ORDER BY section_name, barangay_extracted
+        `, [gid]);
+
+        res.json({ 
+            success: true, 
+            students: students.rows,
+            barangay_counts: barangayCounts.rows 
+        });
     } catch (err) {
         console.error('Error fetching snapshot students:', err);
         res.status(500).json({ success: false, message: 'Error fetching snapshot students' });
@@ -4503,10 +4534,9 @@ app.put('/api/students/:id/reassign', async (req, res) => {
                 INSERT INTO students (
                     lrn, school_year, grade_level, last_name, first_name, middle_name, ext_name,
                     birthday, age, sex, religion, current_address, contact_number,
-                    ip_community, ip_community_specify, pwd, pwd_specify,
-                    father_name, mother_name, guardian_name,
-                    enrollment_status, section_id, gmail_address, printed_name, signature_image_path, has_been_assigned
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, true)
+                    enrollment_status, section_id
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                ON CONFLICT DO NOTHING
             `, [
                 earlyReg.lrn,
                 earlyReg.school_year,
@@ -4521,18 +4551,8 @@ app.put('/api/students/:id/reassign', async (req, res) => {
                 earlyReg.religion || null,
                 earlyReg.current_address,
                 earlyReg.contact_number || null,
-                earlyReg.ip_community,
-                earlyReg.ip_community_specify || null,
-                earlyReg.pwd,
-                earlyReg.pwd_specify || null,
-                earlyReg.father_name || null,
-                earlyReg.mother_name || null,
-                earlyReg.guardian_name || null,
                 'active',
-                newSectionId,
-                earlyReg.gmail_address || null,
-                earlyReg.printed_name || null,
-                earlyReg.signature_image_path || null
+                newSectionId
             ]);
 
             // Increment new section count
@@ -4573,8 +4593,8 @@ app.put('/api/students/:id/reassign', async (req, res) => {
                 });
             }
 
-            // Update student's section and mark as assigned
-            await client.query('UPDATE students SET section_id = $1, has_been_assigned = true WHERE id = $2', [newSectionId, studentId]);
+            // Update student's section
+            await client.query('UPDATE students SET section_id = $1 WHERE id = $2', [newSectionId, studentId]);
 
             // Decrement old section count (if student had a section)
             if (oldSectionId) {
@@ -4677,7 +4697,7 @@ app.get('/api/students/unassigned', async (req, res) => {
                 er.contact_number,
                 er.registration_date as enrollment_date,
                 'active' as enrollment_status,
-                CASE WHEN er.is_archived IS NULL THEN false ELSE er.is_archived END as is_archived,
+                false as is_archived,
                 'early_registration' as source
             FROM early_registration er
             LEFT JOIN students st ON st.lrn = er.lrn AND st.school_year = er.school_year
@@ -4707,63 +4727,30 @@ app.put('/api/students/:id/archive', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // Check if this is an ER (early_registration) ID
-        if (String(studentId).startsWith('ER')) {
-            // Extract numeric ID from ER prefix
-            const erId = String(studentId).substring(2);
-            
-            // Get the student details first
-            const getResult = await client.query(
-                'SELECT last_name, first_name FROM early_registration WHERE id = $1',
-                [erId]
-            );
+        // Get student info
+        const studentResult = await client.query(
+            'SELECT full_name, section_id FROM students WHERE id = $1',
+            [studentId]
+        );
 
-            if (getResult.rows.length === 0) {
-                await client.query('ROLLBACK');
-                return res.status(404).json({ success: false, message: 'Student not found' });
-            }
-
-            const student = getResult.rows[0];
-            const fullName = `${student.last_name}, ${student.first_name}`;
-            
-            // Archive the early registration record
-            await client.query(
-                'UPDATE early_registration SET is_archived = true WHERE id = $1',
-                [erId]
-            );
-
-            await client.query('COMMIT');
-            res.json({ 
-                success: true, 
-                message: `Student "${fullName}" has been archived successfully.`
-            });
-        } else {
-            // Regular student ID (from students table)
-            const studentResult = await client.query(
-                'SELECT last_name, first_name, section_id FROM students WHERE id = $1',
-                [studentId]
-            );
-
-            if (studentResult.rows.length === 0) {
-                await client.query('ROLLBACK');
-                return res.status(404).json({ success: false, message: 'Student not found' });
-            }
-
-            const student = studentResult.rows[0];
-            const fullName = `${student.last_name}, ${student.first_name}`;
-
-            // Archive the student
-            await client.query(
-                'UPDATE students SET is_archived = true WHERE id = $1',
-                [studentId]
-            );
-
-            await client.query('COMMIT');
-            res.json({ 
-                success: true, 
-                message: `Student "${fullName}" has been archived successfully.`
-            });
+        if (studentResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, message: 'Student not found' });
         }
+
+        const student = studentResult.rows[0];
+
+        // Archive the student
+        await client.query(
+            'UPDATE students SET is_archived = true WHERE id = $1',
+            [studentId]
+        );
+
+        await client.query('COMMIT');
+        res.json({ 
+            success: true, 
+            message: `Student "${student.full_name}" has been archived successfully.`
+        });
 
     } catch (err) {
         await client.query('ROLLBACK');
@@ -4786,53 +4773,30 @@ app.put('/api/students/:id/unarchive', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // Check if this is an ER (early_registration) ID
-        if (String(studentId).startsWith('ER')) {
-            // Extract numeric ID from ER prefix
-            const erId = String(studentId).substring(2);
-            
-            // Restore the early registration record
-            const erResult = await client.query(
-                'UPDATE early_registration SET is_archived = false WHERE id = $1 RETURNING CONCAT(last_name, \', \', first_name) as full_name',
-                [erId]
-            );
+        // Get student info
+        const studentResult = await client.query(
+            'SELECT full_name FROM students WHERE id = $1',
+            [studentId]
+        );
 
-            if (erResult.rows.length === 0) {
-                await client.query('ROLLBACK');
-                return res.status(404).json({ success: false, message: 'Student not found' });
-            }
-
-            await client.query('COMMIT');
-            res.json({ 
-                success: true, 
-                message: `Student "${erResult.rows[0].full_name}" has been restored successfully.`
-            });
-        } else {
-            // Regular student ID (from students table)
-            const studentResult = await client.query(
-                'SELECT full_name FROM students WHERE id = $1',
-                [studentId]
-            );
-
-            if (studentResult.rows.length === 0) {
-                await client.query('ROLLBACK');
-                return res.status(404).json({ success: false, message: 'Student not found' });
-            }
-
-            const student = studentResult.rows[0];
-
-            // Restore the student
-            await client.query(
-                'UPDATE students SET is_archived = false WHERE id = $1',
-                [studentId]
-            );
-
-            await client.query('COMMIT');
-            res.json({ 
-                success: true, 
-                message: `Student "${student.full_name}" has been restored successfully.`
-            });
+        if (studentResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, message: 'Student not found' });
         }
+
+        const student = studentResult.rows[0];
+
+        // Restore the student
+        await client.query(
+            'UPDATE students SET is_archived = false WHERE id = $1',
+            [studentId]
+        );
+
+        await client.query('COMMIT');
+        res.json({ 
+            success: true, 
+            message: `Student "${student.full_name}" has been restored successfully.`
+        });
 
     } catch (err) {
         await client.query('ROLLBACK');
@@ -4855,63 +4819,30 @@ app.put('/api/students/:id/recover', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // Check if this is an ER (early_registration) ID
-        if (String(studentId).startsWith('ER')) {
-            // Extract numeric ID from ER prefix
-            const erId = String(studentId).substring(2);
-            
-            // Get the student details first
-            const getResult = await client.query(
-                'SELECT last_name, first_name FROM early_registration WHERE id = $1',
-                [erId]
-            );
+        // Get student info
+        const studentResult = await client.query(
+            `SELECT CONCAT(last_name, ', ', first_name, ' ', COALESCE(middle_name, ''), ' ', COALESCE(ext_name, '')) as full_name FROM students WHERE id = $1`,
+            [studentId]
+        );
 
-            if (getResult.rows.length === 0) {
-                await client.query('ROLLBACK');
-                return res.status(404).json({ success: false, message: 'Student not found' });
-            }
-
-            const student = getResult.rows[0];
-            const fullName = `${student.last_name}, ${student.first_name}`;
-            
-            // Restore the early registration record
-            await client.query(
-                'UPDATE early_registration SET is_archived = false WHERE id = $1',
-                [erId]
-            );
-
-            await client.query('COMMIT');
-            res.json({ 
-                success: true, 
-                message: `Student "${fullName}" has been recovered successfully.`
-            });
-        } else {
-            // Regular student ID (from students table)
-            const studentResult = await client.query(
-                'SELECT last_name, first_name FROM students WHERE id = $1',
-                [studentId]
-            );
-
-            if (studentResult.rows.length === 0) {
-                await client.query('ROLLBACK');
-                return res.status(404).json({ success: false, message: 'Student not found' });
-            }
-
-            const student = studentResult.rows[0];
-            const fullName = `${student.last_name}, ${student.first_name}`;
-
-            // Restore the student
-            await client.query(
-                'UPDATE students SET is_archived = false WHERE id = $1',
-                [studentId]
-            );
-
-            await client.query('COMMIT');
-            res.json({ 
-                success: true, 
-                message: `Student "${fullName}" has been recovered successfully.`
-            });
+        if (studentResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, message: 'Student not found' });
         }
+
+        const student = studentResult.rows[0];
+
+        // Restore the student
+        await client.query(
+            'UPDATE students SET is_archived = false WHERE id = $1',
+            [studentId]
+        );
+
+        await client.query('COMMIT');
+        res.json({ 
+            success: true, 
+            message: `Student "${student.full_name}" has been recovered successfully.`
+        });
 
     } catch (err) {
         await client.query('ROLLBACK');
@@ -4934,55 +4865,27 @@ app.delete('/api/students/:id', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // Check if this is an ER (early_registration) ID
-        if (String(studentId).startsWith('ER')) {
-            // Extract numeric ID from ER prefix
-            const erId = String(studentId).substring(2);
-            
-            // Get student info
-            const erResult = await client.query(
-                `SELECT CONCAT(last_name, ', ', first_name) as full_name FROM early_registration WHERE id = $1`,
-                [erId]
-            );
+        // Get student info
+        const studentResult = await client.query(
+            `SELECT CONCAT(last_name, ', ', first_name, ' ', COALESCE(middle_name, ''), ' ', COALESCE(ext_name, '')) as full_name FROM students WHERE id = $1`,
+            [studentId]
+        );
 
-            if (erResult.rows.length === 0) {
-                await client.query('ROLLBACK');
-                return res.status(404).json({ success: false, message: 'Student not found' });
-            }
-
-            const student = erResult.rows[0];
-
-            // Delete the early registration record
-            await client.query('DELETE FROM early_registration WHERE id = $1', [erId]);
-
-            await client.query('COMMIT');
-            res.json({ 
-                success: true, 
-                message: `Student "${student.full_name}" has been permanently deleted.`
-            });
-        } else {
-            // Regular student ID (from students table)
-            const studentResult = await client.query(
-                `SELECT CONCAT(last_name, ', ', first_name, ' ', COALESCE(middle_name, ''), ' ', COALESCE(ext_name, '')) as full_name FROM students WHERE id = $1`,
-                [studentId]
-            );
-
-            if (studentResult.rows.length === 0) {
-                await client.query('ROLLBACK');
-                return res.status(404).json({ success: false, message: 'Student not found' });
-            }
-
-            const student = studentResult.rows[0];
-
-            // Delete the student and all related records
-            await client.query('DELETE FROM students WHERE id = $1', [studentId]);
-
-            await client.query('COMMIT');
-            res.json({ 
-                success: true, 
-                message: `Student "${student.full_name}" has been permanently deleted.`
-            });
+        if (studentResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, message: 'Student not found' });
         }
+
+        const student = studentResult.rows[0];
+
+        // Delete the student and all related records
+        await client.query('DELETE FROM students WHERE id = $1', [studentId]);
+
+        await client.query('COMMIT');
+        res.json({ 
+            success: true, 
+            message: `Student "${student.full_name}" has been permanently deleted.`
+        });
 
     } catch (err) {
         await client.query('ROLLBACK');
@@ -5036,7 +4939,7 @@ app.get('/api/students/all', async (req, res) => {
     }
 
     try {
-        // Get students from students table - ONLY those who have NEVER been assigned (has_been_assigned = false)
+        // Get students from students table (both active and archived)
         const studentsResult = await pool.query(`
             SELECT 
                 s.id,
@@ -5057,7 +4960,7 @@ app.get('/api/students/all', async (req, res) => {
                 CASE WHEN s.is_archived IS NULL THEN false ELSE s.is_archived END as is_archived
             FROM students s
             LEFT JOIN sections sec ON s.section_id = sec.id
-            WHERE s.enrollment_status = 'active' AND (s.has_been_assigned IS NULL OR s.has_been_assigned = false)
+            WHERE s.enrollment_status = 'active'
             ORDER BY 
                 CASE 
                     WHEN s.grade_level = 'Kindergarten' THEN 1
@@ -5077,7 +4980,7 @@ app.get('/api/students/all', async (req, res) => {
         const enrolleesResult = await pool.query(`
             SELECT 
                 'ER' || er.id::text as id,
-                er.id as enrollment_id,
+                er.id::text as enrollment_id,
                 er.lrn,
                 er.grade_level,
                 er.last_name,
@@ -5091,10 +4994,10 @@ app.get('/api/students/all', async (req, res) => {
                 NULL as assigned_section,
                 er.created_at as enrollment_date,
                 'pending' as enrollment_status,
-                CASE WHEN er.is_archived IS NULL THEN false ELSE er.is_archived END as is_archived
+                false as is_archived
             FROM early_registration er
             WHERE NOT EXISTS (
-                SELECT 1 FROM students st WHERE st.enrollment_id = er.id
+                SELECT 1 FROM students st WHERE st.enrollment_id = er.id::text
             )
             ORDER BY 
                 CASE 
@@ -5111,7 +5014,7 @@ app.get('/api/students/all', async (req, res) => {
                 er.last_name, er.first_name
         `);
 
-        // Combine: pending enrollees + unassigned students (active & archived)
+        // Combine: pending enrollees + all students (active & archived)
         const allStudents = [...enrolleesResult.rows, ...studentsResult.rows];
 
         res.json({ success: true, students: allStudents });
@@ -6710,6 +6613,15 @@ app.post('/api/test-email', async (req, res) => {
 });
 
 // Start the server
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+app.listen(port, async () => {
+    console.log(`\n🚀 Server running at http://localhost:${port}\n`);
+    
+    // Initialize database and create default ictcoor account if needed
+    console.log('═'.repeat(60));
+    const dbInitialized = await initializeDatabase();
+    console.log('═'.repeat(60));
+    
+    if (!dbInitialized) {
+        console.warn('⚠️  Database initialization encountered issues. Some features may not work correctly.');
+    }
 });
