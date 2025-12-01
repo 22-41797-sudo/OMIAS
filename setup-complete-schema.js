@@ -1,39 +1,18 @@
-// Database Initialization Script
-// This script ensures the users table exists and creates the default ictcoor account if needed
-
+// Complete Schema Setup for Render Database
 const { Pool } = require('pg');
-const bcrypt = require('bcrypt');
 require('dotenv').config();
 
-// Create pool with either DATABASE_URL or individual connection parameters
-let pool;
-console.log('📍 Environment Check:');
-console.log('   DATABASE_URL set:', !!process.env.DATABASE_URL);
-console.log('   NODE_ENV:', process.env.NODE_ENV);
-if (process.env.DATABASE_URL) {
-    console.log('   Using DATABASE_URL for connection');
-    pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
-} else {
-    console.log('   Using individual DB parameters (localhost)');
-    pool = new Pool({
-        user: process.env.DB_USER || 'postgres',
-        host: process.env.DB_HOST || 'localhost',
-        database: process.env.DB_NAME || 'ICTCOORdb',
-        password: process.env.DB_PASSWORD,
-        port: parseInt(process.env.DB_PORT) || 5432,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
-}
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL || 'postgresql://omias_user:IxP0kZC2hXBNfDISoTx8BdtcWW2ci1sj@dpg-d4mpccpr0fns73ad6uv0-a.singapore-postgres.render.com:5432/omias',
+    ssl: { rejectUnauthorized: false }
+});
 
-async function initializeDatabase() {
+async function setupCompleteSchema() {
     try {
-        console.log('🔄 Starting database initialization...');
+        console.log('🔄 Setting up complete database schema...\n');
 
-        // 1. Create users table if it doesn't exist
-        console.log('📋 Creating users table if it does not exist...');
+        // ============= USERS TABLE =============
+        console.log('📋 Creating users table...');
         await pool.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -43,40 +22,42 @@ async function initializeDatabase() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-        console.log('✅ Users table is ready');
+        console.log('   ✅ users table ready');
 
-        // 2. Check if ictcoor account exists
-        console.log('🔍 Checking for existing ictcoor account...');
-        const existingUser = await pool.query(
-            'SELECT * FROM users WHERE username = $1 AND role = $2',
-            ['ictcoor', 'ictcoor']
-        );
+        // ============= TEACHERS TABLE =============
+        console.log('📋 Creating teachers table...');
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS teachers (
+                id SERIAL PRIMARY KEY,
+                teacher_id VARCHAR(50) UNIQUE,
+                first_name VARCHAR(100),
+                last_name VARCHAR(100),
+                email VARCHAR(100),
+                phone VARCHAR(20),
+                specialization VARCHAR(100),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        console.log('   ✅ teachers table ready');
 
-        if (existingUser.rows.length > 0) {
-            console.log('✅ ICT Coordinator account already exists');
-            console.log(`   Username: ${existingUser.rows[0].username}`);
-            console.log(`   Role: ${existingUser.rows[0].role}`);
-        } else {
-            // 3. Create default ictcoor account
-            console.log('🆕 Creating default ictcoor account...');
-            const hashedPassword = await bcrypt.hash('admin123', 10);
-            
-            const result = await pool.query(
-                'INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING id, username, role',
-                ['ictcoor', hashedPassword, 'ictcoor']
-            );
+        // ============= SECTIONS TABLE =============
+        console.log('📋 Creating sections table...');
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS sections (
+                id SERIAL PRIMARY KEY,
+                section_name VARCHAR(100) UNIQUE,
+                grade_level VARCHAR(50),
+                adviser_id INTEGER,
+                adviser_name VARCHAR(255),
+                max_capacity INTEGER DEFAULT 50,
+                current_count INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        console.log('   ✅ sections table ready');
 
-            console.log('✅ ICT Coordinator account created successfully');
-            console.log(`   ID: ${result.rows[0].id}`);
-            console.log(`   Username: ${result.rows[0].username}`);
-            console.log(`   Password: admin123 (hashed in database)`);
-            console.log(`   Role: ${result.rows[0].role}`);
-        }
-
-        // 4. Create essential tables
-        console.log('📋 Creating essential tables...');
-        
-        // Students table
+        // ============= STUDENTS TABLE =============
+        console.log('📋 Creating students table...');
         await pool.query(`
             CREATE TABLE IF NOT EXISTS students (
                 id SERIAL PRIMARY KEY,
@@ -95,46 +76,15 @@ async function initializeDatabase() {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-        
-        // Add missing columns to students
+        console.log('   ✅ students table ready');
+
+        // Add missing columns to students if needed
         await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS lrn VARCHAR(20)');
         await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS enrollment_id VARCHAR(50)');
         await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS student_id VARCHAR(50) UNIQUE');
 
-        // Sections table
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS sections (
-                id SERIAL PRIMARY KEY,
-                section_name VARCHAR(100) UNIQUE,
-                grade_level VARCHAR(50),
-                adviser_id INTEGER,
-                adviser_name VARCHAR(255),
-                max_capacity INTEGER DEFAULT 50,
-                current_count INTEGER DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-        
-        // Add missing columns to sections
-        await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS adviser_name VARCHAR(255)');
-        await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS max_capacity INTEGER DEFAULT 50');
-        await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS current_count INTEGER DEFAULT 0');
-
-        // Teachers table
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS teachers (
-                id SERIAL PRIMARY KEY,
-                teacher_id VARCHAR(50) UNIQUE,
-                first_name VARCHAR(100),
-                last_name VARCHAR(100),
-                email VARCHAR(100),
-                phone VARCHAR(20),
-                specialization VARCHAR(100),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-        // Early Registration table
+        // ============= EARLY REGISTRATION TABLE =============
+        console.log('📋 Creating early_registration table...');
         await pool.query(`
             CREATE TABLE IF NOT EXISTS early_registration (
                 id SERIAL PRIMARY KEY,
@@ -154,8 +104,10 @@ async function initializeDatabase() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        console.log('   ✅ early_registration table ready');
 
-        // Enrollment Requests table
+        // ============= ENROLLMENT REQUESTS TABLE =============
+        console.log('📋 Creating enrollment_requests table...');
         await pool.query(`
             CREATE TABLE IF NOT EXISTS enrollment_requests (
                 id SERIAL PRIMARY KEY,
@@ -171,8 +123,10 @@ async function initializeDatabase() {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        console.log('   ✅ enrollment_requests table ready');
 
-        // Document Requests table
+        // ============= DOCUMENT REQUESTS TABLE =============
+        console.log('📋 Creating document_requests table...');
         await pool.query(`
             CREATE TABLE IF NOT EXISTS document_requests (
                 id SERIAL PRIMARY KEY,
@@ -190,8 +144,10 @@ async function initializeDatabase() {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        console.log('   ✅ document_requests table ready');
 
-        // Submission Logs table
+        // ============= SUBMISSION LOGS TABLE =============
+        console.log('📋 Creating submission_logs table...');
         await pool.query(`
             CREATE TABLE IF NOT EXISTS submission_logs (
                 id SERIAL PRIMARY KEY,
@@ -203,8 +159,10 @@ async function initializeDatabase() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        console.log('   ✅ submission_logs table ready');
 
-        // Blocked IPs table
+        // ============= BLOCKED IPS TABLE =============
+        console.log('📋 Creating blocked_ips table...');
         await pool.query(`
             CREATE TABLE IF NOT EXISTS blocked_ips (
                 id SERIAL PRIMARY KEY,
@@ -214,8 +172,10 @@ async function initializeDatabase() {
                 expires_at TIMESTAMP
             )
         `);
+        console.log('   ✅ blocked_ips table ready');
 
-        // Messaging table
+        // ============= MESSAGING TABLE =============
+        console.log('📋 Creating messaging table...');
         await pool.query(`
             CREATE TABLE IF NOT EXISTS messaging (
                 id SERIAL PRIMARY KEY,
@@ -228,8 +188,10 @@ async function initializeDatabase() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        console.log('   ✅ messaging table ready');
 
-        // Behavior Reports table
+        // ============= BEHAVIOR REPORTS TABLE =============
+        console.log('📋 Creating behavior_reports table...');
         await pool.query(`
             CREATE TABLE IF NOT EXISTS behavior_reports (
                 id SERIAL PRIMARY KEY,
@@ -245,8 +207,10 @@ async function initializeDatabase() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        console.log('   ✅ behavior_reports table ready');
 
-        // Snapshot groups table
+        // ============= SNAPSHOT TABLES =============
+        console.log('📋 Creating snapshot tables...');
         await pool.query(`
             CREATE TABLE IF NOT EXISTS section_snapshot_groups (
                 id SERIAL PRIMARY KEY,
@@ -256,8 +220,8 @@ async function initializeDatabase() {
                 is_archived BOOLEAN DEFAULT false
             )
         `);
+        console.log('   ✅ section_snapshot_groups ready');
 
-        // Snapshot items table
         await pool.query(`
             CREATE TABLE IF NOT EXISTS section_snapshot_items (
                 id SERIAL PRIMARY KEY,
@@ -270,8 +234,8 @@ async function initializeDatabase() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        console.log('   ✅ section_snapshot_items ready');
 
-        // Snapshot students table
         await pool.query(`
             CREATE TABLE IF NOT EXISTS section_snapshot_students (
                 id SERIAL PRIMARY KEY,
@@ -284,20 +248,40 @@ async function initializeDatabase() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        console.log('   ✅ section_snapshot_students ready');
 
-        console.log('✅ All essential tables are ready');
+        // ============= ADD MISSING COLUMNS =============
+        console.log('📋 Adding missing columns to existing tables...');
+        
+        await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS adviser_name VARCHAR(255)');
+        await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS max_capacity INTEGER DEFAULT 50');
+        await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS current_count INTEGER DEFAULT 0');
 
-        console.log('\n✨ Database initialization completed successfully!');
-        console.log('📍 You can now log in at /login');
-        console.log('   Username: ictcoor');
-        console.log('   Password: admin123\n');
+        console.log('   ✅ All missing columns added');
 
-        return true;
+        console.log('\n✨ Complete database schema setup finished successfully!');
+        console.log('\n📊 Tables Created:');
+        console.log('   ✅ users');
+        console.log('   ✅ teachers');
+        console.log('   ✅ sections');
+        console.log('   ✅ students');
+        console.log('   ✅ early_registration');
+        console.log('   ✅ enrollment_requests');
+        console.log('   ✅ document_requests');
+        console.log('   ✅ submission_logs');
+        console.log('   ✅ blocked_ips');
+        console.log('   ✅ messaging');
+        console.log('   ✅ behavior_reports');
+        console.log('   ✅ section_snapshot_groups');
+        console.log('   ✅ section_snapshot_items');
+        console.log('   ✅ section_snapshot_students');
+        console.log('\n🚀 Your Render database is now fully functional!\n');
+
+        process.exit(0);
     } catch (err) {
-        console.error('❌ Database initialization error:', err.message);
-        console.error(err);
-        return false;
+        console.error('❌ Error setting up schema:', err.message);
+        process.exit(1);
     }
 }
 
-module.exports = { initializeDatabase, pool };
+setupCompleteSchema();
