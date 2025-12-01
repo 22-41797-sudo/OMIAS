@@ -1188,6 +1188,16 @@ const upload = multer({
 });
 
 // PostgreSQL connection pool
+// ============= DATABASE CONNECTION =============
+console.log('\n📍 Database Configuration Check:');
+console.log('   DATABASE_URL set:', !!process.env.DATABASE_URL);
+console.log('   NODE_ENV:', process.env.NODE_ENV);
+if (process.env.DATABASE_URL) {
+    console.log('   ✅ Using DATABASE_URL for connection');
+} else {
+    console.log('   Using individual DB parameters (localhost)');
+}
+
 const pool = new Pool({
     ...(process.env.DATABASE_URL 
         ? { connectionString: process.env.DATABASE_URL, ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false }

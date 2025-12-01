@@ -7,12 +7,17 @@ require('dotenv').config();
 
 // Create pool with either DATABASE_URL or individual connection parameters
 let pool;
+console.log('📍 Environment Check:');
+console.log('   DATABASE_URL set:', !!process.env.DATABASE_URL);
+console.log('   NODE_ENV:', process.env.NODE_ENV);
 if (process.env.DATABASE_URL) {
+    console.log('   Using DATABASE_URL for connection');
     pool = new Pool({
         connectionString: process.env.DATABASE_URL,
         ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     });
 } else {
+    console.log('   Using individual DB parameters (localhost)');
     pool = new Pool({
         user: process.env.DB_USER || 'postgres',
         host: process.env.DB_HOST || 'localhost',
