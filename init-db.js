@@ -159,6 +159,7 @@ async function initializeDatabase() {
         await pool.query(`
             CREATE TABLE IF NOT EXISTS enrollment_requests (
                 id SERIAL PRIMARY KEY,
+                request_token VARCHAR(20) UNIQUE NOT NULL,
                 student_id VARCHAR(50),
                 lrn VARCHAR(20),
                 first_name VARCHAR(100),
@@ -176,16 +177,24 @@ async function initializeDatabase() {
         await pool.query(`
             CREATE TABLE IF NOT EXISTS document_requests (
                 id SERIAL PRIMARY KEY,
-                request_id VARCHAR(100) UNIQUE,
-                student_id VARCHAR(50),
-                student_name VARCHAR(255),
+                request_token VARCHAR(20) UNIQUE NOT NULL,
+                student_name VARCHAR(255) NOT NULL,
+                student_id VARCHAR(100),
+                contact_number VARCHAR(50),
+                email VARCHAR(255) NOT NULL,
                 document_type VARCHAR(100),
                 quantity INTEGER DEFAULT 1,
-                status VARCHAR(50) DEFAULT 'pending',
-                email VARCHAR(100),
-                phone VARCHAR(20),
                 purpose TEXT,
+                additional_notes TEXT,
+                adviser_name VARCHAR(255),
+                adviser_school_year VARCHAR(50),
+                student_type VARCHAR(20),
+                status VARCHAR(50) DEFAULT 'pending',
                 submission_ip VARCHAR(50),
+                processed_by INTEGER,
+                processed_at TIMESTAMP,
+                completion_notes TEXT,
+                rejection_reason TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -208,10 +217,15 @@ async function initializeDatabase() {
         await pool.query(`
             CREATE TABLE IF NOT EXISTS blocked_ips (
                 id SERIAL PRIMARY KEY,
-                ip_address VARCHAR(50) UNIQUE NOT NULL,
-                reason TEXT,
+                ip_address VARCHAR(45) UNIQUE NOT NULL,
+                reason TEXT NOT NULL,
+                blocked_by INTEGER,
                 blocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                expires_at TIMESTAMP
+                expires_at TIMESTAMP,
+                is_active BOOLEAN DEFAULT true,
+                unblocked_by INTEGER,
+                unblocked_at TIMESTAMP,
+                notes TEXT
             )
         `);
 
@@ -427,6 +441,22 @@ async function initializeDatabase() {
         await pool.query('ALTER TABLE behavior_reports ADD COLUMN IF NOT EXISTS severity VARCHAR(50)');
         await pool.query('ALTER TABLE behavior_reports ADD COLUMN IF NOT EXISTS action_taken TEXT');
         await pool.query('ALTER TABLE behavior_reports ADD COLUMN IF NOT EXISTS follow_up_date DATE');
+
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS request_token VARCHAR(20) UNIQUE');
+        await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS request_token VARCHAR(20) UNIQUE');
+        await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS contact_number VARCHAR(50)');
+        await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS additional_notes TEXT');
+        await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS adviser_school_year VARCHAR(50)');
+        await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS student_type VARCHAR(20)');
+        await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS processed_by INTEGER');
+        await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS processed_at TIMESTAMP');
+        await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS completion_notes TEXT');
+        
+        await pool.query('ALTER TABLE blocked_ips ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true');
+        await pool.query('ALTER TABLE blocked_ips ADD COLUMN IF NOT EXISTS blocked_by INTEGER');
+        await pool.query('ALTER TABLE blocked_ips ADD COLUMN IF NOT EXISTS unblocked_by INTEGER');
+        await pool.query('ALTER TABLE blocked_ips ADD COLUMN IF NOT EXISTS unblocked_at TIMESTAMP');
+        await pool.query('ALTER TABLE blocked_ips ADD COLUMN IF NOT EXISTS notes TEXT');
 
         await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1');
         await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMP');
