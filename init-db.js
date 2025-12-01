@@ -73,33 +73,59 @@ async function initializeDatabase() {
             console.log(`   Role: ${result.rows[0].role}`);
         }
 
-        // 4. Create other essential tables if needed
+        // 4. Create essential tables
         console.log('📋 Creating essential tables...');
         
         // Students table
         await pool.query(`
             CREATE TABLE IF NOT EXISTS students (
                 id SERIAL PRIMARY KEY,
-                first_name VARCHAR(100) NOT NULL,
+                first_name VARCHAR(100),
                 middle_name VARCHAR(100),
-                last_name VARCHAR(100) NOT NULL,
+                last_name VARCHAR(100),
                 grade_level VARCHAR(50),
                 section_id INTEGER,
                 current_address TEXT,
                 enrollment_status VARCHAR(50) DEFAULT 'active',
                 has_been_assigned BOOLEAN DEFAULT false,
+                lrn VARCHAR(20),
+                enrollment_id VARCHAR(50),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        
+        // Add missing columns if they don't exist
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS lrn VARCHAR(20)');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS enrollment_id VARCHAR(50)');
 
         // Sections table
         await pool.query(`
             CREATE TABLE IF NOT EXISTS sections (
                 id SERIAL PRIMARY KEY,
-                section_name VARCHAR(100) NOT NULL UNIQUE,
+                section_name VARCHAR(100) UNIQUE,
                 grade_level VARCHAR(50),
                 adviser_id INTEGER,
+                max_capacity INTEGER,
+                current_count INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Add missing columns if they don't exist
+        await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS max_capacity INTEGER');
+        await pool.query('ALTER TABLE sections ADD COLUMN IF NOT EXISTS current_count INTEGER DEFAULT 0');
+
+        // Teachers table
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS teachers (
+                id SERIAL PRIMARY KEY,
+                teacher_id VARCHAR(50) UNIQUE,
+                first_name VARCHAR(100),
+                last_name VARCHAR(100),
+                email VARCHAR(100),
+                phone VARCHAR(20),
+                specialization VARCHAR(100),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
