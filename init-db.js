@@ -143,12 +143,27 @@ async function initializeDatabase() {
                 first_name VARCHAR(100),
                 middle_name VARCHAR(100),
                 last_name VARCHAR(100),
+                ext_name VARCHAR(20),
                 age INTEGER,
                 grade_level VARCHAR(50),
                 guardian_name VARCHAR(255),
                 guardian_contact VARCHAR(20),
                 current_address TEXT,
                 birthday DATE,
+                sex VARCHAR(20),
+                religion VARCHAR(50),
+                gmail_address VARCHAR(100),
+                school_year VARCHAR(50),
+                ip_community VARCHAR(100),
+                ip_community_specify VARCHAR(255),
+                pwd VARCHAR(50),
+                pwd_specify VARCHAR(255),
+                father_name VARCHAR(255),
+                mother_name VARCHAR(255),
+                contact_number VARCHAR(20),
+                printed_name VARCHAR(255),
+                signature_image_path VARCHAR(255),
+                registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 status VARCHAR(50) DEFAULT 'pending',
                 submission_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -458,6 +473,16 @@ async function initializeDatabase() {
         await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS contact_number VARCHAR(20)');
         await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS school_year VARCHAR(50)');
         await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+        await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS gmail_address VARCHAR(100)');
+        await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS ip_community VARCHAR(100)');
+        await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS ip_community_specify VARCHAR(255)');
+        await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS pwd VARCHAR(50)');
+        await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS pwd_specify VARCHAR(255)');
+        await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS father_name VARCHAR(255)');
+        await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS mother_name VARCHAR(255)');
+        await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS printed_name VARCHAR(255)');
+        await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS signature_image_path VARCHAR(255)');
+        await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS religion VARCHAR(50)');
 
         await pool.query('ALTER TABLE behavior_reports ADD COLUMN IF NOT EXISTS severity VARCHAR(50)');
         await pool.query('ALTER TABLE behavior_reports ADD COLUMN IF NOT EXISTS action_taken TEXT');

@@ -2218,9 +2218,12 @@ app.post('/add-registration', upload.single('signatureImage'), async (req, res) 
 
     } catch (err) {
         console.error('Error adding registration:', err);
+        console.error('Error message:', err.message);
+        console.error('Error details:', err);
         res.status(500).json({ 
             success: false, 
-            message: 'Error adding registration: ' + err.message 
+            message: 'Error adding registration: ' + err.message,
+            error: err.message
         });
     }
 });
