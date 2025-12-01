@@ -449,6 +449,12 @@ async function initializeDatabase() {
         await pool.query('ALTER TABLE teachers ADD COLUMN IF NOT EXISTS password VARCHAR(255)');
         await pool.query('ALTER TABLE teachers ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true');
 
+        await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS sex VARCHAR(20)');
+        await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS ext_name VARCHAR(20)');
+        await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS contact_number VARCHAR(20)');
+        await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS school_year VARCHAR(50)');
+        await pool.query('ALTER TABLE early_registration ADD COLUMN IF NOT EXISTS registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+
         await pool.query('ALTER TABLE behavior_reports ADD COLUMN IF NOT EXISTS severity VARCHAR(50)');
         await pool.query('ALTER TABLE behavior_reports ADD COLUMN IF NOT EXISTS action_taken TEXT');
         await pool.query('ALTER TABLE behavior_reports ADD COLUMN IF NOT EXISTS follow_up_date DATE');
