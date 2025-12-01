@@ -4313,15 +4313,25 @@ q<!DOCTYPE html>
                 });
         }
 
-        // Load unassigned students when switching to Unassigned Students tab
+        // Load students/unassigned when switching tabs
         document.querySelectorAll('.sidebar-link').forEach(link => {
             link.addEventListener('click', function() {
                 const contentId = this.getAttribute('data-content-id');
-                if (contentId === 'unassigned-content') {
+                if (contentId === 'students-content') {
+                    setTimeout(() => loadStudents(), 100);
+                } else if (contentId === 'unassigned-content') {
                     setTimeout(() => loadUnassignedStudents(), 100);
                 }
             });
         });
+
+        // Also load on page if students link exists
+        const studentsLink = document.getElementById('students-link');
+        if (studentsLink) {
+            studentsLink.addEventListener('click', function() {
+                setTimeout(() => loadStudents(), 100);
+            });
+        }
 
         // Also load on page if unassigned link exists
         const unassignedLink = document.getElementById('unassigned-link');
