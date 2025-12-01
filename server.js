@@ -5054,10 +5054,10 @@ app.get('/api/students/all', async (req, res) => {
                 s.last_name,
                 s.first_name,
                 s.middle_name,
-                s.ext_name,
+                COALESCE(s.ext_name, '') as ext_name,
                 CONCAT(s.last_name, ', ', s.first_name, ' ', COALESCE(s.middle_name, ''), ' ', COALESCE(s.ext_name, '')) AS full_name,
-                s.age,
-                s.sex,
+                COALESCE(s.age, 0) as age,
+                COALESCE(s.sex, 'N/A') as sex,
                 s.contact_number,
                 sec.section_name as assigned_section,
                 COALESCE(s.created_at, CURRENT_TIMESTAMP)::date as enrollment_date,
@@ -5091,10 +5091,10 @@ app.get('/api/students/all', async (req, res) => {
                 er.last_name,
                 er.first_name,
                 er.middle_name,
-                er.ext_name,
+                COALESCE(er.ext_name, '') as ext_name,
                 CONCAT(er.last_name, ', ', er.first_name, ' ', COALESCE(er.middle_name, ''), ' ', COALESCE(er.ext_name, '')) as full_name,
-                er.age,
-                er.sex,
+                COALESCE(er.age, 0) as age,
+                COALESCE(er.sex, 'N/A') as sex,
                 er.contact_number,
                 NULL as assigned_section,
                 er.created_at as enrollment_date,
@@ -5124,8 +5124,13 @@ app.get('/api/students/all', async (req, res) => {
 
         res.json({ success: true, students: allStudents });
     } catch (err) {
-        console.error('Error fetching all students:', err);
-        res.status(500).json({ success: false, message: 'Error fetching students' });
+        console.error('Error fetching all students:', err.message);
+        console.error('Full error:', err);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error fetching students',
+            error: err.message 
+        });
     }
 });
 
@@ -5846,13 +5851,13 @@ app.get('/api/dashboard/summary', async (req, res) => {
     }
 
     try {
-        // Aggregate counts
+        // Aggregate counts - use COALESCE to handle missing columns gracefully
         const [teacherCounts, studentCounts, sectionCounts, avgClassSize] = await Promise.all([
             pool.query(`
                 SELECT 
                     COUNT(*)::int AS total,
-                    SUM(CASE WHEN is_active THEN 1 ELSE 0 END)::int AS active,
-                    SUM(CASE WHEN NOT is_active THEN 1 ELSE 0 END)::int AS inactive
+                    SUM(CASE WHEN COALESCE(is_active, true) THEN 1 ELSE 0 END)::int AS active,
+                    SUM(CASE WHEN NOT COALESCE(is_active, true) THEN 1 ELSE 0 END)::int AS inactive
                 FROM teachers
             `),
             pool.query(`
@@ -5860,20 +5865,20 @@ app.get('/api/dashboard/summary', async (req, res) => {
                     COUNT(*)::int AS total,
                     SUM(CASE WHEN COALESCE(is_archived, false) = false THEN 1 ELSE 0 END)::int AS active,
                     SUM(CASE WHEN COALESCE(is_archived, false) = true THEN 1 ELSE 0 END)::int AS archived,
-                    SUM(CASE WHEN sex = 'Male' THEN 1 ELSE 0 END)::int AS male,
-                    SUM(CASE WHEN sex = 'Female' THEN 1 ELSE 0 END)::int AS female
+                    SUM(CASE WHEN COALESCE(sex, 'N/A') = 'Male' THEN 1 ELSE 0 END)::int AS male,
+                    SUM(CASE WHEN COALESCE(sex, 'N/A') = 'Female' THEN 1 ELSE 0 END)::int AS female
                 FROM students
             `),
             pool.query(`
                 SELECT 
                     COUNT(*)::int AS total,
-                    SUM(CASE WHEN is_active THEN 1 ELSE 0 END)::int AS active
+                    SUM(CASE WHEN COALESCE(is_active, true) THEN 1 ELSE 0 END)::int AS active
                 FROM sections
             `),
             pool.query(`
-                SELECT COALESCE(ROUND(AVG(current_count)::numeric, 2), 0)::float AS avg_size,
-                       COALESCE(SUM(current_count),0)::int AS total_enrolled,
-                       COALESCE(SUM(max_capacity),0)::int AS total_capacity
+                SELECT COALESCE(ROUND(AVG(COALESCE(current_count, 0))::numeric, 2), 0)::float AS avg_size,
+                       COALESCE(SUM(COALESCE(current_count, 0)),0)::int AS total_enrolled,
+                       COALESCE(SUM(COALESCE(max_capacity, 0)),0)::int AS total_capacity
                 FROM sections
             `)
         ]);
@@ -5901,8 +5906,8 @@ app.get('/api/dashboard/summary', async (req, res) => {
         const sectionsOverview = await pool.query(`
             SELECT s.id, s.section_name,
                    COALESCE(SUM(CASE WHEN st.enrollment_status = 'active' THEN 1 ELSE 0 END),0)::int AS total,
-                   COALESCE(SUM(CASE WHEN st.enrollment_status = 'active' AND st.sex = 'Female' THEN 1 ELSE 0 END),0)::int AS girls,
-                   COALESCE(SUM(CASE WHEN st.enrollment_status = 'active' AND st.sex = 'Male' THEN 1 ELSE 0 END),0)::int AS boys
+                   COALESCE(SUM(CASE WHEN st.enrollment_status = 'active' AND COALESCE(st.sex, 'N/A') = 'Female' THEN 1 ELSE 0 END),0)::int AS girls,
+                   COALESCE(SUM(CASE WHEN st.enrollment_status = 'active' AND COALESCE(st.sex, 'N/A') = 'Male' THEN 1 ELSE 0 END),0)::int AS boys
             FROM sections s
             LEFT JOIN students st ON st.section_id = s.id
             GROUP BY s.id, s.section_name
@@ -5932,8 +5937,13 @@ app.get('/api/dashboard/summary', async (req, res) => {
             sectionsOverview: sectionsOverview.rows
         });
     } catch (err) {
-        console.error('Dashboard summary error:', err);
-        return res.status(500).json({ success: false, message: 'Failed to load dashboard summary' });
+        console.error('Dashboard summary error:', err.message);
+        console.error('Full error:', err);
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Failed to load dashboard summary',
+            error: err.message 
+        });
     }
 });
 
