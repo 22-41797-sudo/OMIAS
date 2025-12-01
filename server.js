@@ -2217,13 +2217,22 @@ app.post('/add-registration', upload.single('signatureImage'), async (req, res) 
         });
 
     } catch (err) {
-        console.error('Error adding registration:', err);
+        console.error('❌ Error adding registration:', err);
         console.error('Error message:', err.message);
         console.error('Error details:', err);
+        console.error('SQL Error Code:', err.code);
+        console.error('SQL Error Constraint:', err.constraint);
+        
+        // Check if it's a missing column error
+        if (err.message && err.message.includes('column')) {
+            console.error('⚠️ MISSING COLUMN ERROR - Check if database initialization completed');
+        }
+        
         res.status(500).json({ 
             success: false, 
             message: 'Error adding registration: ' + err.message,
-            error: err.message
+            error: err.message,
+            code: err.code
         });
     }
 });
@@ -6741,5 +6750,26 @@ app.listen(port, async () => {
     
     if (!dbInitialized) {
         console.warn('⚠️  Database initialization encountered issues. Some features may not work correctly.');
+    }
+});
+
+// Debug endpoint to manually trigger database initialization (for troubleshooting)
+app.get('/api/debug/init-db', async (req, res) => {
+    // Only allow from localhost in development
+    const isLocalhost = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === 'localhost';
+    if (process.env.NODE_ENV === 'production' && !isLocalhost) {
+        return res.status(403).json({ success: false, message: 'Not allowed in production' });
+    }
+    
+    try {
+        console.log('🔄 Manually triggering database initialization...');
+        const result = await initializeDatabase();
+        res.json({ 
+            success: result, 
+            message: result ? 'Database initialized successfully' : 'Database initialization encountered issues'
+        });
+    } catch (err) {
+        console.error('Error during manual init:', err);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
