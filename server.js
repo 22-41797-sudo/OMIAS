@@ -1917,10 +1917,10 @@ app.get('/registraracc', async (req, res) => {
         const result = await pool.query(
             'SELECT ra.id, u.username, ra.office_name, ra.registrar_id, ra.is_active FROM registrar_accounts ra JOIN users u ON ra.user_id = u.id ORDER BY ra.id'
         );
-        res.render('registraracc', { registrarAccounts: result.rows });
+        res.render('registraracc', { registrarAccounts: result.rows, error: null, success: null });
     } catch (err) {
         console.error('Error loading registrar accounts:', err);
-        res.render('registraracc', { registrarAccounts: [], error: 'Error loading accounts.' });
+        res.render('registraracc', { registrarAccounts: [], error: 'Error loading accounts.', success: null });
     }
 });
 
@@ -1967,7 +1967,7 @@ app.post('/create-registrar-account', async (req, res) => {
             const result = await pool.query(
                 'SELECT ra.id, u.username, ra.office_name, ra.registrar_id, ra.is_active FROM registrar_accounts ra JOIN users u ON ra.user_id = u.id ORDER BY ra.id'
             );
-            res.render('registraracc', { registrarAccounts: result.rows, success: 'Registrar account created successfully!' });
+            res.render('registraracc', { registrarAccounts: result.rows, success: 'Registrar account created successfully!', error: null });
         } catch (err) {
             await client.query('ROLLBACK');
             throw err;
@@ -1980,9 +1980,9 @@ app.post('/create-registrar-account', async (req, res) => {
             const result = await pool.query(
                 'SELECT ra.id, u.username, ra.office_name, ra.registrar_id, ra.is_active FROM registrar_accounts ra JOIN users u ON ra.user_id = u.id ORDER BY ra.id'
             );
-            res.render('registraracc', { registrarAccounts: result.rows, error: err.message || 'Error creating account. Username may already exist.' });
+            res.render('registraracc', { registrarAccounts: result.rows, error: err.message || 'Error creating account. Username may already exist.', success: null });
         } catch (loadErr) {
-            res.render('registraracc', { registrarAccounts: [], error: err.message || 'Error creating account.' });
+            res.render('registraracc', { registrarAccounts: [], error: err.message || 'Error creating account.', success: null });
         }
     }
 });
