@@ -4506,8 +4506,8 @@ app.get('/sections/:id/view', async (req, res) => {
                 COALESCE(st.sex, 'N/A') as sex,
                 COALESCE(st.age, 0) as age,
                 st.contact_number,
-                st.birthday,
-                st.religion,
+                COALESCE(st.birthday, NULL) as birthday,
+                COALESCE(st.religion, 'N/A') as religion,
                 st.current_address,
                 COALESCE(st.created_at, CURRENT_TIMESTAMP)::date as enrollment_date,
                 st.enrollment_status
