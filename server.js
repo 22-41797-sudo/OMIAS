@@ -942,7 +942,6 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
                 r.student_id,
                 r.section_id,
                 r.teacher_id,
-                r.is_done,
                 COALESCE(s.last_name, '') || ', ' || COALESCE(s.first_name, '') || ' ' || COALESCE(s.middle_name || '', '') AS student_full_name,
                 COALESCE(t.last_name, '') || ', ' || COALESCE(t.first_name, '') AS teacher_name,
                 COALESCE(sec.section_name, 'N/A') AS section_name,
