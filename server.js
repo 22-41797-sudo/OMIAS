@@ -946,9 +946,9 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
                 sec.section_name,
                 sec.grade_level
             FROM student_behavior_reports r
-            JOIN students s ON s.id = r.student_id
-            JOIN teachers t ON t.id = r.teacher_id
-            JOIN sections sec ON sec.id = r.section_id
+            LEFT JOIN students s ON s.id = r.student_id
+            LEFT JOIN teachers t ON t.id = r.teacher_id
+            LEFT JOIN sections sec ON sec.id = r.section_id
             ORDER BY r.report_date DESC
         `);
 
@@ -962,7 +962,7 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
                 COALESCE(s.last_name, '') || ', ' || COALESCE(s.first_name, '') || ' ' || COALESCE(s.middle_name || '', '') AS full_name,
                 sec.section_name
             FROM students s
-            JOIN sections sec ON sec.id = s.section_id
+            LEFT JOIN sections sec ON sec.id = s.section_id
             WHERE s.id IN (
                 SELECT DISTINCT student_id FROM student_behavior_reports
             )
