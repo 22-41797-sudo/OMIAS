@@ -537,6 +537,45 @@ async function initializeDatabase() {
 
         console.log('   ✅ All missing columns added');
 
+        // Seed sections if they don't exist
+        console.log('📚 Seeding sections...');
+        const sectionCheckResult = await pool.query('SELECT COUNT(*) as cnt FROM sections');
+        if (sectionCheckResult.rows[0].cnt === 0) {
+            await pool.query(`
+                INSERT INTO sections (grade_level, section_name) VALUES
+                -- Kindergarten sections
+                ('Kindergarten', 'angel'),
+                ('Kindergarten', 'dahlia'),
+                ('Kindergarten', 'lily'),
+                ('Kindergarten', 'santan'),
+                -- Grade 1 sections
+                ('Grade 1', 'rosal'),
+                ('Grade 1', 'rose'),
+                -- Grade 2 sections
+                ('Grade 2', 'camia'),
+                ('Grade 2', 'daisy'),
+                ('Grade 2', 'lirio'),
+                -- Grade 3 sections
+                ('Grade 3', 'adelfa'),
+                ('Grade 3', 'orchids'),
+                -- Grade 4 sections
+                ('Grade 4', 'ilang-ilang'),
+                ('Grade 4', 'sampaguita'),
+                -- Grade 5 sections
+                ('Grade 5', 'blueberry'),
+                ('Grade 5', 'everlasting'),
+                -- Grade 6 sections
+                ('Grade 6', 'cattleya'),
+                ('Grade 6', 'sunflower'),
+                -- Non-Graded section
+                ('Non-Graded', 'tulips')
+                ON CONFLICT (section_name) DO NOTHING
+            `);
+            console.log('✅ Sections seeded successfully (18 sections)');
+        } else {
+            console.log(`✅ Sections already exist (${sectionCheckResult.rows[0].cnt} found)`);
+        }
+
         console.log('\n✨ Database initialization completed successfully!');
         console.log('📍 You can now log in at /login');
         console.log('   Username: ictcoor');
