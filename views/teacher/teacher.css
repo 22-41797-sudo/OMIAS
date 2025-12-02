@@ -312,3 +312,16 @@ td:last-child .cta-button { padding: 6px 10px; border-radius: 10px; font-size: 1
   width: 100%;
   resize: vertical;
 }
+
+.severity-display {
+  padding: 10px 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 600;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}

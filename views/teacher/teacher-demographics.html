@@ -229,12 +229,8 @@
 
           <div class="form-group">
             <label for="reportSeverity">Severity Level:</label>
-            <select id="reportSeverity" required>
-              <option value="">Select Severity</option>
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-            </select>
+            <div id="reportSeverity" class="severity-display">—</div>
+            <input type="hidden" id="reportSeverityValue" />
           </div>
 
           <div class="form-group">
@@ -540,6 +536,33 @@
       }
     }
 
+    // Category to severity mapping
+    const categoryToSeverity = {
+      'Disruption': 'High',
+      'Attendance': 'Medium',
+      'Academic': 'Low',
+      'Conduct': 'High',
+      'Bullying': 'High',
+      'Mental Health': 'High',
+      'Family Issues': 'Medium',
+      'Medical': 'High',
+      'Substance Use': 'High',
+      'Peer Conflict': 'Medium',
+      'Vandalism': 'High',
+      'Safety': 'High',
+      'Other': 'Low'
+    };
+
+    function updateSeverityFromCategory() {
+      const category = document.getElementById('reportCategory').value;
+      const severity = categoryToSeverity[category] || '—';
+      document.getElementById('reportSeverity').textContent = severity;
+      document.getElementById('reportSeverityValue').value = severity === '—' ? '' : severity;
+    }
+
+    // Add event listener for category changes
+    document.getElementById('reportCategory')?.addEventListener('change', updateSeverityFromCategory);
+
     async function loadProfile() {
       const data = await safeFetchJson('/api/teacher/me');
       console.log('Profile API response:', data); // DEBUG
@@ -725,7 +748,7 @@
       if (!currentStudent || !currentSectionId) return;
       
       const category = document.getElementById('reportCategory').value;
-      const severity = document.getElementById('reportSeverity').value;
+      const severity = document.getElementById('reportSeverityValue').value;
       const notes = document.getElementById('reportNotes').value;
       
       if (!category || !severity) {
