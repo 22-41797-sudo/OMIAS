@@ -4516,7 +4516,7 @@ app.get('/sections/:id/view', async (req, res) => {
                 st.grade_level,
                 st.last_name,
                 st.first_name,
-                CONCAT(st.last_name, ', ', st.first_name) as full_name,
+                (st.last_name || ', ' || st.first_name) as full_name,
                 st.current_address,
                 COALESCE(st.created_at, CURRENT_TIMESTAMP)::date as enrollment_date,
                 st.enrollment_status
@@ -4561,7 +4561,7 @@ app.get('/api/sections/:id/students', async (req, res) => {
             SELECT 
                 st.id,
                 st.lrn,
-                CONCAT(st.last_name, ', ', st.first_name, ' ', COALESCE(st.middle_name, ''), ' ', COALESCE(st.ext_name, '')) as full_name,
+                (st.last_name || ', ' || st.first_name || ' ' || COALESCE(st.middle_name, '') || ' ' || COALESCE(st.ext_name, '')) as full_name,
                 st.last_name,
                 st.first_name,
                 COALESCE(st.sex, 'N/A') as sex,
@@ -4785,7 +4785,7 @@ app.get('/api/students/unassigned', async (req, res) => {
             SELECT 
                 st.id,
                 st.lrn,
-                CONCAT(st.last_name, ', ', st.first_name) as full_name,
+                (st.last_name || ', ' || st.first_name) as full_name,
                 st.grade_level,
                 NULL::VARCHAR as sex,
                 NULL::INTEGER as age,
@@ -4804,7 +4804,7 @@ app.get('/api/students/unassigned', async (req, res) => {
             SELECT 
                 'ER' || er.id as id,
                 er.lrn,
-                CONCAT(er.last_name, ', ', er.first_name, ' ', COALESCE(er.middle_name, ''), ' ', COALESCE(er.ext_name, '')) as full_name,
+                (er.last_name || ', ' || er.first_name || ' ' || COALESCE(er.middle_name, '') || ' ' || COALESCE(er.ext_name, '')) as full_name,
                 er.grade_level,
                 COALESCE(er.sex, 'N/A') as sex,
                 COALESCE(er.age, 0) as age,
