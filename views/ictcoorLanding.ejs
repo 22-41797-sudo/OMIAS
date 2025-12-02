@@ -3157,13 +3157,13 @@ q<!DOCTYPE html>
                                     <td>${student.contact_number || '-'}</td>
                                     <td>${enrollmentDate}</td>
                                     <td class="table-actions">
-                                        <button type="button" class="action-btn action-view" title="View details" onclick="openStudentDetails(${student.id})">
+                                        <button type="button" class="action-btn action-view" title="View details" onclick="openStudentDetails('${student.id}')">
                                             <i class="fas fa-eye"></i> View
                                         </button>
-                                        <button type="button" class="action-btn action-edit" title="Reassign to another section" onclick="openReassignModal(${student.id}, '${(student.full_name||'').replace(/'/g, "\\'")}', ${sectionId}, '${(gradeLevel + ' - ' + sectionName).replace(/'/g, "\\'")}')">
+                                        <button type="button" class="action-btn action-edit" title="Reassign to another section" onclick="openReassignModal('${student.id}', '${(student.full_name||'').replace(/'/g, "\\'")}', '${sectionId}', '${(gradeLevel + ' - ' + sectionName).replace(/'/g, "\\'")}')">
                                             <i class="fas fa-exchange-alt"></i> Reassign
                                         </button>
-                                        <button type="button" class="action-btn action-delete" title="Remove from section" onclick="removeStudentFromSection(${student.id}, '${(student.full_name||'').replace(/'/g, "\\'")}', ${sectionId})">
+                                        <button type="button" class="action-btn action-delete" title="Remove from section" onclick="removeStudentFromSection('${student.id}', '${(student.full_name||'').replace(/'/g, "\\'")}', '${sectionId}')">
                                             <i class="fas fa-user-minus"></i> Remove
                                         </button>
                                     </td>
@@ -3341,19 +3341,19 @@ q<!DOCTYPE html>
                             if (!student.is_archived) {
                                 // Active unassigned: can assign or archive
                                 actions = `
-                                    <button class="action-btn action-edit" title="Assign to section" onclick="assignUnassignedStudent(${student.id}, '${student.full_name.replace(/'/g, "\\'")}')">
+                                    <button class="action-btn action-edit" title="Assign to section" onclick="assignUnassignedStudent('${student.id}', '${student.full_name.replace(/'/g, "\\'")}')">
                                         <i class="fas fa-user-plus"></i> Assign
                                     </button>
-                                    <button class="action-btn action-delete" title="Archive student" onclick="archiveStudent(${student.id}, '${student.full_name.replace(/'/g, "\\'")}')">
+                                    <button class="action-btn action-delete" title="Archive student" onclick="archiveStudent('${student.id}', '${student.full_name.replace(/'/g, "\\'")}')">
                                         <i class="fas fa-archive"></i> Archive
                                     </button>`;
                             } else {
                                 // Archived unassigned: can recover or permanently delete
                                 actions = `
-                                    <button class="action-btn action-edit" title="Recover student" onclick="recoverStudent(${student.id}, '${student.full_name.replace(/'/g, "\\'")}')">
+                                    <button class="action-btn action-edit" title="Recover student" onclick="recoverStudent('${student.id}', '${student.full_name.replace(/'/g, "\\'")}')">
                                         <i class="fas fa-undo"></i> Recover
                                     </button>
-                                    <button class="action-btn action-delete" title="Permanently delete student" onclick="permanentlyDeleteStudent(${student.id}, '${student.full_name.replace(/'/g, "\\'")}', true)">
+                                    <button class="action-btn action-delete" title="Permanently delete student" onclick="permanentlyDeleteStudent('${student.id}', '${student.full_name.replace(/'/g, "\\'")}', true)">
                                         <i class="fas fa-trash"></i> Delete
                                     </button>`;
                             }
