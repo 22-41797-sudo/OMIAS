@@ -5280,7 +5280,7 @@ app.get('/api/teachers', async (req, res) => {
                 NULL::VARCHAR as sex,
                 NULL::VARCHAR as address,
                 NULL::VARCHAR as employee_id,
-                department,
+                COALESCE(department, 'N/A') as department,
                 NULL::VARCHAR as position,
                 specialization,
                 NULL::DATE as date_hired,
