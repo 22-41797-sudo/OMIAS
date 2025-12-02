@@ -4253,10 +4253,7 @@ app.get('/api/sections/snapshots', async (req, res) => {
         return res.status(403).json({ success: false, message: 'Access denied' });
     }
     try {
-        // Ensure tables exist with correct schema
-        await pool.query('DROP TABLE IF EXISTS section_snapshot_items CASCADE');
-        await pool.query('DROP TABLE IF EXISTS section_snapshot_groups CASCADE');
-        
+        // Ensure tables exist (but DO NOT drop them - we need to preserve data)
         await pool.query(`
             CREATE TABLE IF NOT EXISTS section_snapshot_groups (
                 id SERIAL PRIMARY KEY,
