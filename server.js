@@ -4646,6 +4646,8 @@ app.put('/api/students/:id/reassign', async (req, res) => {
 
     const studentId = req.params.id;
     const { newSectionId } = req.body;
+    
+    console.log(`🔄 REASSIGN REQUEST: studentId=${studentId}, newSectionId=${newSectionId}`);
 
     const client = await pool.connect();
     try {
@@ -4767,7 +4769,11 @@ app.put('/api/students/:id/reassign', async (req, res) => {
         }
     } catch (err) {
         await client.query('ROLLBACK');
-        console.error('Error reassigning student:', err);
+        console.error('❌ Error reassigning student ER19:', err);
+        console.error('Error Code:', err.code);
+        console.error('Error Detail:', err.detail);
+        console.error('Error Hint:', err.hint);
+        console.error('Stack:', err.stack);
         res.status(500).json({ success: false, message: 'Error reassigning student: ' + err.message });
     } finally {
         client.release();
