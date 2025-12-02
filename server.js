@@ -3994,7 +3994,7 @@ app.post('/api/snapshots/dataset', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // Create tables if they don't exist
+        // Ensure the tables exist with all needed columns
         await client.query(`
             CREATE TABLE IF NOT EXISTS section_snapshot_groups (
                 id SERIAL PRIMARY KEY,
@@ -4005,8 +4005,10 @@ app.post('/api/snapshots/dataset', async (req, res) => {
             )
         `);
 
+        // Drop and recreate items table to ensure all columns exist
+        await client.query(`DROP TABLE IF EXISTS section_snapshot_items CASCADE`);
         await client.query(`
-            CREATE TABLE IF NOT EXISTS section_snapshot_items (
+            CREATE TABLE section_snapshot_items (
                 id SERIAL PRIMARY KEY,
                 group_id INTEGER REFERENCES section_snapshot_groups(id) ON DELETE CASCADE,
                 section_id INTEGER,
@@ -4014,9 +4016,7 @@ app.post('/api/snapshots/dataset', async (req, res) => {
                 grade_level TEXT,
                 count INTEGER,
                 adviser_name TEXT,
-                student_name TEXT,
-                last_name TEXT,
-                first_name TEXT,
+                student_full_name TEXT,
                 current_address TEXT,
                 barangay_extracted TEXT,
                 teacher_name TEXT
@@ -4034,20 +4034,16 @@ app.post('/api/snapshots/dataset', async (req, res) => {
         for (const student of students) {
             const barangay = extractBarangayFlexible(student.barangay || student.current_address);
             const fullName = student.name || student.full_name || '-';
-            const nameParts = fullName.split(',').map(p => p.trim());
-            const lastName = nameParts.length > 0 ? nameParts[0] : '-';
-            const firstName = nameParts.length > 1 ? nameParts[1] : '-';
             
             await client.query(`
                 INSERT INTO section_snapshot_items 
-                (group_id, section_name, grade_level, last_name, first_name, current_address, barangay_extracted, adviser_name)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                (group_id, section_name, grade_level, student_full_name, current_address, barangay_extracted, adviser_name)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
             `, [
                 groupId,
                 student.sectionLevel || student.section_name || '-',
                 student.grade_level || '-',
-                lastName,
-                firstName,
+                fullName,
                 student.current_address || '-',
                 barangay,
                 student.adviser || student.adviser_name || '-'
