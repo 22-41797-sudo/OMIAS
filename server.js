@@ -2201,7 +2201,7 @@ app.post('/add-registration', upload.single('signatureImage'), async (req, res) 
                 ip_community, ip_community_specify, pwd, pwd_specify, father_name, 
                 mother_name, guardian_name, contact_number, registration_date, 
                 printed_name, signature_image_path
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::date, $10::integer, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22::date, $23, $24)
             RETURNING id
         `;
 
@@ -3276,7 +3276,7 @@ app.post('/approve-request/:id', async (req, res) => {
                 ip_community, ip_community_specify, pwd, pwd_specify,
                 father_name, mother_name, guardian_name, contact_number,
                 registration_date, printed_name, signature_image_path
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::date, $10::integer, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22::date, $23, $24)
             RETURNING id
         `;
 
@@ -3326,6 +3326,12 @@ app.post('/approve-request/:id', async (req, res) => {
     } catch (err) {
         await client.query('ROLLBACK');
         console.error('Error approving request:', err);
+        console.error('Full error details:', {
+            message: err.message,
+            code: err.code,
+            detail: err.detail,
+            hint: err.hint
+        });
         res.status(500).json({ success: false, message: 'Error approving request: ' + err.message });
     } finally {
         client.release();
