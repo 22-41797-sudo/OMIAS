@@ -4578,25 +4578,82 @@ q<!DOCTYPE html>
             try {
                 let m; // metrics
                 let data; // raw data
+                let fullSnapshotData = null;
 
                 // Check if a snapshot is loaded via filter
                 if (window.currentSnapshotData && Array.isArray(window.currentSnapshotData.items)) {
-                    // Use snapshot data for stats
-                    const items = window.currentSnapshotData.items;
-                    const totalStudents = items.reduce((s, it) => s + (Number(it.count) || 0), 0);
-                    const totalTeachers = items.length; // Number of sections with advisers
-                    const avgClassSize = items.length > 0 ? Math.round((totalStudents / items.length) * 10) / 10 : 0;
-                    
-                    document.getElementById('total-teachers').innerText = totalTeachers;
-                    document.getElementById('total-students').innerText = totalStudents;
-                    document.getElementById('avg-class-size').innerText = avgClassSize;
-                    
-                    // Set mock metrics object for consistency
-                    m = {
-                        teachers: { total: totalTeachers },
-                        students: { total: totalStudents, male: Math.round(totalStudents * 0.5), female: totalStudents - Math.round(totalStudents * 0.5) },
-                        avgClassSize: avgClassSize
-                    };
+                    // Fetch full snapshot data with student details for accurate counts
+                    try {
+                        const fullRes = await fetch(`/api/snapshots/${window.currentSnapshotData.id}/full-data`);
+                        fullSnapshotData = await fullRes.json();
+                    } catch (e) {
+                        console.warn('Failed to load full snapshot data', e);
+                    }
+
+                    if (fullSnapshotData && fullSnapshotData.success && Array.isArray(fullSnapshotData.sections)) {
+                        // Calculate from actual section data
+                        const sections = fullSnapshotData.sections;
+                        let totalStudents = 0;
+                        let maleCount = 0;
+                        let femaleCount = 0;
+                        let barangayDistribution = {};
+
+                        // Iterate through sections and count students by gender
+                        sections.forEach(section => {
+                            if (Array.isArray(section.students)) {
+                                section.students.forEach(student => {
+                                    totalStudents++;
+                                    // Count gender
+                                    if (student.sex && student.sex.toLowerCase() === 'male') {
+                                        maleCount++;
+                                    } else if (student.sex && student.sex.toLowerCase() === 'female') {
+                                        femaleCount++;
+                                    }
+                                    // Count barangay
+                                    const barangay = student.barangay || 'Others';
+                                    barangayDistribution[barangay] = (barangayDistribution[barangay] || 0) + 1;
+                                });
+                            }
+                        });
+
+                        const totalTeachers = sections.length;
+                        const avgClassSize = totalTeachers > 0 ? Math.round((totalStudents / totalTeachers) * 10) / 10 : 0;
+
+                        // Update dashboard cards
+                        document.getElementById('total-teachers').innerText = totalTeachers;
+                        document.getElementById('total-students').innerText = totalStudents;
+                        document.getElementById('avg-class-size').innerText = avgClassSize;
+
+                        // Set metrics for chart rendering
+                        m = {
+                            teachers: { total: totalTeachers },
+                            students: { total: totalStudents, male: maleCount, female: femaleCount },
+                            avgClassSize: avgClassSize
+                        };
+
+                        // Render charts with snapshot data
+                        renderGenderDistributionChart(maleCount, femaleCount);
+                        renderBarangayDistributionChart(barangayDistribution);
+                    } else {
+                        // Fallback if full data fetch fails
+                        const items = window.currentSnapshotData.items;
+                        const totalStudents = items.reduce((s, it) => s + (Number(it.count) || 0), 0);
+                        const totalTeachers = items.length;
+                        const avgClassSize = totalTeachers > 0 ? Math.round((totalStudents / totalTeachers) * 10) / 10 : 0;
+                        
+                        document.getElementById('total-teachers').innerText = totalTeachers;
+                        document.getElementById('total-students').innerText = totalStudents;
+                        document.getElementById('avg-class-size').innerText = avgClassSize;
+
+                        m = {
+                            teachers: { total: totalTeachers },
+                            students: { total: totalStudents, male: Math.round(totalStudents * 0.5), female: totalStudents - Math.round(totalStudents * 0.5) },
+                            avgClassSize: avgClassSize
+                        };
+
+                        renderGenderDistributionChart(m.students.male, m.students.female);
+                        renderBarangayDistributionChart({});
+                    }
                 } else {
                     // Load live data from server
                     const res = await fetch('/api/dashboard/summary');
@@ -4611,38 +4668,12 @@ q<!DOCTYPE html>
                     document.getElementById('total-teachers').innerText = m.teachers.total;
                     document.getElementById('total-students').innerText = m.students.total;
                     document.getElementById('avg-class-size').innerText = m.avgClassSize;
-                }
 
-                // Charts
-                // Default to the snapshots chart (controls removed)
-                try { await plotSnapshotsBySY(); } catch (e) { console.warn('Failed to plot snapshots by SY on load', e); }
-                
-                // Render gender distribution
-                let maleCount = m.students.male;
-                let femaleCount = m.students.female;
-                
-                renderGenderDistributionChart(maleCount, femaleCount);
-                
-                // Load barangay distribution and render chart
-                let barangayDistribution = {};
-                if (window.currentSnapshotData && Array.isArray(window.currentSnapshotData.items)) {
-                    // Get barangay data from snapshot student details
-                    try {
-                        const studRes = await fetch(`/api/snapshots/${window.currentSnapshotData.id}/full-data`);
-                        const studData = await studRes.json();
-                        if (studData && studData.success && Array.isArray(studData.sections)) {
-                            for (const section of studData.sections) {
-                                if (Array.isArray(section.students)) {
-                                    for (const student of section.students) {
-                                        const barangay = student.barangay || 'Others';
-                                        barangayDistribution[barangay] = (barangayDistribution[barangay] || 0) + 1;
-                                    }
-                                }
-                            }
-                        }
-                    } catch (e) { console.warn('Failed to load snapshot barangay distribution', e); }
-                } else {
-                    // Get live barangay data
+                    // Render gender distribution
+                    renderGenderDistributionChart(m.students.male, m.students.female);
+                    
+                    // Load barangay distribution and render chart
+                    let barangayDistribution = {};
                     try {
                         const r = await fetch('/api/stats/barangay-distribution');
                         const jr = await r.json();
@@ -4650,9 +4681,12 @@ q<!DOCTYPE html>
                             barangayDistribution = jr.counts;
                         }
                     } catch (e) { console.warn('Failed to load barangay distribution', e); }
+                    
+                    renderBarangayDistributionChart(barangayDistribution);
                 }
-                
-                renderBarangayDistributionChart(barangayDistribution);
+
+                // Plot enrollment trend
+                try { await plotSnapshotsBySY(); } catch (e) { console.warn('Failed to plot snapshots by SY on load', e); }
             } catch (err) {
                 console.error('Dashboard load error:', err);
             }
