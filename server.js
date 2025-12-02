@@ -5167,7 +5167,7 @@ app.get('/api/students/all', async (req, res) => {
                 false as is_archived
             FROM early_registration er
             WHERE NOT EXISTS (
-                SELECT 1 FROM students st WHERE st.enrollment_id = er.id::text
+                SELECT 1 FROM students st WHERE st.enrollment_id::text = er.id::text
             )
             AND er.grade_level IN ('Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Non-Graded')
             ORDER BY 
