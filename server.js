@@ -3992,9 +3992,13 @@ app.post('/api/snapshots/dataset', async (req, res) => {
 
     const client = await pool.connect();
     try {
-        // Ensure groups table exists
+        // Drop and recreate tables to ensure correct schema
+        await client.query('DROP TABLE IF EXISTS section_snapshot_items CASCADE');
+        await client.query('DROP TABLE IF EXISTS section_snapshot_groups CASCADE');
+
+        // Create groups table
         await client.query(`
-            CREATE TABLE IF NOT EXISTS section_snapshot_groups (
+            CREATE TABLE section_snapshot_groups (
                 id SERIAL PRIMARY KEY,
                 snapshot_name TEXT NOT NULL UNIQUE,
                 created_by INTEGER,
@@ -4003,11 +4007,11 @@ app.post('/api/snapshots/dataset', async (req, res) => {
             )
         `);
 
-        // Ensure items table exists
+        // Create items table with proper structure
         await client.query(`
-            CREATE TABLE IF NOT EXISTS section_snapshot_items (
+            CREATE TABLE section_snapshot_items (
                 id SERIAL PRIMARY KEY,
-                group_id INTEGER,
+                group_id INTEGER NOT NULL REFERENCES section_snapshot_groups(id) ON DELETE CASCADE,
                 section_id INTEGER,
                 section_name TEXT,
                 grade_level TEXT,
@@ -4016,7 +4020,8 @@ app.post('/api/snapshots/dataset', async (req, res) => {
                 student_full_name TEXT,
                 current_address TEXT,
                 barangay_extracted TEXT,
-                teacher_name TEXT
+                teacher_name TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
@@ -4127,23 +4132,26 @@ app.post('/api/sections/snapshots', async (req, res) => {
     const snapshotName = String(name).trim();
     const client = await pool.connect();
     try {
-        await client.query('BEGIN');
+        // Drop and recreate tables to ensure correct schema
+        await client.query('DROP TABLE IF EXISTS section_snapshot_items CASCADE');
+        await client.query('DROP TABLE IF EXISTS section_snapshot_groups CASCADE');
 
-        // Create groups and items tables if missing
+        // Create groups table
         await client.query(`
-            CREATE TABLE IF NOT EXISTS section_snapshot_groups (
+            CREATE TABLE section_snapshot_groups (
                 id SERIAL PRIMARY KEY,
-                snapshot_name TEXT NOT NULL,
+                snapshot_name TEXT NOT NULL UNIQUE,
                 created_by INTEGER,
                 is_archived BOOLEAN DEFAULT false,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
+        // Create items table
         await client.query(`
-            CREATE TABLE IF NOT EXISTS section_snapshot_items (
+            CREATE TABLE section_snapshot_items (
                 id SERIAL PRIMARY KEY,
-                group_id INTEGER REFERENCES section_snapshot_groups(id) ON DELETE CASCADE,
+                group_id INTEGER NOT NULL REFERENCES section_snapshot_groups(id) ON DELETE CASCADE,
                 section_id INTEGER,
                 section_name TEXT,
                 grade_level TEXT,
@@ -4154,9 +4162,12 @@ app.post('/api/sections/snapshots', async (req, res) => {
                 first_name TEXT,
                 current_address TEXT,
                 barangay_extracted TEXT,
-                teacher_name TEXT
+                teacher_name TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+        await client.query('BEGIN');
 
         // Insert group
         const g = await client.query(`INSERT INTO section_snapshot_groups (snapshot_name, created_by) VALUES ($1, $2) RETURNING id, snapshot_name, created_at`, [snapshotName, req.session.user.id || null]);
@@ -4228,7 +4239,7 @@ app.post('/api/sections/snapshots', async (req, res) => {
         await client.query('COMMIT');
         res.json({ success: true, message: `Snapshot '${snapshotName}' saved with ${students.rows.length} students`, group: g.rows[0] });
     } catch (err) {
-        await client.query('ROLLBACK');
+        try { await client.query('ROLLBACK'); } catch (e) {}
         console.error('Error creating snapshot group:', err);
         res.status(500).json({ success: false, message: 'Error creating snapshot: ' + err.message });
     } finally {
@@ -4242,10 +4253,14 @@ app.get('/api/sections/snapshots', async (req, res) => {
         return res.status(403).json({ success: false, message: 'Access denied' });
     }
     try {
+        // Ensure tables exist with correct schema
+        await pool.query('DROP TABLE IF EXISTS section_snapshot_items CASCADE');
+        await pool.query('DROP TABLE IF EXISTS section_snapshot_groups CASCADE');
+        
         await pool.query(`
             CREATE TABLE IF NOT EXISTS section_snapshot_groups (
                 id SERIAL PRIMARY KEY,
-                snapshot_name TEXT NOT NULL,
+                snapshot_name TEXT NOT NULL UNIQUE,
                 created_by INTEGER,
                 is_archived BOOLEAN DEFAULT false,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -4254,7 +4269,7 @@ app.get('/api/sections/snapshots', async (req, res) => {
         await pool.query(`
             CREATE TABLE IF NOT EXISTS section_snapshot_items (
                 id SERIAL PRIMARY KEY,
-                group_id INTEGER REFERENCES section_snapshot_groups(id) ON DELETE CASCADE,
+                group_id INTEGER NOT NULL REFERENCES section_snapshot_groups(id) ON DELETE CASCADE,
                 section_id INTEGER,
                 section_name TEXT,
                 grade_level TEXT,
@@ -4265,7 +4280,8 @@ app.get('/api/sections/snapshots', async (req, res) => {
                 first_name TEXT,
                 current_address TEXT,
                 barangay_extracted TEXT,
-                teacher_name TEXT
+                teacher_name TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
