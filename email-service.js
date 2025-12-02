@@ -10,11 +10,44 @@ const transporter = nodemailer.createTransport({
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_PASSWORD,
     },
-    connectionTimeout: 15000, // 15 second timeout
-    socketTimeout: 15000, // 15 second socket timeout
-    logger: true, // Enable logging for debugging
-    debug: true, // Enable debug output
+    connectionTimeout: 30000, // 30 second timeout
+    socketTimeout: 30000, // 30 second socket timeout
+    maxConnections: 5, // Connection pooling
+    maxMessages: 100, // Messages per connection
+    rateDelta: 1000, // Milliseconds between messages
+    rateLimit: 5, // Max connections at a time
+    logger: false, // Disable logging (can slow down on Render)
+    debug: false, // Disable debug output
 });
+
+/**
+ * Helper: Retry email sending with exponential backoff
+ * Attempts to send email with retries on timeout/network errors
+ */
+async function sendMailWithRetry(mailOptions, maxRetries = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`   📧 Send attempt ${attempt}/${maxRetries}...`);
+            const result = await transporter.sendMail(mailOptions);
+            console.log(`   ✅ Success on attempt ${attempt}`);
+            return result;
+        } catch (err) {
+            const isLastAttempt = attempt === maxRetries;
+            const isTimeout = err.message.includes('timeout') || err.code === 'ETIMEDOUT' || err.code === 'ESOCKETTIMEDOUT';
+            const isNetworkError = err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.code === 'EHOSTUNREACH';
+            
+            if ((isTimeout || isNetworkError) && !isLastAttempt) {
+                const waitTime = Math.pow(2, attempt) * 1000; // Exponential backoff: 2s, 4s, 8s
+                console.log(`   ⏱️ Attempt ${attempt} failed (${err.message}), retrying in ${waitTime}ms...`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+                continue; // Retry
+            }
+            
+            // If all retries failed or it's a different error, throw
+            throw err;
+        }
+    }
+}
 
 /**
  * Send enrollment status update email to student
@@ -100,7 +133,7 @@ async function sendEnrollmentStatusUpdate(studentEmail, studentName, requestToke
             `,
         };
 
-        await transporter.sendMail(mailOptions);
+        await sendMailWithRetry(mailOptions);
         console.log(`✅ Enrollment ${status} email sent successfully to ${studentEmail}`);
         console.log(`   Student: ${studentName} | Token: ${requestToken}`);
         return true;
@@ -112,11 +145,12 @@ async function sendEnrollmentStatusUpdate(studentEmail, studentName, requestToke
         
         // Provide specific troubleshooting based on error type
         if (err.message.includes('timeout') || err.code === 'ETIMEDOUT' || err.code === 'ESOCKETTIMEDOUT') {
-            console.error(`\n   ⏱️ CONNECTION TIMEOUT - Gmail SMTP server not responding`);
-            console.error(`   Possible causes:`);
-            console.error(`   1. Network connectivity issues on Render`);
+            console.error(`\n   ⏱️ CONNECTION TIMEOUT - Gmail SMTP server not responding after retries`);
+            console.error(`   Attempted 3 retries with exponential backoff`);
+            console.error(`\n   Possible causes:`);
+            console.error(`   1. Render network may be blocking outbound SMTP on port 465`);
             console.error(`   2. Gmail SMTP server temporarily unreachable`);
-            console.error(`   3. Port 587 (TLS) blocked by network firewall`);
+            console.error(`   3. Network firewall between Render and Gmail`);
         } else if (err.message.includes('Invalid login') || err.code === 'EAUTH') {
             console.error(`\n   🔐 AUTHENTICATION FAILED - Invalid Gmail credentials`);
             console.error(`   Possible causes:`);
@@ -211,7 +245,7 @@ async function sendDocumentRequestStatusUpdate(studentEmail, studentName, reques
             `,
         };
 
-        await transporter.sendMail(mailOptions);
+        await sendMailWithRetry(mailOptions);
         console.log(`✅ Document request ${status} email sent successfully to ${studentEmail}`);
         console.log(`   Student: ${studentName} | Document: ${documentType} | Token: ${requestToken}`);
         return true;
@@ -223,7 +257,8 @@ async function sendDocumentRequestStatusUpdate(studentEmail, studentName, reques
         
         // Provide specific troubleshooting based on error type
         if (err.message.includes('timeout') || err.code === 'ETIMEDOUT' || err.code === 'ESOCKETTIMEDOUT') {
-            console.error(`\n   ⏱️ CONNECTION TIMEOUT - Gmail SMTP server not responding`);
+            console.error(`\n   ⏱️ CONNECTION TIMEOUT - Gmail SMTP server not responding after retries`);
+            console.error(`   Attempted 3 retries with exponential backoff`);
             console.error(`   Possible causes:`);
             console.error(`   1. Network connectivity issues on Render`);
             console.error(`   2. Gmail SMTP server temporarily unreachable`);
