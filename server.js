@@ -6360,19 +6360,17 @@ app.put('/api/teachers/:id/archive', async (req, res) => {
             );
         `);
 
-        // Insert teacher into archive
+        // Insert teacher into archive (only columns that exist)
         const insertRes = await client.query(`
             INSERT INTO teachers_archive (
-                original_id, username, password, first_name, middle_name, last_name, ext_name,
-                email, contact_number, birthday, sex, address, employee_id, department, position,
-                specialization, date_hired, is_active, created_at, updated_at, archived_by
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+                original_id, username, password, first_name, last_name,
+                email, department, specialization, is_active, created_at, archived_by
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
             RETURNING id
         `, [
-            teacher.id, teacher.username, teacher.password, teacher.first_name, teacher.middle_name || null, teacher.last_name, teacher.ext_name || null,
-            teacher.email || null, teacher.contact_number || null, teacher.birthday || null, teacher.sex || null, teacher.address || null,
-            teacher.employee_id || null, teacher.department || null, teacher.position || null, teacher.specialization || null,
-            teacher.date_hired || null, teacher.is_active !== undefined ? teacher.is_active : true, teacher.created_at || null, teacher.updated_at || null, req.session.user.id
+            teacher.id, teacher.username, teacher.password, teacher.first_name, teacher.last_name,
+            teacher.email || null, teacher.department || null, teacher.specialization || null, 
+            teacher.is_active !== undefined ? teacher.is_active : true, teacher.created_at || null, req.session.user.id
         ]);
 
         // Clear adviser references in sections (both by id and by name)
@@ -6442,22 +6440,17 @@ app.put('/api/teachers/:id/recover', async (req, res) => {
         }
         const archived = archRes.rows[0];
 
-        // Insert back into active teachers table
+        // Insert back into active teachers table (only core columns)
         const insertRes = await client.query(`
             INSERT INTO teachers (
-                id, username, password, first_name, middle_name, last_name, ext_name,
-                email, contact_number, birthday, sex, address, employee_id, department, position,
-                specialization, date_hired, is_active, created_at, updated_at
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+                id, username, password, first_name, last_name,
+                email, department, specialization, is_active, created_at
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
             RETURNING id
         `, [
-            archived.original_id, archived.username, archived.password, archived.first_name, 
-            archived.middle_name || null, archived.last_name, archived.ext_name || null,
-            archived.email || null, archived.contact_number || null, archived.birthday || null, 
-            archived.sex || null, archived.address || null, archived.employee_id || null, 
-            archived.department || null, archived.position || null, archived.specialization || null,
-            archived.date_hired || null, archived.is_active !== undefined ? archived.is_active : true, 
-            archived.created_at || null, archived.updated_at || null
+            archived.original_id, archived.username, archived.password, archived.first_name, archived.last_name,
+            archived.email || null, archived.department || null, archived.specialization || null, 
+            archived.is_active !== undefined ? archived.is_active : true, archived.created_at || null
         ]);
 
         // Delete from archive table
