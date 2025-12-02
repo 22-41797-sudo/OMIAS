@@ -3733,7 +3733,7 @@ app.post('/assign-section/:id', async (req, res) => {
                     last_name, first_name, middle_name, ext_name,
                     birthday, age, sex, religion, current_address,
                     guardian_name, enrollment_status, is_archived
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'active', false)
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
                 RETURNING id
             `;
 
@@ -3742,7 +3742,7 @@ app.post('/assign-section/:id', async (req, res) => {
                 enrollee.school_year, enrollee.lrn, enrollee.grade_level,
                 enrollee.last_name, enrollee.first_name, enrollee.middle_name, enrollee.ext_name,
                 enrollee.birthday, enrollee.age, enrollee.sex, enrollee.religion, enrollee.current_address,
-                enrollee.guardian_name, 'active'
+                enrollee.guardian_name, 'active', false
             ];
 
             await client.query(insertQuery, insertValues);
