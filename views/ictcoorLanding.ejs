@@ -4910,14 +4910,19 @@ q<!DOCTYPE html>
         // Plot all saved snapshots: each dot represents a school year (SY on Y axis), count on X axis
         async function plotSnapshotsBySY() {
             const ctx = document.getElementById('enrollmentTrendChart');
-            if (!ctx) return;
+            if (!ctx) {
+                console.error('Chart container not found');
+                return;
+            }
             try {
                 let rows = [];
                 const filterSelect = document.getElementById('schoolYearFilter');
                 const selectedFilter = filterSelect ? filterSelect.value : 'current';
+                console.log('Filter selected:', selectedFilter, 'currentSnapshotData:', window.currentSnapshotData);
 
                 // If filter is set to a specific snapshot, show only that snapshot
                 if (selectedFilter !== 'current' && window.currentSnapshotData && Array.isArray(window.currentSnapshotData.items)) {
+                    console.log('Loading specific snapshot');
                     const items = window.currentSnapshotData.items;
                     const total = items.reduce((s, it) => s + (Number(it.count) || 0), 0);
                     rows.push({ 
@@ -4925,43 +4930,65 @@ q<!DOCTYPE html>
                         total,
                         isCurrentSnapshot: true
                     });
+                    console.log('Snapshot data:', rows);
                 } else {
+                    console.log('Loading live data and all snapshots');
                     // Show current live data
                     try {
                         const liveRes = await fetch('/api/enrollment/live-count');
                         const liveData = await liveRes.json();
+                        console.log('Live data response:', liveData);
                         if (liveData.success) {
                             rows.push({
                                 name: liveData.label || 'Current School Year (Live)',
                                 total: liveData.total,
                                 isLiveData: true
                             });
+                            console.log('Added live data, rows now:', rows);
                         }
                     } catch (e) {
-                        console.warn('Failed to load live enrollment count', e);
+                        console.error('Failed to load live enrollment count', e);
                     }
                     
-                    // Also load snapshots for comparison
+                    // Also load snapshots for comparison - use full-data endpoint to get actual student counts
                     try {
                         const res = await fetch('/api/sections/snapshots');
                         const meta = await res.json();
+                        console.log('Snapshots metadata:', meta);
                         if (meta && meta.success && Array.isArray(meta.groups)) {
                             const groups = meta.groups.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-                            const itemsResults = await Promise.all(groups.map(g => fetch(`/api/sections/snapshots/${g.id}/items`).then(r => r.json()).catch(() => null)));
+                            console.log('Sorted groups:', groups);
+                            const fullDataResults = await Promise.all(groups.map(g => fetch(`/api/snapshots/${g.id}/full-data`).then(r => r.json()).catch((err) => {
+                                console.error('Error loading full snapshot data for group', g.id, err);
+                                return null;
+                            })));
                             for (let i = 0; i < groups.length; i++) {
                                 const g = groups[i];
-                                const d = itemsResults[i];
-                                if (!d || !d.success || !Array.isArray(d.items)) continue;
-                                const total = d.items.reduce((s, it) => s + (Number(it.count) || 0), 0);
+                                const d = fullDataResults[i];
+                                console.log(`Snapshot ${g.snapshot_name}:`, d);
+                                if (!d || !d.success || !Array.isArray(d.sections)) {
+                                    console.warn('Invalid snapshot data:', d);
+                                    continue;
+                                }
+                                // Count total students from all sections
+                                let total = 0;
+                                d.sections.forEach(section => {
+                                    if (Array.isArray(section.students)) {
+                                        total += section.students.length;
+                                    }
+                                });
                                 rows.push({ name: g.snapshot_name, total });
+                                console.log(`Added snapshot ${g.snapshot_name} with total ${total} students`);
                             }
                         }
                     } catch (e) {
-                        console.warn('Failed to load snapshots', e);
+                        console.error('Failed to load snapshots', e);
                     }
                 }
 
+                console.log('Final rows:', rows);
                 if (rows.length === 0) { 
+                    console.warn('No rows to render');
                     const container = document.getElementById('chartInterpretation');
                     if (container) {
                         container.innerHTML = '<p style="padding:20px; text-align:center; color:var(--gray-600);">No enrollment data found.</p>';
@@ -4969,6 +4996,7 @@ q<!DOCTYPE html>
                     return; 
                 }
                 // Render the snapshots chart
+                console.log('Rendering chart with', rows.length, 'data points');
                 renderSnapshotsChart(rows);
                 try { renderInterpretationFromRows(rows); } catch (e) { console.warn('renderInterpretation error', e); }
             } catch (err) {
@@ -4983,7 +5011,12 @@ q<!DOCTYPE html>
         // Render a snapshots chart for provided rows = [{name, total}, ...]
         function renderSnapshotsChart(rows) {
             const ctx = document.getElementById('enrollmentTrendChart');
-            if (!ctx) return;
+            if (!ctx) {
+                console.error('Chart canvas not found');
+                return;
+            }
+            
+            console.log('renderSnapshotsChart called with', rows.length, 'rows');
             
             // Sort rows by created date or year extracted from name
             rows.sort((a,b) => {
@@ -4998,62 +5031,76 @@ q<!DOCTYPE html>
                 return a.name.localeCompare(b.name);
             });
             
+            console.log('Sorted rows:', rows);
+            
             const labels = rows.map(r => r.name);
             const values = rows.map(r => r.total);
             
-            if (enrollmentChart) enrollmentChart.destroy();
-            enrollmentChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Students',
-                        data: values,
-                        borderColor: '#1f78b4',
-                        backgroundColor: 'rgba(31,120,180,0.1)',
-                        fill: true,
-                        tension: 0.3,
-                        pointBackgroundColor: '#1f78b4',
-                        pointBorderColor: '#0d47a1',
-                        pointBorderWidth: 2,
-                        pointRadius: 7,
-                        pointHoverRadius: 9,
-                        borderWidth: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: { 
-                            title: { display: true, text: 'School Year', font: { size: 14, weight: 'bold' } },
-                            ticks: { font: { size: 12 } }
-                        },
-                        y: { 
-                            beginAtZero: true, 
-                            title: { display: true, text: 'Student Count', font: { size: 14, weight: 'bold' } },
-                            ticks: { font: { size: 12 } }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            labels: { font: { size: 12 }, padding: 15 }
-                        },
-                        tooltip: { 
-                            mode: 'index', 
-                            intersect: false,
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            titleFont: { size: 13, weight: 'bold' },
-                            bodyFont: { size: 12 },
-                            padding: 12,
-                            displayColors: true,
+            console.log('Labels:', labels);
+            console.log('Values:', values);
+            
+            if (enrollmentChart) {
+                console.log('Destroying existing chart');
+                enrollmentChart.destroy();
+            }
+            
+            try {
+                enrollmentChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Students',
+                            data: values,
                             borderColor: '#1f78b4',
-                            borderWidth: 1
+                            backgroundColor: 'rgba(31,120,180,0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            pointBackgroundColor: '#1f78b4',
+                            pointBorderColor: '#0d47a1',
+                            pointBorderWidth: 2,
+                            pointRadius: 7,
+                            pointHoverRadius: 9,
+                            borderWidth: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { 
+                                title: { display: true, text: 'School Year', font: { size: 14, weight: 'bold' } },
+                                ticks: { font: { size: 12 } }
+                            },
+                            y: { 
+                                beginAtZero: true, 
+                                title: { display: true, text: 'Student Count', font: { size: 14, weight: 'bold' } },
+                                ticks: { font: { size: 12 } }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                labels: { font: { size: 12 }, padding: 15 }
+                            },
+                            tooltip: { 
+                                mode: 'index', 
+                                intersect: false,
+                                backgroundColor: 'rgba(0,0,0,0.8)',
+                                titleFont: { size: 13, weight: 'bold' },
+                                bodyFont: { size: 12 },
+                                padding: 12,
+                                displayColors: true,
+                                borderColor: '#1f78b4',
+                                borderWidth: 1
+                            }
                         }
                     }
-                }
-            });
+                });
+                console.log('Chart created successfully');
+            } catch (err) {
+                console.error('Error creating chart:', err);
+            }
         }
 
         // Toggle visibility for the interpretation panel - now opens in modal
