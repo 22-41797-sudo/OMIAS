@@ -3975,12 +3975,18 @@ app.get('/api/sections/all', async (req, res) => {
 
 // New snapshot/grouped snapshot endpoints
 app.post('/api/sections/snapshots', async (req, res) => {
+    console.log('📸 POST /api/sections/snapshots called');
+    console.log('Session user:', req.session.user);
+    console.log('Request body:', req.body);
+    
     if (!req.session.user || req.session.user.role !== 'ictcoor') {
+        console.log('❌ Access denied - not ictcoor');
         return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
     const { name } = req.body || {};
     if (!name || !String(name).trim()) {
+        console.log('❌ No snapshot name provided');
         return res.status(400).json({ success: false, message: 'Snapshot name is required' });
     }
 
