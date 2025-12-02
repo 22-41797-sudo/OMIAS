@@ -2147,29 +2147,29 @@ q<!DOCTYPE html>
                 
                 // Build action buttons based on archived state
                 let actionButtons = `
-                    <button class="action-btn action-view" onclick="viewTeacherDetails(${teacher.id})" title="View details">
+                    <button class="action-btn action-view" onclick="viewTeacherDetails('${teacher.id}')" title="View details">
                         <i class="fas fa-eye"></i> View
                     </button>`;
                 
                 if (isArchived) {
                     // Show archived teacher actions: Recover and Permanently Delete
                     actionButtons += `
-                        <button class="action-btn action-confirm" onclick="recoverTeacher(${teacher.id}, '${fullName.replace(/'/g, "\\'")}');" title="Recover teacher">
+                        <button class="action-btn action-confirm" onclick="recoverTeacher('${teacher.id}', '${fullName.replace(/'/g, "\\'")}');" title="Recover teacher">
                             <i class="fas fa-undo"></i> Recover
                         </button>
-                        <button class="action-btn action-delete" onclick="permanentlyDeleteTeacher(${teacher.id}, '${fullName.replace(/'/g, "\\'")}');" title="Permanently delete teacher">
+                        <button class="action-btn action-delete" onclick="permanentlyDeleteTeacher('${teacher.id}', '${fullName.replace(/'/g, "\\'")}');" title="Permanently delete teacher">
                             <i class="fas fa-trash"></i> Delete
                         </button>`;
                 } else {
                     // Show active teacher actions: Edit, Assign/Reassign, Archive
                     actionButtons += `
-                        <button class="action-btn action-edit" onclick="openEditTeacherModal(${teacher.id})" title="Edit teacher">
+                        <button class="action-btn action-edit" onclick="openEditTeacherModal('${teacher.id}')" title="Edit teacher">
                             <i class="fas fa-edit"></i> Edit
                         </button>
-                        <button type="button" class="action-btn ${isAdviser ? 'action-reassign' : 'action-assign'}" onclick="openAssignTeacherModal(${teacher.id}, '${fullName.replace(/'/g, "\\'")}');" title="${isAdviser ? 'Reassign to another section' : 'Assign to section'}">
+                        <button type="button" class="action-btn ${isAdviser ? 'action-reassign' : 'action-assign'}" onclick="openAssignTeacherModal('${teacher.id}', '${fullName.replace(/'/g, "\\'")}');" title="${isAdviser ? 'Reassign to another section' : 'Assign to section'}">
                             <i class="fas fa-chalkboard-teacher"></i> ${isAdviser ? 'Reassign' : 'Assign'}
                         </button>
-                        <button class="action-btn action-delete" onclick="archiveTeacher(${teacher.id}, '${fullName.replace(/'/g, "\\'")}');" title="Archive teacher">
+                        <button class="action-btn action-delete" onclick="archiveTeacher('${teacher.id}', '${fullName.replace(/'/g, "\\'")}');" title="Archive teacher">
                             <i class="fas fa-archive"></i> Archive
                         </button>`;
                 }
@@ -2762,7 +2762,7 @@ q<!DOCTYPE html>
                                     : '<span class="badge" style="background: var(--gray-400); color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">Inactive</span>'}
                             </td>
                             <td class="table-actions">
-                                <button type="button" class="action-btn action-view" title="View students in this section" onclick="viewSectionStudents(${section.id}, '${(section.grade_level || '').replace(/'/g, "\\'")}', '${(section.section_name || '').replace(/'/g, "\\'")}')">
+                                <button type="button" class="action-btn action-view" title="View students in this section" onclick="viewSectionStudents('${section.id}', '${(section.grade_level || '').replace(/'/g, "\\'")}', '${(section.section_name || '').replace(/'/g, "\\'")}')">
                                     <i class="fas fa-eye"></i> View
                                 </button>
 
@@ -2771,16 +2771,16 @@ q<!DOCTYPE html>
                                         <i class="fas fa-edit"></i> Edit <i class="fas fa-caret-down" style="margin-left:6px; font-size:10px;"></i>
                                     </button>
                                     <div class="action-dropdown-menu" style="display:none; position:absolute; right:0; top:44px; min-width:160px; background:#fff; border:1px solid var(--gray-200); box-shadow:var(--shadow-lg); border-radius:8px; padding:8px; z-index:1500;">
-                                        <button type="button" class="action-btn" style="display:block; width:100%; text-align:left; margin-bottom:6px;" onclick="openEditSectionModal(${section.id}, '${section.section_name}', '${section.grade_level}', ${section.max_capacity}, '${section.adviser_name || ''}', '${section.room_number || ''}', ${section.is_active})">
+                                        <button type="button" class="action-btn" style="display:block; width:100%; text-align:left; margin-bottom:6px;" onclick="openEditSectionModal('${section.id}', '${section.section_name}', '${section.grade_level}', ${section.max_capacity}, '${section.adviser_name || ''}', '${section.room_number || ''}', ${section.is_active})">
                                             <i class="fas fa-edit"></i> Edit
                                         </button>
-                                        <button type="button" class="action-btn action-toggle" style="display:block; width:100%; text-align:left;" onclick="toggleSectionStatus(${section.id}, '${section.section_name}', ${section.is_active})">
+                                        <button type="button" class="action-btn action-toggle" style="display:block; width:100%; text-align:left;" onclick="toggleSectionStatus('${section.id}', '${section.section_name}', ${section.is_active})">
                                             <i class="fas fa-${section.is_active ? 'ban' : 'check'}"></i> ${section.is_active ? 'Deactivate' : 'Activate'}
                                         </button>
                                     </div>
                                 </div>
 
-                                <button class="action-btn action-delete" title="Permanently delete this section" onclick="permanentDeleteSection(${section.id}, '${section.section_name}')" ${section.current_count > 0 ? 'disabled title="Cannot delete section with enrolled students"' : ''}>
+                                <button class="action-btn action-delete" title="Permanently delete this section" onclick="permanentDeleteSection('${section.id}', '${section.section_name}')" ${section.current_count > 0 ? 'disabled title="Cannot delete section with enrolled students"' : ''}>
                                     <i class="fas fa-trash-alt"></i> Delete
                                 </button>
                             </td>
@@ -2984,10 +2984,10 @@ q<!DOCTYPE html>
                                 <td style="padding:8px;">${lrn}</td>
                                 <td style="padding:8px;">${sname}</td>
                                 <td style="padding:8px;">
-                                    <button type="button" class="action-btn action-edit" onclick="openReassignModal(${sid}, '${sname}', ${id}, '${escapeHtml(gradeLevel + ' - ' + name)}')" style="margin-right:6px;">
+                                    <button type="button" class="action-btn action-edit" onclick="openReassignModal('${sid}', '${sname}', '${id}', '${escapeHtml(gradeLevel + ' - ' + name)}')" style="margin-right:6px;">
                                         <i class="fas fa-exchange-alt"></i> Reassign
                                     </button>
-                                    <button type="button" class="action-btn action-delete" onclick="openConfirmRemoveFromSectionModal(${sid}, '${sname}', ${id})">
+                                    <button type="button" class="action-btn action-delete" onclick="openConfirmRemoveFromSectionModal('${sid}', '${sname}', '${id}')">
                                         <i class="fas fa-user-minus"></i> Remove
                                     </button>
                                 </td>
@@ -3447,22 +3447,22 @@ q<!DOCTYPE html>
 
                 // Actions: View always; if unassigned show Assign; if assigned show Reassign + Remove; if archived show Restore
                 let actions = `
-                    <button class="action-btn action-view" onclick="openStudentDetails(${sid})" title="View details">
+                    <button class="action-btn action-view" onclick="openStudentDetails('${sid}')" title="View details">
                         <i class="fas fa-eye"></i> View
                     </button>`;
 
                 if (!student.is_archived && (!student.assigned_section || student.enrollment_status === 'pending')) {
                     actions += `
-                        <button class="action-btn action-edit" onclick="openAssignSectionModal(${sid}, '${name}', '${assignedSectionName}')" title="Assign to section">
+                        <button class="action-btn action-edit" onclick="openAssignSectionModal('${sid}', '${name}', '${assignedSectionName}')" title="Assign to section">
                             <i class="fas fa-users"></i> Assign
                         </button>`;
                 } else if (!student.is_archived && student.assigned_section) {
                     // Reassign and Remove for assigned students
                     actions += `
-                        <button type="button" class="action-btn action-edit" onclick="openReassignModal(${sid}, '${name}', '', '${assignedSectionName}')" title="Reassign to another section">
+                        <button type="button" class="action-btn action-edit" onclick="openReassignModal('${sid}', '${name}', '', '${assignedSectionName}')" title="Reassign to another section">
                             <i class="fas fa-exchange-alt"></i> Reassign
                         </button>
-                        <button class="action-btn action-delete" onclick="openConfirmRemoveFromSectionModal(${sid}, '${name}', '')" title="Remove from section">
+                        <button class="action-btn action-delete" onclick="openConfirmRemoveFromSectionModal('${sid}', '${name}', '')" title="Remove from section">
                             <i class="fas fa-user-minus"></i> Remove
                         </button>`;
                 }
@@ -3771,11 +3771,11 @@ q<!DOCTYPE html>
                         <td>${created}</td>
                         <td>${g.is_archived ? '<span class="status-badge status-inactive">Archived</span>' : '<span class="status-badge status-active">Active</span>'}</td>
                         <td class="table-actions">
-                            <button class="action-btn action-view" onclick="viewSnapshotItems(${g.id}, '${escapeHtml(g.snapshot_name)}')"><i class="fas fa-eye"></i> View</button>
-                            <button class="action-btn action-confirm" onclick="loadSnapshotOnDashboard(${g.id}, '${escapeHtml(g.snapshot_name).replace(/'/g, "\\'")}')"><i class="fas fa-chart-pie"></i> Load</button>
-                            ${g.is_archived ? `<button class="action-btn action-confirm" onclick="recoverSnapshot(${g.id})"><i class="fas fa-undo"></i> Recover</button>
-                                              <button class="action-btn action-delete" onclick="permanentlyDeleteSnapshot(${g.id})"><i class="fas fa-trash"></i> Delete</button>`
-                                           : `<button class="action-btn action-delete" onclick="archiveSnapshot(${g.id})"><i class="fas fa-archive"></i> Archive</button>`}
+                            <button class="action-btn action-view" onclick="viewSnapshotItems('${g.id}', '${escapeHtml(g.snapshot_name)}')"><i class="fas fa-eye"></i> View</button>
+                            <button class="action-btn action-confirm" onclick="loadSnapshotOnDashboard('${g.id}', '${escapeHtml(g.snapshot_name).replace(/'/g, "\\'")}')"><i class="fas fa-chart-pie"></i> Load</button>
+                            ${g.is_archived ? `<button class="action-btn action-confirm" onclick="recoverSnapshot('${g.id}')"><i class="fas fa-undo"></i> Recover</button>
+                                              <button class="action-btn action-delete" onclick="permanentlyDeleteSnapshot('${g.id}')"><i class="fas fa-trash"></i> Delete</button>`
+                                           : `<button class="action-btn action-delete" onclick="archiveSnapshot('${g.id}')"><i class="fas fa-archive"></i> Archive</button>`}
                         </td>
                     `;
                     tbody.appendChild(tr);
