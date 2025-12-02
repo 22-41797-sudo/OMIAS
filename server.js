@@ -3725,27 +3725,24 @@ app.post('/assign-section/:id', async (req, res) => {
                 return res.status(400).json({ success: false, message: 'This enrollee has already been assigned to a section' });
             }
 
-            // Insert into students table
+            // Insert into students table (only columns that exist)
             const insertQuery = `
                 INSERT INTO students (
                     enrollment_id, section_id,
-                    gmail_address, school_year, lrn, grade_level,
+                    school_year, lrn, grade_level,
                     last_name, first_name, middle_name, ext_name,
                     birthday, age, sex, religion, current_address,
-                    ip_community, ip_community_specify, pwd, pwd_specify,
-                    father_name, mother_name, guardian_name, contact_number,
-                    enrollment_status, is_archived
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, 'active', false)
+                    guardian_name, enrollment_status, is_archived
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'active', false)
                 RETURNING id
             `;
 
             const insertValues = [
                 earlyRegId, section,
-                enrollee.gmail_address, enrollee.school_year, enrollee.lrn, enrollee.grade_level,
+                enrollee.school_year, enrollee.lrn, enrollee.grade_level,
                 enrollee.last_name, enrollee.first_name, enrollee.middle_name, enrollee.ext_name,
                 enrollee.birthday, enrollee.age, enrollee.sex, enrollee.religion, enrollee.current_address,
-                enrollee.ip_community, enrollee.ip_community_specify, enrollee.pwd, enrollee.pwd_specify,
-                enrollee.father_name, enrollee.mother_name, enrollee.guardian_name, enrollee.contact_number
+                enrollee.guardian_name, 'active'
             ];
 
             await client.query(insertQuery, insertValues);
