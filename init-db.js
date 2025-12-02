@@ -542,33 +542,33 @@ async function initializeDatabase() {
         const sectionCheckResult = await pool.query('SELECT COUNT(*) as cnt FROM sections');
         if (sectionCheckResult.rows[0].cnt === 0) {
             await pool.query(`
-                INSERT INTO sections (grade_level, section_name) VALUES
+                INSERT INTO sections (grade_level, section_name, is_active) VALUES
                 -- Kindergarten sections
-                ('Kindergarten', 'angel'),
-                ('Kindergarten', 'dahlia'),
-                ('Kindergarten', 'lily'),
-                ('Kindergarten', 'santan'),
+                ('Kindergarten', 'angel', true),
+                ('Kindergarten', 'dahlia', true),
+                ('Kindergarten', 'lily', true),
+                ('Kindergarten', 'santan', true),
                 -- Grade 1 sections
-                ('Grade 1', 'rosal'),
-                ('Grade 1', 'rose'),
+                ('Grade 1', 'rosal', true),
+                ('Grade 1', 'rose', true),
                 -- Grade 2 sections
-                ('Grade 2', 'camia'),
-                ('Grade 2', 'daisy'),
-                ('Grade 2', 'lirio'),
+                ('Grade 2', 'camia', true),
+                ('Grade 2', 'daisy', true),
+                ('Grade 2', 'lirio', true),
                 -- Grade 3 sections
-                ('Grade 3', 'adelfa'),
-                ('Grade 3', 'orchids'),
+                ('Grade 3', 'adelfa', true),
+                ('Grade 3', 'orchids', true),
                 -- Grade 4 sections
-                ('Grade 4', 'ilang-ilang'),
-                ('Grade 4', 'sampaguita'),
+                ('Grade 4', 'ilang-ilang', true),
+                ('Grade 4', 'sampaguita', true),
                 -- Grade 5 sections
-                ('Grade 5', 'blueberry'),
-                ('Grade 5', 'everlasting'),
+                ('Grade 5', 'blueberry', true),
+                ('Grade 5', 'everlasting', true),
                 -- Grade 6 sections
-                ('Grade 6', 'cattleya'),
-                ('Grade 6', 'sunflower'),
+                ('Grade 6', 'cattleya', true),
+                ('Grade 6', 'sunflower', true),
                 -- Non-Graded section
-                ('Non-Graded', 'tulips')
+                ('Non-Graded', 'tulips', true)
                 ON CONFLICT (section_name) DO NOTHING
             `);
             console.log('✅ Sections seeded successfully (18 sections)');
