@@ -5355,20 +5355,12 @@ app.get('/api/teachers/:id', async (req, res) => {
                 id,
                 username,
                 first_name,
-                middle_name,
                 last_name,
-                ext_name,
                 email,
-                contact_number,
-                birthday,
-                sex,
-                address,
-                employee_id,
-                specialization,
                 department,
-                position,
-                created_at as date_hired,
-                is_active
+                specialization,
+                is_active,
+                created_at
             FROM teachers
             WHERE id = $1
         `, [teacherId]);
@@ -5377,7 +5369,19 @@ app.get('/api/teachers/:id', async (req, res) => {
             return res.status(404).json({ success: false, message: 'Teacher not found' });
         }
 
-        res.json({ success: true, teacher: result.rows[0] });
+        // Build response with optional fields set to NULL if they don't exist
+        const teacher = result.rows[0];
+        teacher.contact_number = null;
+        teacher.middle_name = null;
+        teacher.ext_name = null;
+        teacher.birthday = null;
+        teacher.sex = null;
+        teacher.address = null;
+        teacher.employee_id = null;
+        teacher.position = null;
+        teacher.date_hired = teacher.created_at;
+
+        res.json({ success: true, teacher });
     } catch (err) {
         console.error('Error fetching teacher:', err);
         res.status(500).json({ success: false, message: 'Error fetching teacher' });
@@ -5437,27 +5441,36 @@ app.post('/api/teachers', async (req, res) => {
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Insert new teacher (only columns that exist in teachers table)
+        // Insert new teacher (only columns that definitely exist in teachers table)
         const result = await pool.query(`
             INSERT INTO teachers (
-                username, password, first_name, middle_name, last_name, ext_name,
-                email, contact_number, birthday, sex, address, employee_id,
-                department, position, specialization, is_active
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                username, password, first_name, last_name,
+                email, department, specialization, is_active
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING 
-                id, username, first_name, last_name, email, contact_number,
-                department, specialization, is_active,
-                middle_name, ext_name, birthday, sex, address, employee_id, position, created_at AS date_hired
+                id, username, first_name, last_name, email,
+                department, specialization, is_active, created_at
         `, [
-            username, hashedPassword, first_name, middle_name || null, last_name, ext_name || null,
-            email || null, contact_number || null, birthday || null, sex || null, address || null, employee_id || null,
-            department || null, position || null, specialization || null, true
+            username, hashedPassword, first_name, last_name,
+            email || null, department || null, specialization || null, true
         ]);
+
+        // Add NULL placeholders for optional fields
+        const teacher = result.rows[0];
+        teacher.contact_number = null;
+        teacher.middle_name = null;
+        teacher.ext_name = null;
+        teacher.birthday = null;
+        teacher.sex = null;
+        teacher.address = null;
+        teacher.employee_id = null;
+        teacher.position = null;
+        teacher.date_hired = teacher.created_at;
 
         res.json({ 
             success: true, 
             message: 'Teacher account created successfully',
-            teacher: result.rows[0]
+            teacher: teacher
         });
     } catch (err) {
         console.error('Error creating teacher:', err);
@@ -5521,30 +5534,21 @@ app.put('/api/teachers/:id', async (req, res) => {
             }
         }
 
-        // Build update query (only columns that exist in teachers table)
+        // Build update query (only columns that definitely exist in teachers table)
         let updateQuery = `
             UPDATE teachers SET
                 username = $1,
                 first_name = $2,
-                middle_name = $3,
-                last_name = $4,
-                ext_name = $5,
-                email = $6,
-                contact_number = $7,
-                birthday = $8,
-                sex = $9,
-                address = $10,
-                employee_id = $11,
-                department = $12,
-                position = $13,
-                specialization = $14,
-                is_active = $15
+                last_name = $3,
+                email = $4,
+                department = $5,
+                specialization = $6,
+                is_active = $7
         `;
 
         let queryParams = [
-            username, first_name, middle_name || null, last_name, ext_name || null,
-            email || null, contact_number || null, birthday || null, sex || null, address || null,
-            employee_id || null, department || null, position || null, specialization || null,
+            username, first_name, last_name,
+            email || null, department || null, specialization || null,
             is_active !== undefined ? is_active : true
         ];
 
@@ -5555,15 +5559,27 @@ app.put('/api/teachers/:id', async (req, res) => {
             queryParams.push(hashedPassword);
         }
 
-        updateQuery += ` WHERE id = $${queryParams.length + 1} RETURNING id, username, first_name, last_name, email, contact_number, department, specialization, is_active, middle_name, ext_name, birthday, sex, address, employee_id, position, created_at AS date_hired`;
+        updateQuery += ` WHERE id = $${queryParams.length + 1} RETURNING id, username, first_name, last_name, email, department, specialization, is_active, created_at`;
         queryParams.push(teacherId);
 
         const result = await pool.query(updateQuery, queryParams);
 
+        // Add NULL placeholders for optional fields
+        const teacher = result.rows[0];
+        teacher.contact_number = null;
+        teacher.middle_name = null;
+        teacher.ext_name = null;
+        teacher.birthday = null;
+        teacher.sex = null;
+        teacher.address = null;
+        teacher.employee_id = null;
+        teacher.position = null;
+        teacher.date_hired = teacher.created_at;
+
         res.json({ 
             success: true, 
             message: 'Teacher updated successfully',
-            teacher: result.rows[0]
+            teacher: teacher
         });
     } catch (err) {
         console.error('Error updating teacher:', err);
