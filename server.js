@@ -511,7 +511,7 @@ app.get('/api/teacher/sections/:id/students', requireTeacher, async (req, res) =
         }
         const students = await pool.query(`
             SELECT id, lrn, last_name, first_name, middle_name, ext_name, sex, age, grade_level, contact_number,
-                   CONCAT(last_name, ', ', first_name, ' ', COALESCE(middle_name, ''), ' ', COALESCE(ext_name, '')) as full_name
+                   last_name || ', ' || first_name || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') as full_name
             FROM students
             WHERE section_id = $1 AND enrollment_status = 'active'
             ORDER BY last_name, first_name
@@ -540,7 +540,7 @@ app.get('/api/teacher/students/:id', requireTeacher, async (req, res) => {
         const detail = await pool.query(`
             SELECT id, enrollment_id, gmail_address, school_year, lrn, grade_level,
                    last_name, first_name, middle_name, ext_name,
-                   CONCAT(last_name, ', ', first_name, ' ', COALESCE(middle_name, ''), ' ', COALESCE(ext_name, '')) AS full_name,
+                   last_name || ', ' || first_name || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') AS full_name,
                    birthday, age, sex, religion, current_address,
                    father_name, mother_name, guardian_name, contact_number
             FROM students WHERE id = $1
@@ -704,7 +704,7 @@ app.get('/api/behavior-reports', requireTeacher, async (req, res) => {
             if (sec.rows.length === 0) return res.status(403).json({ success: false, error: 'Access denied' });
             const list = await pool.query(`
                 SELECT r.id, r.report_date, r.category, r.severity, r.notes, r.student_id,
-                       CONCAT(s.last_name, ', ', s.first_name, ' ', COALESCE(s.middle_name,'')) AS student_name
+                       s.last_name || ', ' || s.first_name || ' ' || COALESCE(s.middle_name || '', '') AS student_name
                 FROM student_behavior_reports r
                 JOIN students s ON s.id = r.student_id
                 WHERE r.section_id = $1
@@ -931,8 +931,8 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
                 r.section_id,
                 r.teacher_id,
                 r.is_done,
-                CONCAT(s.last_name, ', ', s.first_name, ' ', COALESCE(s.middle_name, '')) AS student_full_name,
-                CONCAT(t.last_name, ', ', t.first_name) AS teacher_name,
+                s.last_name || ', ' || s.first_name || ' ' || COALESCE(s.middle_name || '', '') AS student_full_name,
+                t.last_name || ', ' || t.first_name AS teacher_name,
                 sec.section_name,
                 sec.grade_level
             FROM student_behavior_reports r
@@ -949,7 +949,7 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
                 s.first_name,
                 s.middle_name,
                 s.last_name,
-                CONCAT(s.last_name, ', ', s.first_name, ' ', COALESCE(s.middle_name, '')) AS full_name,
+                s.last_name || ', ' || s.first_name || ' ' || COALESCE(s.middle_name || '', '') AS full_name,
                 sec.section_name
             FROM students s
             JOIN sections sec ON sec.id = s.section_id
@@ -1008,7 +1008,7 @@ app.get('/api/guidance/students', async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT s.id, 
-                   CONCAT(s.first_name, ' ', s.middle_name, ' ', s.last_name) as full_name,
+                   s.first_name || ' ' || s.middle_name || ' ' || s.last_name as full_name,
                    s.lrn, 
                    sec.section_name
             FROM students s
@@ -1077,8 +1077,8 @@ app.get('/api/guidance/messages', async (req, res) => {
         const result = await pool.query(`
             SELECT 
                 gtm.id, gtm.message, gtm.created_at, gtm.is_read, COALESCE(gtm.is_archived, false) as is_archived,
-                CONCAT(t.first_name, ' ', t.last_name) as teacher_name,
-                CONCAT(s.first_name, ' ', s.middle_name, ' ', s.last_name) as student_name
+                t.first_name || ' ' || t.last_name as teacher_name,
+                s.first_name || ' ' || s.middle_name || ' ' || s.last_name as student_name
             FROM guidance_teacher_messages gtm
             INNER JOIN teachers t ON gtm.teacher_id = t.id
             LEFT JOIN students s ON gtm.student_id = s.id
@@ -2073,7 +2073,7 @@ app.get('/registrar', async (req, res) => {
         // Fetch all registration records
         const result = await pool.query(`
             SELECT id, school_year, grade_level, 
-                   CONCAT(last_name, ', ', first_name, ' ', COALESCE(middle_name, ''), ' ', COALESCE(ext_name, '')) as learner_name,
+                   last_name || ', ' || first_name || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') as learner_name,
                    lrn, mother_name, contact_number, registration_date, created_at
             FROM early_registration 
             ORDER BY created_at DESC
@@ -2082,7 +2082,7 @@ app.get('/registrar', async (req, res) => {
         // Fetch pending enrollment requests
         const requestsResult = await pool.query(`
             SELECT id, request_token, 
-                   CONCAT(last_name, ', ', first_name, ' ', COALESCE(middle_name, '')) as learner_name,
+                   last_name || ', ' || first_name || ' ' || COALESCE(middle_name || '', '') as learner_name,
                    grade_level, gmail_address, contact_number, created_at, status
             FROM enrollment_requests 
             WHERE status = 'pending'
@@ -2092,7 +2092,7 @@ app.get('/registrar', async (req, res) => {
         // Fetch history of reviewed requests
         const historyResult = await pool.query(`
             SELECT id, request_token, 
-                   CONCAT(last_name, ', ', first_name, ' ', COALESCE(middle_name, '')) as learner_name,
+                   last_name || ', ' || first_name || ' ' || COALESCE(middle_name || '', '') as learner_name,
                    grade_level, gmail_address, status, reviewed_at, rejection_reason
             FROM enrollment_requests 
             WHERE status IN ('approved', 'rejected')
@@ -2145,7 +2145,7 @@ app.get('/api/early-registrations', async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT id, school_year, grade_level, 
-                   CONCAT(last_name, ', ', first_name, ' ', COALESCE(middle_name, ''), ' ', COALESCE(ext_name, '')) as learner_name,
+                   last_name || ', ' || first_name || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') as learner_name,
                    lrn, current_address, contact_number, registration_date, created_at
             FROM early_registration 
             ORDER BY created_at DESC
@@ -3214,7 +3214,7 @@ app.get('/check-status/:token', async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT id, request_token, status, gmail_address,
-                   CONCAT(last_name, ', ', first_name, ' ', COALESCE(middle_name, '')) as learner_name,
+                   last_name || ', ' || first_name || ' ' || COALESCE(middle_name || '', '') as learner_name,
                    grade_level, created_at, reviewed_at, rejection_reason
             FROM enrollment_requests 
             WHERE request_token = $1
@@ -3994,7 +3994,7 @@ app.post('/api/sections/snapshots', async (req, res) => {
                 s.first_name,
                 s.middle_name,
                 s.ext_name,
-                CONCAT(s.last_name, ', ', s.first_name, ' ', COALESCE(s.middle_name, ''), ' ', COALESCE(s.ext_name, '')) AS full_name,
+                s.last_name || ', ' || s.first_name || ' ' || COALESCE(s.middle_name || ' ', '') || COALESCE(s.ext_name, '') AS full_name,
                 s.current_address,
                 s.section_id,
                 sec.section_name,
@@ -4935,7 +4935,7 @@ app.put('/api/students/:id/recover', async (req, res) => {
 
         // Get student info
         const studentResult = await client.query(
-            `SELECT CONCAT(last_name, ', ', first_name, ' ', COALESCE(middle_name, ''), ' ', COALESCE(ext_name, '')) as full_name FROM students WHERE id = $1`,
+            `SELECT last_name || ', ' || first_name || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') as full_name FROM students WHERE id = $1`,
             [studentId]
         );
 
@@ -4981,7 +4981,7 @@ app.delete('/api/students/:id', async (req, res) => {
 
         // Get student info
         const studentResult = await client.query(
-            `SELECT CONCAT(last_name, ', ', first_name, ' ', COALESCE(middle_name, ''), ' ', COALESCE(ext_name, '')) as full_name FROM students WHERE id = $1`,
+            `SELECT last_name || ', ' || first_name || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') as full_name FROM students WHERE id = $1`,
             [studentId]
         );
 
@@ -5027,7 +5027,7 @@ app.get('/api/students/archived', async (req, res) => {
                 s.first_name,
                 NULL::VARCHAR as middle_name,
                 NULL::VARCHAR as ext_name,
-                CONCAT(s.last_name, ', ', s.first_name) AS full_name,
+                s.last_name || ', ' || s.first_name AS full_name,
                 NULL::INTEGER as age,
                 NULL::VARCHAR as sex,
                 NULL::VARCHAR as contact_number,
@@ -5063,7 +5063,7 @@ app.get('/api/students/all', async (req, res) => {
                 s.last_name,
                 s.first_name,
                 NULL::VARCHAR as middle_name,
-                CONCAT(s.last_name, ', ', s.first_name) AS full_name,
+                s.last_name || ', ' || s.first_name AS full_name,
                 NULL::VARCHAR as ext_name,
                 NULL::INTEGER as age,
                 NULL::VARCHAR as sex,
@@ -5101,7 +5101,7 @@ app.get('/api/students/all', async (req, res) => {
                 er.first_name,
                 er.middle_name,
                 COALESCE(er.ext_name, '') as ext_name,
-                CONCAT(er.last_name, ', ', er.first_name, ' ', COALESCE(er.middle_name, ''), ' ', COALESCE(er.ext_name, '')) as full_name,
+                er.last_name || ', ' || er.first_name || ' ' || COALESCE(er.middle_name || ' ', '') || COALESCE(er.ext_name, '') as full_name,
                 COALESCE(er.age, 0) as age,
                 COALESCE(er.sex, 'N/A') as sex,
                 er.contact_number,
@@ -5273,7 +5273,7 @@ app.get('/api/teachers', async (req, res) => {
                 NULL::VARCHAR as middle_name,
                 last_name,
                 NULL::VARCHAR as ext_name,
-                CONCAT(first_name, ' ', last_name) AS full_name,
+                first_name || ' ' || last_name AS full_name,
                 email,
                 phone as contact_number,
                 NULL::DATE as birthday,
@@ -5309,7 +5309,7 @@ app.get('/api/teachers', async (req, res) => {
                         middle_name,
                         last_name,
                         ext_name,
-                        CONCAT(first_name, ' ', COALESCE(middle_name || ' ', ''), last_name, COALESCE(' ' || ext_name, '')) AS full_name,
+                        first_name || ' ' || COALESCE(middle_name || ' ', '') || last_name || COALESCE(' ' || ext_name, '') AS full_name,
                         email,
                         contact_number,
                         birthday,
@@ -6063,8 +6063,8 @@ app.get('/api/guidance/behavior-reports/archived', async (req, res) => {
 
         const result = await pool.query(`
             SELECT a.id, a.original_id, a.student_id, a.section_id, a.teacher_id, a.report_date, a.category, a.severity, a.notes, a.archived_by, a.archived_at,
-                   CONCAT(s.last_name, ', ', s.first_name, ' ', COALESCE(s.middle_name, '')) AS student_full_name,
-                   CONCAT(t.last_name, ', ', t.first_name) AS teacher_name,
+                   s.last_name || ', ' || s.first_name || ' ' || COALESCE(s.middle_name || '', '') AS student_full_name,
+                   t.last_name || ', ' || t.first_name AS teacher_name,
                    sec.section_name
             FROM student_behavior_reports_archive a
             LEFT JOIN students s ON s.id = a.student_id
@@ -6778,7 +6778,7 @@ app.get('/api/admin/test-pending-query', async (req, res) => {
             SELECT 
                 'ER' || er.id::text as id,
                 er.id as enrollment_id,
-                CONCAT(er.last_name, ', ', er.first_name) as full_name,
+                er.last_name || ', ' || er.first_name as full_name,
                 er.grade_level,
                 er.school_year
             FROM early_registration er
@@ -6873,7 +6873,7 @@ app.get('/api/debug/pending-students', async (req, res) => {
             SELECT 
                 'ER' || er.id::text as id,
                 er.id as enrollment_id,
-                CONCAT(er.last_name, ', ', er.first_name) as full_name,
+                er.last_name || ', ' || er.first_name as full_name,
                 er.lrn,
                 er.grade_level,
                 COALESCE(er.sex, 'N/A') as sex,
