@@ -303,6 +303,7 @@ const enrollmentLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
+    trustProxy: 1, // Trust 1 proxy (Render's load balancer)
 });
 
 // Limit document request submissions to 3 per hour per IP
@@ -315,6 +316,7 @@ const documentRequestLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
+    trustProxy: 1, // Trust 1 proxy (Render's load balancer)
 });
 
 // General API rate limiter (100 requests per 15 minutes)
@@ -327,6 +329,7 @@ const apiLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
+    trustProxy: 1, // Trust 1 proxy (Render's load balancer)
 });
 
 // (moved) session + parsers are now registered at the very top

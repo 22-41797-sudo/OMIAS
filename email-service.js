@@ -1,13 +1,20 @@
 require('dotenv').config();
 const nodemailer = require('nodemailer');
 
-// Create transporter for Gmail
+// Create transporter for Gmail with connection timeout settings
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_PASSWORD,
     },
+    connectionUrl: `smtp://gmail.com`,
+    connectionTimeout: 10000, // 10 second timeout
+    socketTimeout: 10000, // 10 second socket timeout
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // Use TLS, not SSL
+    requireTLS: true,
 });
 
 /**
@@ -99,13 +106,27 @@ async function sendEnrollmentStatusUpdate(studentEmail, studentName, requestToke
         console.log(`   Student: ${studentName} | Token: ${requestToken}`);
         return true;
     } catch (err) {
-        console.error(`❌ FAILED to send enrollment ${status} email to ${studentEmail}:`);
-        console.error(`   Error: ${err.message}`);
+        console.error(`\n❌ FAILED to send enrollment ${status} email to ${studentEmail}:`);
+        console.error(`   Error Type: ${err.code || err.name}`);
+        console.error(`   Error Message: ${err.message}`);
         console.error(`   Student: ${studentName} | Token: ${requestToken}`);
-        console.error('   This is likely due to:');
-        console.error('   1. Missing/invalid GMAIL_USER or GMAIL_PASSWORD on Render');
-        console.error('   2. Gmail account needs 2-factor authentication enabled');
-        console.error('   3. Must use App Password, not regular Gmail password');
+        
+        // Provide specific troubleshooting based on error type
+        if (err.message.includes('timeout') || err.code === 'ETIMEDOUT' || err.code === 'ESOCKETTIMEDOUT') {
+            console.error(`\n   ⏱️ CONNECTION TIMEOUT - Gmail SMTP server not responding`);
+            console.error(`   Possible causes:`);
+            console.error(`   1. Network connectivity issues on Render`);
+            console.error(`   2. Gmail SMTP server temporarily unreachable`);
+            console.error(`   3. Port 587 (TLS) blocked by network firewall`);
+        } else if (err.message.includes('Invalid login') || err.code === 'EAUTH') {
+            console.error(`\n   🔐 AUTHENTICATION FAILED - Invalid Gmail credentials`);
+            console.error(`   Possible causes:`);
+            console.error(`   1. GMAIL_USER or GMAIL_PASSWORD is incorrect on Render`);
+            console.error(`   2. Gmail account doesn't have 2-factor authentication enabled`);
+            console.error(`   3. Not using App Password (must be 16 characters)`);
+        } else {
+            console.error(`\n   Unknown error. Check Render logs for more details.`);
+        }
         return false;
     }
 }
@@ -196,13 +217,27 @@ async function sendDocumentRequestStatusUpdate(studentEmail, studentName, reques
         console.log(`   Student: ${studentName} | Document: ${documentType} | Token: ${requestToken}`);
         return true;
     } catch (err) {
-        console.error(`❌ FAILED to send document request ${status} email to ${studentEmail}:`);
-        console.error(`   Error: ${err.message}`);
+        console.error(`\n❌ FAILED to send document request ${status} email to ${studentEmail}:`);
+        console.error(`   Error Type: ${err.code || err.name}`);
+        console.error(`   Error Message: ${err.message}`);
         console.error(`   Student: ${studentName} | Document: ${documentType} | Token: ${requestToken}`);
-        console.error('   This is likely due to:');
-        console.error('   1. Missing/invalid GMAIL_USER or GMAIL_PASSWORD on Render');
-        console.error('   2. Gmail account needs 2-factor authentication enabled');
-        console.error('   3. Must use App Password, not regular Gmail password');
+        
+        // Provide specific troubleshooting based on error type
+        if (err.message.includes('timeout') || err.code === 'ETIMEDOUT' || err.code === 'ESOCKETTIMEDOUT') {
+            console.error(`\n   ⏱️ CONNECTION TIMEOUT - Gmail SMTP server not responding`);
+            console.error(`   Possible causes:`);
+            console.error(`   1. Network connectivity issues on Render`);
+            console.error(`   2. Gmail SMTP server temporarily unreachable`);
+            console.error(`   3. Port 587 (TLS) blocked by network firewall`);
+        } else if (err.message.includes('Invalid login') || err.code === 'EAUTH') {
+            console.error(`\n   🔐 AUTHENTICATION FAILED - Invalid Gmail credentials`);
+            console.error(`   Possible causes:`);
+            console.error(`   1. GMAIL_USER or GMAIL_PASSWORD is incorrect on Render`);
+            console.error(`   2. Gmail account doesn't have 2-factor authentication enabled`);
+            console.error(`   3. Not using App Password (must be 16 characters)`);
+        } else {
+            console.error(`\n   Unknown error. Check Render logs for more details.`);
+        }
         return false;
     }
 }
