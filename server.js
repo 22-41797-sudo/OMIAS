@@ -929,6 +929,8 @@ app.get('/guidance/behavior-archive', (req, res) => {
 // Guidance Behavior Analytics API (DSS-powered)
 app.get('/api/guidance/behavior-analytics', async (req, res) => {
     try {
+        console.log('📊 Loading behavior analytics...');
+        
         // Get all behavior reports with full details
         const reportsResult = await pool.query(`
             SELECT 
@@ -943,14 +945,16 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
                 r.is_done,
                 COALESCE(s.last_name, '') || ', ' || COALESCE(s.first_name, '') || ' ' || COALESCE(s.middle_name || '', '') AS student_full_name,
                 COALESCE(t.last_name, '') || ', ' || COALESCE(t.first_name, '') AS teacher_name,
-                sec.section_name,
-                sec.grade_level
+                COALESCE(sec.section_name, 'N/A') AS section_name,
+                COALESCE(sec.grade_level, 'N/A') AS grade_level
             FROM student_behavior_reports r
             LEFT JOIN students s ON s.id = r.student_id
             LEFT JOIN teachers t ON t.id = r.teacher_id
             LEFT JOIN sections sec ON sec.id = r.section_id
             ORDER BY r.report_date DESC
         `);
+
+        console.log('📋 Found', reportsResult.rows.length, 'reports');
 
         // Get unique students
         const studentsResult = await pool.query(`
@@ -960,7 +964,7 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
                 s.middle_name,
                 s.last_name,
                 COALESCE(s.last_name, '') || ', ' || COALESCE(s.first_name, '') || ' ' || COALESCE(s.middle_name || '', '') AS full_name,
-                sec.section_name
+                COALESCE(sec.section_name, 'N/A') AS section_name
             FROM students s
             LEFT JOIN sections sec ON sec.id = s.section_id
             WHERE s.id IN (
@@ -968,13 +972,36 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
             )
         `);
 
+        console.log('👥 Found', studentsResult.rows.length, 'students with reports');
+
         // ===== DSS ENGINE: ANALYZE ALL REPORTS =====
         const reports = reportsResult.rows;
-        const dashboardAnalysis = dssEngine.analyzeAllReports(reports);
+        
+        let dashboardAnalysis = {};
+        try {
+            if (dssEngine && dssEngine.analyzeAllReports) {
+                dashboardAnalysis = dssEngine.analyzeAllReports(reports);
+            } else {
+                console.warn('⚠️ DSS Engine not available, using empty analysis');
+                dashboardAnalysis = { totalReports: reports.length };
+            }
+        } catch (dssErr) {
+            console.error('⚠️ DSS Engine error:', dssErr.message);
+            dashboardAnalysis = { totalReports: reports.length, dssError: true };
+        }
 
         // ===== ADD RECOMMENDATIONS TO EACH REPORT =====
         const reportsWithRecommendations = reports.map(report => {
-            const recommendations = dssEngine.generateRecommendations(report, reports);
+            let recommendations = [];
+            try {
+                if (dssEngine && dssEngine.generateRecommendations) {
+                    recommendations = dssEngine.generateRecommendations(report, reports);
+                }
+            } catch (recErr) {
+                console.warn('⚠️ Recommendation generation error for report', report.id, ':', recErr.message);
+                recommendations = [];
+            }
+            
             return {
                 ...report,
                 recommendations: recommendations,
@@ -982,6 +1009,8 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
             };
         });
 
+        console.log('✅ Successfully loaded behavior analytics');
+        
         res.json({
             success: true,
             reports: reportsWithRecommendations,
@@ -989,8 +1018,8 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
             dashboardAnalysis: dashboardAnalysis,
         });
     } catch (err) {
-        console.error('Guidance behavior analytics error:', err);
-        res.status(500).json({ success: false, error: 'Failed to load analytics' });
+        console.error('💥 Guidance behavior analytics error:', err);
+        res.status(500).json({ success: false, error: 'Failed to load analytics: ' + err.message });
     }
 });
 
