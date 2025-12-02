@@ -24,6 +24,9 @@
         <span class="school-name-text">Mainaga San Francisco Integrated School</span>
       </div>
       <div class="navbar-logout">
+        <div class="navbar-adviser-info">
+          <span id="adviserNameDisplay" class="adviser-name">—</span>
+        </div>
         <button class="notification-btn" onclick="switchTab(event, 'messages-tab')" title="Messages from Guidance">
           <span class="bell-icon">🔔</span>
           <span id="notificationBadge" class="notification-badge hidden">0</span>
@@ -566,7 +569,7 @@
       const t = data.teacher;
       const full = [t.first_name, t.middle_name, t.last_name].filter(Boolean).join(' ');
       console.log('Teacher full name:', full); // DEBUG
-      document.getElementById('profName').textContent = full;
+      document.getElementById('profName').textContent = full || '—';
       document.getElementById('profUsername').textContent = t.username || '—';
       document.getElementById('profEmail').textContent = t.email || '—';
       document.getElementById('profContact').textContent = t.contact_number || '—';
@@ -584,6 +587,8 @@
         const chosen = resolved.section;
         currentSectionId = chosen.id;
         document.getElementById('currentSectionName').textContent = chosen.section_name;
+        // Display adviser name in navbar
+        document.getElementById('adviserNameDisplay').textContent = chosen.adviser_name || req.session.user.name || '—';
         await loadStudents();
         await loadSectionReports();
         return;
@@ -595,6 +600,7 @@
       if (!data.success || !data.sections || data.sections.length === 0) {
         document.getElementById('currentSectionName').textContent = 'Not assigned';
         document.getElementById('currentSectionCount').textContent = '0';
+        document.getElementById('adviserNameDisplay').textContent = '—';
         console.warn('No sections found for this teacher'); // DEBUG
         currentSectionId = null;
         // Clear tables
@@ -608,6 +614,8 @@
       const chosen = data.sections.find(s => (s.grade_level || '').toLowerCase() === 'non-graded') || data.sections[0];
       currentSectionId = chosen.id;
       document.getElementById('currentSectionName').textContent = chosen.section_name;
+      // Display adviser name in navbar
+      document.getElementById('adviserNameDisplay').textContent = chosen.adviser_name || '—';
       // Load students and reports for this section
       await loadStudents();
       await loadSectionReports();

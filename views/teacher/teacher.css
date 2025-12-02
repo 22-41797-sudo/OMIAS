@@ -90,6 +90,20 @@ body {
   display: none;
 }
 
+/* Adviser info display in navbar */
+.navbar-adviser-info {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-right: 1px solid #e2e8f0;
+}
+.adviser-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
 /* Layout */
 .container { max-width: 1200px; margin: 28px auto; padding: 0 20px; }
 .header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px; }
