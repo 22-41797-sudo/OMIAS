@@ -761,7 +761,7 @@ q<!DOCTYPE html>
                     <span class="text">Teachers</span>
                 </a>
             </li>
-            <li>
+            <li style="display:none;">
                 <a href="#" id="students-link" data-content-id="students-content">
                     <span class="icon"><i class="fas fa-user-graduate"></i></span>
                     <span class="text">Students</span>
@@ -1005,7 +1005,8 @@ q<!DOCTYPE html>
                                                         data-student-id="<%= student.enrollment_id %>" 
                                                         data-student-name="<%= student.full_name %>" 
                                                         data-current-section="<%= student.assigned_section || '' %>"
-                                                        onclick="openAssignSectionModal(this.dataset.studentId, this.dataset.studentName, this.dataset.currentSection)">
+                                                        onclick="openAssignSectionModal(this.dataset.studentId, this.dataset.studentName, this.dataset.currentSection)"
+                                                        style="display:none;">
                                                         <i class="fas fa-users"></i> Assign
                                                     </button>
                                                 <% } else { %>
