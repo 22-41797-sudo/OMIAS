@@ -4621,33 +4621,23 @@ q<!DOCTYPE html>
                 let maleCount = m.students.male;
                 let femaleCount = m.students.female;
                 
-                // If using snapshot, try to get actual gender data from student details
-                if (window.currentSnapshotData && Array.isArray(window.currentSnapshotData.items)) {
-                    try {
-                        const studRes = await fetch(`/api/snapshots/${window.currentSnapshotData.id}/students`);
-                        const studData = await studRes.json();
-                        if (studData && studData.success && Array.isArray(studData.students)) {
-                            // For now, use 50/50 distribution or improve later with actual gender data
-                            const totalStudents = window.currentSnapshotData.items.reduce((s, it) => s + (Number(it.count) || 0), 0);
-                            maleCount = Math.round(totalStudents * 0.5);
-                            femaleCount = totalStudents - maleCount;
-                        }
-                    } catch (e) { console.warn('Failed to get snapshot student details', e); }
-                }
-                
                 renderGenderDistributionChart(maleCount, femaleCount);
                 
                 // Load barangay distribution and render chart
                 let barangayDistribution = {};
                 if (window.currentSnapshotData && Array.isArray(window.currentSnapshotData.items)) {
-                    // Get barangay data from snapshot students
+                    // Get barangay data from snapshot student details
                     try {
-                        const studRes = await fetch(`/api/snapshots/${window.currentSnapshotData.id}/students`);
+                        const studRes = await fetch(`/api/snapshots/${window.currentSnapshotData.id}/full-data`);
                         const studData = await studRes.json();
-                        if (studData && studData.success && Array.isArray(studData.students)) {
-                            for (const student of studData.students) {
-                                const barangay = student.barangay || 'Unknown';
-                                barangayDistribution[barangay] = (barangayDistribution[barangay] || 0) + 1;
+                        if (studData && studData.success && Array.isArray(studData.sections)) {
+                            for (const section of studData.sections) {
+                                if (Array.isArray(section.students)) {
+                                    for (const student of section.students) {
+                                        const barangay = student.barangay || 'Others';
+                                        barangayDistribution[barangay] = (barangayDistribution[barangay] || 0) + 1;
+                                    }
+                                }
                             }
                         }
                     } catch (e) { console.warn('Failed to load snapshot barangay distribution', e); }
