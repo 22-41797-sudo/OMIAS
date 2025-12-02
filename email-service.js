@@ -1,20 +1,19 @@
 require('dotenv').config();
 const nodemailer = require('nodemailer');
 
-// Create transporter for Gmail with connection timeout settings
+// Create transporter for Gmail with SSL connection (more reliable on Render)
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465, // SSL port (more reliable than 587 TLS)
+    secure: true, // true for 465, false for other ports
     auth: {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_PASSWORD,
     },
-    connectionUrl: `smtp://gmail.com`,
-    connectionTimeout: 10000, // 10 second timeout
-    socketTimeout: 10000, // 10 second socket timeout
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // Use TLS, not SSL
-    requireTLS: true,
+    connectionTimeout: 15000, // 15 second timeout
+    socketTimeout: 15000, // 15 second socket timeout
+    logger: true, // Enable logging for debugging
+    debug: true, // Enable debug output
 });
 
 /**
