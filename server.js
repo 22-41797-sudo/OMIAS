@@ -3649,8 +3649,6 @@ app.put('/api/guidance/document-requests/:id/status', async (req, res) => {
                 console.warn('⚠️ Email service not available, skipping document request email');
             }
         }
-            );
-        }
 
         res.json({
             success: true,
