@@ -2003,7 +2003,7 @@ q<!DOCTYPE html>
                 setTimeout(() => loadUnassignedStudents(), 100); // Load unassigned students when switching to this tab
             } else if (contentId === 'sections-content') {
                 pageTitle.innerText = 'Sections Management';
-                loadSections(); // Load sections when switching to this tab
+                setTimeout(() => loadSections(), 100); // Load sections when switching to this tab
             } else if (contentId === 'settings-content') {
                 pageTitle.innerText = 'Settings';
             }
@@ -2738,22 +2738,36 @@ q<!DOCTYPE html>
         
         // --- Section Management Functions ---
         function loadSections() {
+            console.log('🔄 loadSections() called');
             fetch('/api/sections/all')
-                .then(r => r.json())
+                .then(r => {
+                    console.log('API response status:', r.status);
+                    return r.json();
+                })
                 .then(data => {
+                    console.log('📊 API response data:', data);
                     if (!data.success) {
+                        console.error('API error:', data.message);
                         alert('Error loading sections: ' + (data.message || 'Unknown error'));
                         return;
                     }
                     
                     const tbody = document.getElementById('sections-table-body');
+                    if (!tbody) {
+                        console.error('❌ sections-table-body element not found!');
+                        return;
+                    }
+                    
+                    console.log('Found tbody element, clearing and populating...');
                     tbody.innerHTML = '';
                     
                     if (data.sections.length === 0) {
+                        console.log('⚠️ No sections found in API response');
                         tbody.innerHTML = '<tr><td colspan="8" class="text-center" style="padding: 2rem;">No sections found. Click "Add New Section" to create one.</td></tr>';
                         return;
                     }
                     
+                    console.log(`✅ Found ${data.sections.length} sections, rendering...`);
                     data.sections.forEach(section => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
@@ -2794,9 +2808,14 @@ q<!DOCTYPE html>
                         `;
                         tbody.appendChild(row);
                     });
+                    console.log('✨ Sections table rendered successfully');
                 })
                 .catch(err => {
-                    console.error('Error loading sections:', err);
+                    console.error('❌ Error loading sections:', err);
+                    const tbody = document.getElementById('sections-table-body');
+                    if (tbody) {
+                        tbody.innerHTML = '<tr><td colspan="8" class="text-center" style="padding: 2rem; color: red;">Failed to load sections. Check console for details.</td></tr>';
+                    }
                     alert('Failed to load sections. Please refresh the page.');
                 });
         }
