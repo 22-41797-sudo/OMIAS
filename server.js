@@ -3984,12 +3984,27 @@ app.post('/api/sections/snapshots', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Snapshot name is required' });
     }
 
-    // Helper function to extract barangay from address
+    // Helper function to extract barangay from address (flexible - takes first word or main barangay)
     const extractBarangay = (address) => {
-        if (!address) return null;
-        // Extract first word as barangay name (e.g., "Manaiga Mabini Batangas" → "Manaiga")
-        const parts = String(address).trim().split(/\s+/);
-        return parts.length > 0 ? parts[0] : null;
+        if (!address) return 'Others';
+        const addressStr = String(address).trim();
+        
+        // Common barangay patterns in the school area
+        const barangayPatterns = [
+            'San Francisco', 'Mabini', 'Mainaga', 'Brgy', 'Barangay',
+            'Talahib', 'Marilog', 'Suisui', 'Layaw', 'Maharlika'
+        ];
+        
+        // Check if any known barangay is in the address
+        for (const pattern of barangayPatterns) {
+            if (addressStr.toLowerCase().includes(pattern.toLowerCase())) {
+                return pattern;
+            }
+        }
+        
+        // Otherwise, take the first word as barangay
+        const parts = addressStr.split(/[\s,]+/).filter(p => p.length > 0);
+        return parts.length > 0 ? parts[0] : 'Others';
     };
 
     const snapshotName = String(name).trim();

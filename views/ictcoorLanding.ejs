@@ -3713,8 +3713,21 @@ q<!DOCTYPE html>
             if (!name) return alert('Enter a snapshot name first');
             openGenericConfirmModal('Save snapshot', `Save current section counts as "${escapeHtml(name)}"?`, async () => {
                 try {
-                    const res = await fetch('/api/sections/snapshots', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
-                    const data = await res.json();
+                    const res = await fetch('/api/sections/snapshots', { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ name }) 
+                    });
+                    
+                    const text = await res.text();
+                    let data;
+                    try {
+                        data = JSON.parse(text);
+                    } catch (parseErr) {
+                        console.error('Failed to parse response:', text);
+                        throw new Error(`Server error: ${res.status} ${res.statusText}`);
+                    }
+                    
                     if (data && data.success) {
                         try { showToast(data.message || 'Snapshot saved', 'success'); } catch (e) { alert(data.message || 'Snapshot saved'); }
                         input.value = '';
@@ -3722,7 +3735,10 @@ q<!DOCTYPE html>
                     } else {
                         alert('Error: ' + (data.message || 'Failed to save snapshot'));
                     }
-                } catch (err) { console.error('Save snapshot error', err); alert('Error saving snapshot'); }
+                } catch (err) { 
+                    console.error('Error saving snapshot:', err); 
+                    alert('Error saving snapshot: ' + err.message); 
+                }
             });
         }
 
