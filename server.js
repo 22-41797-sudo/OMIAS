@@ -3973,6 +3973,116 @@ app.get('/api/sections/all', async (req, res) => {
     }
 });
 
+// Save snapshot with student dataset
+app.post('/api/snapshots/dataset', async (req, res) => {
+    console.log('📸 POST /api/snapshots/dataset called');
+    
+    if (!req.session.user || req.session.user.role !== 'ictcoor') {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    const { snapshotName, students } = req.body || {};
+    if (!snapshotName || !String(snapshotName).trim()) {
+        return res.status(400).json({ success: false, message: 'Snapshot name is required' });
+    }
+
+    if (!Array.isArray(students) || students.length === 0) {
+        return res.status(400).json({ success: false, message: 'No students provided' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // Create tables if they don't exist
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS section_snapshot_groups (
+                id SERIAL PRIMARY KEY,
+                snapshot_name TEXT NOT NULL,
+                created_by INTEGER,
+                is_archived BOOLEAN DEFAULT false,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS section_snapshot_items (
+                id SERIAL PRIMARY KEY,
+                group_id INTEGER REFERENCES section_snapshot_groups(id) ON DELETE CASCADE,
+                section_id INTEGER,
+                section_name TEXT,
+                grade_level TEXT,
+                count INTEGER,
+                adviser_name TEXT,
+                student_name TEXT,
+                last_name TEXT,
+                first_name TEXT,
+                current_address TEXT,
+                barangay_extracted TEXT,
+                teacher_name TEXT
+            )
+        `);
+
+        // Create snapshot group
+        const groupResult = await client.query(
+            'INSERT INTO section_snapshot_groups (snapshot_name, created_by) VALUES ($1, $2) RETURNING id, snapshot_name, created_at',
+            [String(snapshotName).trim(), req.session.user.id || null]
+        );
+        const groupId = groupResult.rows[0].id;
+
+        // Insert each student as a snapshot item
+        for (const student of students) {
+            const barangay = extractBarangayFlexible(student.barangay || student.current_address);
+            await client.query(`
+                INSERT INTO section_snapshot_items 
+                (group_id, section_name, grade_level, student_name, current_address, barangay_extracted, adviser_name)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `, [
+                groupId,
+                student.sectionLevel || student.section_name || '-',
+                student.grade_level || '-',
+                student.name || student.full_name || '-',
+                student.current_address || '-',
+                barangay,
+                student.adviser || student.adviser_name || '-'
+            ]);
+        }
+
+        await client.query('COMMIT');
+        res.json({ 
+            success: true, 
+            message: `Snapshot '${snapshotName}' saved with ${students.length} students`
+        });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Error saving snapshot dataset:', err);
+        res.status(500).json({ success: false, message: 'Error saving snapshot: ' + err.message });
+    } finally {
+        client.release();
+    }
+});
+
+// Helper function for flexible barangay extraction
+function extractBarangayFlexible(address) {
+    if (!address) return 'Others';
+    const addressStr = String(address).trim();
+    
+    // Common barangay patterns
+    const barangayPatterns = [
+        'San Francisco', 'Mabini', 'Mainaga', 'Brgy', 'Barangay',
+        'Talahib', 'Marilog', 'Suisui', 'Layaw', 'Maharlika'
+    ];
+    
+    for (const pattern of barangayPatterns) {
+        if (addressStr.toLowerCase().includes(pattern.toLowerCase())) {
+            return pattern;
+        }
+    }
+    
+    const parts = addressStr.split(/[\s,]+/).filter(p => p.length > 0);
+    return parts.length > 0 ? parts[0] : 'Others';
+}
+
 // New snapshot/grouped snapshot endpoints
 app.post('/api/sections/snapshots', async (req, res) => {
     console.log('📸 POST /api/sections/snapshots called');
