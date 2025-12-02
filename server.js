@@ -4694,8 +4694,8 @@ app.put('/api/students/:id/reassign', async (req, res) => {
                 INSERT INTO students (
                     lrn, school_year, grade_level, last_name, first_name, middle_name, ext_name,
                     birthday, age, sex, religion, current_address, contact_number,
-                    enrollment_status, section_id
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                    enrollment_status, section_id, ip_community
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
                 ON CONFLICT DO NOTHING
             `, [
                 earlyReg.lrn,
@@ -4712,7 +4712,8 @@ app.put('/api/students/:id/reassign', async (req, res) => {
                 earlyReg.current_address,
                 earlyReg.contact_number || null,
                 'active',
-                newSectionId
+                newSectionId,
+                'N/A'
             ]);
 
             // Increment new section count
@@ -5126,6 +5127,7 @@ app.get('/api/students/all', async (req, res) => {
             FROM students s
             LEFT JOIN sections sec ON s.section_id = sec.id
             WHERE s.enrollment_status = 'active'
+            AND s.grade_level IN ('Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Non-Graded')
             ORDER BY 
                 CASE 
                     WHEN s.grade_level = 'Kindergarten' THEN 1
@@ -5166,6 +5168,7 @@ app.get('/api/students/all', async (req, res) => {
             WHERE NOT EXISTS (
                 SELECT 1 FROM students st WHERE st.enrollment_id = er.id::text
             )
+            AND er.grade_level IN ('Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Non-Graded')
             ORDER BY 
                 CASE 
                     WHEN er.grade_level = 'Kindergarten' THEN 1
