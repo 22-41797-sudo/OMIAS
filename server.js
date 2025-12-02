@@ -5159,7 +5159,7 @@ app.get('/api/student/:id', async (req, res) => {
             // Query early_registration table
             const result = await pool.query(`
                 SELECT 
-                    $1 as id,
+                    'ER' || id::text as id,
                     gmail_address,
                     school_year,
                     lrn,
@@ -5168,7 +5168,7 @@ app.get('/api/student/:id', async (req, res) => {
                     first_name,
                     middle_name,
                     ext_name,
-                    CONCAT(last_name, ', ', first_name, ' ', COALESCE(middle_name, ''), ' ', COALESCE(ext_name, '')) AS full_name,
+                    (last_name || ', ' || first_name || ' ' || COALESCE(middle_name, '') || ' ' || COALESCE(ext_name, '')) AS full_name,
                     birthday,
                     age,
                     sex,
@@ -5184,13 +5184,13 @@ app.get('/api/student/:id', async (req, res) => {
                     contact_number,
                     registration_date as enrollment_date,
                     printed_name,
-                    NULL as assigned_section,
+                    assigned_section,
                     signature_image_path,
                     created_at,
                     updated_at
                 FROM early_registration
-                WHERE id = $2
-            `, [studentId, erNumericId]);
+                WHERE id = $1
+            `, [erNumericId]);
             
             if (result.rows.length === 0) {
                 return res.status(404).json({ success: false, message: 'Early registration student not found' });
@@ -5199,12 +5199,11 @@ app.get('/api/student/:id', async (req, res) => {
             return res.json(result.rows[0]);
         }
         
-        // For regular students, query students table
+        // For regular students, query students table with only existing columns
         let result = await pool.query(`
             SELECT 
                 id,
                 enrollment_id,
-                gmail_address,
                 school_year,
                 lrn,
                 grade_level,
@@ -5212,22 +5211,26 @@ app.get('/api/student/:id', async (req, res) => {
                 first_name,
                 middle_name,
                 ext_name,
-                CONCAT(last_name, ', ', first_name, ' ', COALESCE(middle_name, ''), ' ', COALESCE(ext_name, '')) AS full_name,
+                (last_name || ', ' || first_name || ' ' || COALESCE(middle_name, '') || ' ' || COALESCE(ext_name, '')) AS full_name,
                 birthday,
                 age,
                 sex,
                 religion,
                 current_address,
-                ip_community,
-                ip_community_specify,
-                pwd,
-                pwd_specify,
-                father_name,
-                mother_name,
                 guardian_name,
-                contact_number,
-                enrollment_date,
-                enrollment_status
+                guardian_contact,
+                created_at as enrollment_date,
+                enrollment_status,
+                NULL::text as gmail_address,
+                NULL::text as ip_community,
+                NULL::text as ip_community_specify,
+                NULL::text as pwd,
+                NULL::text as pwd_specify,
+                NULL::text as father_name,
+                NULL::text as mother_name,
+                NULL::text as printed_name,
+                NULL::text as signature_image_path,
+                NULL::text as assigned_section
             FROM students
             WHERE id = $1
         `, [studentId]);
