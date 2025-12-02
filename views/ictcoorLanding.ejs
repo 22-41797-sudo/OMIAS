@@ -1274,9 +1274,6 @@ q<!DOCTYPE html>
                 <button type="button" class="snapshot-tab active" onclick="switchSnapshotTab('summary')" style="padding:10px 16px; background:none; border:none; border-bottom:3px solid var(--primary-red); color:var(--primary-red); font-weight:600; cursor:pointer;">
                     📊 Summary
                 </button>
-                <button type="button" class="snapshot-tab" onclick="switchSnapshotTab('students')" style="padding:10px 16px; background:none; border:none; color:var(--gray-600); font-weight:600; cursor:pointer;">
-                    👥 Students by Barangay
-                </button>
             </div>
             
             <!-- Scrollable content -->
@@ -1301,57 +1298,7 @@ q<!DOCTYPE html>
                     </div>
                 </div>
 
-                <!-- Students by Barangay Tab -->
-                <div id="snapshot-students-tab" style="display:none;">
-                    <!-- Filter and Search Controls -->
-                    <div style="background:var(--gray-50); padding:12px 16px; border-radius:8px; margin-bottom:16px; border:1px solid var(--gray-200);">
-                        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-                            <!-- Search Bar -->
-                            <input 
-                                type="text" 
-                                id="snapshotStudentSearch" 
-                                placeholder="Search student name..."
-                                style="flex:1; min-width:200px; padding:8px 12px; border:1px solid var(--gray-300); border-radius:6px; font-size:13px;"
-                                onkeyup="filterSnapshotStudents()"
-                            />
-                            
-                            <!-- Barangay Filter -->
-                            <select 
-                                id="snapshotBarangayFilter" 
-                                style="padding:8px 12px; border:1px solid var(--gray-300); border-radius:6px; font-size:13px; cursor:pointer;"
-                                onchange="filterSnapshotStudents()"
-                            >
-                                <option value="">All Barangays</option>
-                            </select>
-                            
-                            <!-- Grade/Section Filter -->
-                            <select 
-                                id="snapshotGradeLevelFilter" 
-                                style="padding:8px 12px; border:1px solid var(--gray-300); border-radius:6px; font-size:13px; cursor:pointer;"
-                                onchange="filterSnapshotStudents()"
-                            >
-                                <option value="">All Grades/Sections</option>
-                            </select>
-                            
-                            <!-- Clear Filters Button -->
-                            <button 
-                                type="button" 
-                                class="btn btn-cancel" 
-                                style="padding:6px 12px; font-size:12px;" 
-                                onclick="clearSnapshotFilters()"
-                            >
-                                <i class="fas fa-times"></i> Clear
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Results Counter -->
-                    <div id="snapshotFilterResults" style="margin-bottom:12px; font-size:13px; color:var(--gray-600);">
-                    </div>
-                    
-                    <!-- Students View -->
-                    <div id="snapshot-barangay-view"></div>
-                </div>
+                <!-- END: Content Scrollable Area -->
             </div>
 
             <!-- Fixed close button -->
