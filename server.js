@@ -4021,6 +4021,7 @@ app.post('/api/snapshots/dataset', async (req, res) => {
                 current_address TEXT,
                 barangay_extracted TEXT,
                 teacher_name TEXT,
+                sex TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
@@ -4041,8 +4042,8 @@ app.post('/api/snapshots/dataset', async (req, res) => {
             
             await client.query(`
                 INSERT INTO section_snapshot_items 
-                (group_id, section_name, grade_level, student_full_name, current_address, barangay_extracted, adviser_name)
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                (group_id, section_name, grade_level, student_full_name, current_address, barangay_extracted, adviser_name, sex)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             `, [
                 groupId,
                 student.sectionLevel || student.section_name || '-',
@@ -4050,7 +4051,8 @@ app.post('/api/snapshots/dataset', async (req, res) => {
                 fullName,
                 student.current_address || '-',
                 barangay,
-                student.adviser || student.adviser_name || '-'
+                student.adviser || student.adviser_name || '-',
+                student.sex || 'N/A'
             ]);
         }
 
@@ -4375,7 +4377,7 @@ app.get('/api/snapshots/:id/full-data', async (req, res) => {
         const itemsRes = await pool.query(`
             SELECT 
                 id, group_id, section_name, grade_level, count, adviser_name,
-                student_full_name, current_address, barangay_extracted
+                student_full_name, current_address, barangay_extracted, sex
             FROM section_snapshot_items 
             WHERE group_id = $1
             ORDER BY grade_level, section_name, student_full_name
@@ -4404,7 +4406,8 @@ app.get('/api/snapshots/:id/full-data', async (req, res) => {
                 sections[sectionKey].students.push({
                     name: item.student_full_name,
                     barangay: item.barangay_extracted || 'Others',
-                    address: item.current_address || '-'
+                    address: item.current_address || '-',
+                    sex: item.sex || 'N/A'
                 });
                 sections[sectionKey].student_count++;
             }
@@ -5438,9 +5441,11 @@ app.get('/api/students/all', async (req, res) => {
                 s.last_name || ', ' || s.first_name AS full_name,
                 NULL::VARCHAR as ext_name,
                 NULL::INTEGER as age,
-                NULL::VARCHAR as sex,
+                s.sex,
                 NULL::VARCHAR as contact_number,
+                s.current_address,
                 sec.section_name as assigned_section,
+                sec.adviser_name as adviser_name,
                 COALESCE(s.enrollment_date, CURRENT_TIMESTAMP)::date as enrollment_date,
                 s.enrollment_status,
                 CASE WHEN s.is_archived IS NULL THEN false ELSE s.is_archived END as is_archived
@@ -5480,7 +5485,9 @@ app.get('/api/students/all', async (req, res) => {
                 COALESCE(er.age, 0) as age,
                 COALESCE(er.sex, 'N/A') as sex,
                 er.contact_number,
+                er.current_address,
                 NULL as assigned_section,
+                NULL as adviser_name,
                 er.created_at as enrollment_date,
                 'pending' as enrollment_status,
                 false as is_archived

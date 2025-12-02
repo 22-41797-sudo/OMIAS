@@ -2810,9 +2810,11 @@ q<!DOCTYPE html>
                         // Extract the necessary student data in the format expected by the API
                         const studentsForSnapshot = assignedStudents.map(s => ({
                             name: s.full_name,
-                            barangay: s.barangay,
+                            barangay: s.current_address,
                             sectionLevel: s.assigned_section,
-                            adviser: s.adviser_name
+                            adviser: s.adviser_name,
+                            sex: s.sex,
+                            current_address: s.current_address
                         }));
                         
                         if (studentsForSnapshot.length === 0) {
@@ -3829,22 +3831,18 @@ q<!DOCTYPE html>
                             background: white;
                         `;
 
-                        // Section header with grade level, section name, adviser
+                        // Section header with ONLY section name, adviser, and student count
                         const headerDiv = document.createElement('div');
                         headerDiv.style.cssText = `
                             background: linear-gradient(135deg, #8B0000 0%, #C41E3A 100%);
                             color: white;
                             padding: 16px;
                             display: grid;
-                            grid-template-columns: 1fr 1fr 1fr 1fr;
+                            grid-template-columns: 1fr 1fr 1fr;
                             gap: 16px;
                             font-weight: 600;
                         `;
                         headerDiv.innerHTML = `
-                            <div>
-                                <div style="font-size: 12px; opacity: 0.9;">Grade Level</div>
-                                <div style="font-size: 16px; font-weight: 700;">${escapeHtml(section.grade_level || '-')}</div>
-                            </div>
                             <div>
                                 <div style="font-size: 12px; opacity: 0.9;">Section</div>
                                 <div style="font-size: 16px; font-weight: 700;">${escapeHtml(section.section_name || '-')}</div>
@@ -3871,6 +3869,7 @@ q<!DOCTYPE html>
                                     <thead>
                                         <tr>
                                             <th>Student Name</th>
+                                            <th>Gender</th>
                                             <th>Barangay</th>
                                             <th>Address</th>
                                         </tr>
@@ -3882,6 +3881,7 @@ q<!DOCTYPE html>
                                 tableHtml += `
                                     <tr>
                                         <td>${escapeHtml(student.name || 'N/A')}</td>
+                                        <td>${escapeHtml(student.sex || 'N/A')}</td>
                                         <td><span style="background: var(--gray-100); padding: 4px 8px; border-radius: 4px; font-size: 13px;">📍 ${escapeHtml(student.barangay || 'Others')}</span></td>
                                         <td style="font-size: 13px; color: var(--gray-600);">${escapeHtml(student.address || '-')}</td>
                                     </tr>
