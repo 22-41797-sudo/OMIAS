@@ -3319,9 +3319,15 @@ app.post('/approve-request/:id', async (req, res) => {
 
         // Send approval notification email
         const learnerName = `${request.first_name} ${request.last_name}`;
-        await emailService.sendEnrollmentStatusUpdate(request.gmail_address, learnerName, request.request_token, 'approved');
-
+        
         await client.query('COMMIT');
+        client.release();
+
+        // Send approval notification email AFTER transaction completes (non-blocking)
+        // Don't await - let it send in background
+        emailService.sendEnrollmentStatusUpdate(request.gmail_address, learnerName, request.request_token, 'approved')
+            .catch(err => console.error('❌ Error sending approval email:', err.message));
+
         res.json({ success: true, message: 'Request approved successfully', early_registration_id: inserted.rows[0].id });
     } catch (err) {
         await client.query('ROLLBACK');
@@ -3334,7 +3340,7 @@ app.post('/approve-request/:id', async (req, res) => {
         });
         res.status(500).json({ success: false, message: 'Error approving request: ' + err.message });
     } finally {
-        client.release();
+        if (!client._released) client.release();
     }
 });
 
@@ -3368,9 +3374,10 @@ app.post('/reject-request/:id', async (req, res) => {
             WHERE id = $3
         `, [registrarId, reason || 'No reason provided', requestId]);
 
-        // Send rejection notification email
+        // Send rejection notification email (non-blocking)
         const learnerName = `${enrollmentRequest.first_name} ${enrollmentRequest.last_name}`;
-        await emailService.sendEnrollmentStatusUpdate(enrollmentRequest.gmail_address, learnerName, enrollmentRequest.request_token, 'rejected', reason || 'No reason provided');
+        emailService.sendEnrollmentStatusUpdate(enrollmentRequest.gmail_address, learnerName, enrollmentRequest.request_token, 'rejected', reason || 'No reason provided')
+            .catch(err => console.error('❌ Error sending rejection email:', err.message));
 
         res.json({ success: true, message: 'Request rejected' });
     } catch (err) {
