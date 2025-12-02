@@ -11,7 +11,13 @@ const fs = require('fs');
 const rateLimit = require('express-rate-limit');
 const dssEngine = require('./dss-engine'); // Import DSS Engine
 const PDFDocument = require('pdfkit'); // Import pdfkit for PDF generation
-const emailService = require('./email-service'); // Import email service for notifications
+let emailService;
+try {
+    emailService = require('./email-service'); // Import email service for notifications
+} catch (err) {
+    console.error('⚠️ Failed to load email service:', err.message);
+    emailService = null;
+}
 const compression = require('compression'); // Import compression middleware
 const { initializeDatabase } = require('./init-db'); // Import database initialization
 
@@ -3332,8 +3338,12 @@ app.post('/approve-request/:id', async (req, res) => {
         // Send approval notification email AFTER transaction completes (non-blocking)
         // Don't await - let it send in background so response isn't blocked
         console.log(`📧 Triggering approval email send to ${studentEmail} for ${learnerName}`);
-        emailService.sendEnrollmentStatusUpdate(studentEmail, learnerName, studentToken, 'approved')
-            .catch(err => console.error('❌ Error sending approval email:', err.message));
+        if (emailService) {
+            emailService.sendEnrollmentStatusUpdate(studentEmail, learnerName, studentToken, 'approved')
+                .catch(err => console.error('❌ Error sending approval email:', err.message));
+        } else {
+            console.warn('⚠️ Email service not available, skipping approval email');
+        }
 
         res.json({ success: true, message: 'Request approved successfully', early_registration_id: inserted.rows[0].id });
     } catch (err) {
@@ -3387,8 +3397,12 @@ app.post('/reject-request/:id', async (req, res) => {
 
         // Send rejection notification email (non-blocking)
         const learnerName = `${enrollmentRequest.first_name} ${enrollmentRequest.last_name}`;
-        emailService.sendEnrollmentStatusUpdate(enrollmentRequest.gmail_address, learnerName, enrollmentRequest.request_token, 'rejected', reason || 'No reason provided')
-            .catch(err => console.error('❌ Error sending rejection email:', err.message));
+        if (emailService) {
+            emailService.sendEnrollmentStatusUpdate(enrollmentRequest.gmail_address, learnerName, enrollmentRequest.request_token, 'rejected', reason || 'No reason provided')
+                .catch(err => console.error('❌ Error sending rejection email:', err.message));
+        } else {
+            console.warn('⚠️ Email service not available, skipping rejection email');
+        }
 
         res.json({ success: true, message: 'Request rejected' });
     } catch (err) {
@@ -3622,13 +3636,19 @@ app.put('/api/guidance/document-requests/:id/status', async (req, res) => {
 
         // Send email notification for status updates that warrant notification
         if (status === 'processing' || status === 'ready' || status === 'rejected') {
-            await emailService.sendDocumentRequestStatusUpdate(
-                documentRequest.email,
-                documentRequest.student_name,
-                documentRequest.request_token,
-                documentRequest.document_type,
-                status,
-                rejection_reason || null
+            if (emailService) {
+                await emailService.sendDocumentRequestStatusUpdate(
+                    documentRequest.email,
+                    documentRequest.student_name,
+                    documentRequest.request_token,
+                    documentRequest.document_type,
+                    status,
+                    rejection_reason || null
+                );
+            } else {
+                console.warn('⚠️ Email service not available, skipping document request email');
+            }
+        }
             );
         }
 
@@ -6712,6 +6732,10 @@ app.post('/api/test-email', async (req, res) => {
     
     if (!email) {
         return res.status(400).json({ success: false, error: 'Email required' });
+    }
+
+    if (!emailService) {
+        return res.status(400).json({ success: false, error: 'Email service not available' });
     }
 
     try {
