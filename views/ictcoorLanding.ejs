@@ -4205,10 +4205,7 @@ q<!DOCTYPE html>
                 `Delete student "${studentName}" permanently? This action cannot be undone.`,
                 async () => {
                     try {
-                        const url = fromArchive ? 
-                            `/api/students/${studentId}?from_archive=true` : 
-                            `/api/students/${studentId}`;
-                        const r = await fetch(url, { 
+                        const r = await fetch(`/api/students/${studentId}/delete`, { 
                             method: 'DELETE', 
                             headers: { 'Content-Type': 'application/json' }
                         });
