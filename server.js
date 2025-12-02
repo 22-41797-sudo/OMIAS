@@ -4566,7 +4566,7 @@ app.get('/api/sections/:id/students', async (req, res) => {
                 st.first_name,
                 COALESCE(st.sex, 'N/A') as sex,
                 COALESCE(st.age, 0) as age,
-                st.contact_number,
+                st.guardian_contact,
                 COALESCE(st.created_at, CURRENT_TIMESTAMP)::date as enrollment_date,
                 st.enrollment_status
             FROM students st
