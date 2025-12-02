@@ -3976,12 +3976,16 @@ app.get('/api/sections/all', async (req, res) => {
 // Save snapshot with student dataset
 app.post('/api/snapshots/dataset', async (req, res) => {
     console.log('📸 POST /api/snapshots/dataset called');
+    console.log('Session user:', req.session.user);
     
     if (!req.session.user || req.session.user.role !== 'ictcoor') {
-        return res.status(403).json({ success: false, message: 'Access denied' });
+        console.log('❌ Access denied - user role:', req.session.user?.role);
+        return res.status(403).json({ success: false, message: 'Access denied - only ICT Coordinator can import' });
     }
 
     const { snapshotName, students } = req.body || {};
+    console.log('Snapshot name:', snapshotName, 'Students count:', students?.length);
+    
     if (!snapshotName || !String(snapshotName).trim()) {
         return res.status(400).json({ success: false, message: 'Snapshot name is required' });
     }
@@ -4030,32 +4034,42 @@ app.post('/api/snapshots/dataset', async (req, res) => {
             [String(snapshotName).trim(), req.session.user.id || null]
         );
         const groupId = groupResult.rows[0].id;
+        console.log('Created snapshot group:', groupId);
 
         // Insert each student as a snapshot item
+        let insertedCount = 0;
         for (const student of students) {
             const barangay = extractBarangayFlexible(student.barangay || student.current_address);
-            const fullName = student.name || student.full_name || '-';
+            const fullName = student.name || student.full_name || 'Unknown';
+            const sectionLevel = student.sectionLevel || student.section_name || 'Unassigned';
             
-            await client.query(`
-                INSERT INTO section_snapshot_items 
-                (group_id, section_name, grade_level, student_full_name, current_address, barangay_extracted, adviser_name, sex)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            `, [
-                groupId,
-                student.sectionLevel || student.section_name || '-',
-                student.grade_level || '-',
-                fullName,
-                student.current_address || '-',
-                barangay,
-                student.adviser || student.adviser_name || '-',
-                student.sex || 'N/A'
-            ]);
+            try {
+                await client.query(`
+                    INSERT INTO section_snapshot_items 
+                    (group_id, section_name, grade_level, student_full_name, current_address, barangay_extracted, adviser_name, sex)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                `, [
+                    groupId,
+                    sectionLevel,
+                    student.grade_level || '-',
+                    fullName,
+                    student.current_address || '-',
+                    barangay,
+                    student.adviser || student.adviser_name || '-',
+                    student.sex || 'N/A'
+                ]);
+                insertedCount++;
+            } catch (err) {
+                console.warn('Error inserting student:', fullName, err.message);
+                // Continue with next student instead of failing completely
+            }
         }
 
         await client.query('COMMIT');
+        console.log('✅ Snapshot saved successfully:', groupId, 'with', insertedCount, 'students');
         res.json({ 
             success: true, 
-            message: `Snapshot '${snapshotName}' saved with ${students.length} students`
+            message: `Snapshot '${snapshotName}' saved with ${insertedCount} students`
         });
     } catch (err) {
         try { await client.query('ROLLBACK'); } catch (e) {}

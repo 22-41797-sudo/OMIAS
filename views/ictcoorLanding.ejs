@@ -3592,14 +3592,14 @@ q<!DOCTYPE html>
                 const dataRows = rows.slice(1).map(row => {
                     const cells = row.split(',').map(c => c.trim());
                     return {
-                        name: cells[nameIdx] || '',
-                        barangay: cells[barangayIdx] || '',
-                        sectionLevel: cells[sectionIdx] || ''
+                        name: cells[nameIdx] || 'Unknown',
+                        barangay: cells[barangayIdx] || 'Others',
+                        sectionLevel: cells[sectionIdx] || 'Unassigned'
                     };
-                }).filter(r => r.name && r.barangay && r.sectionLevel);
+                }).filter(r => r.name && r.name !== 'Unknown' || r.barangay || r.sectionLevel);
 
                 if (dataRows.length === 0) {
-                    showToast('No valid data rows found in file. Make sure all rows have Name, Barangay, and Section values.', 'error');
+                    showToast('No valid data rows found in file.', 'error');
                     return;
                 }
 
@@ -3650,6 +3650,7 @@ q<!DOCTYPE html>
             }
 
             try {
+                console.log('Saving snapshot with', window.importDataset.length, 'students');
                 const response = await fetch('/api/snapshots/dataset', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -3659,7 +3660,10 @@ q<!DOCTYPE html>
                     })
                 });
 
+                console.log('Response status:', response.status);
                 const result = await response.json();
+                console.log('Response data:', result);
+                
                 if (result.success) {
                     showToast(`Snapshot "${snapshotName}" saved successfully with ${window.importDataset.length} students`, 'success');
                     
@@ -3673,14 +3677,16 @@ q<!DOCTYPE html>
                     document.getElementById('snapshotNameSection').style.display = 'none';
                     document.getElementById('saveDatasetSnapshotBtn').style.display = 'none';
                     
-                    // Refresh snapshots modal if it's open
+                    // Refresh snapshots and dashboard
                     try { loadSnapshots(); } catch (e) {}
+                    try { loadDashboard(); } catch (e) {}
+                    try { initializeSchoolYearFilter(); } catch (e) {}
                 } else {
                     showToast('Error: ' + (result.message || 'Failed to save snapshot'), 'error');
                 }
             } catch (err) {
                 console.error('Save snapshot error:', err);
-                showToast('Error saving snapshot', 'error');
+                showToast('Error saving snapshot: ' + err.message, 'error');
             }
         }
 
