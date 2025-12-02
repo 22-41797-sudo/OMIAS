@@ -2668,19 +2668,21 @@ q<!DOCTYPE html>
                     try {
                         if (s.registration_date) {
                             regDate = new Date(s.registration_date).toLocaleDateString('en-PH', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                        } else if (s.enrollment_date) {
+                            regDate = new Date(s.enrollment_date).toLocaleDateString('en-PH', { year: 'numeric', month: '2-digit', day: '2-digit' });
                         }
                     } catch (e) {}
                     document.getElementById('sdRegDate').value = regDate || '';
                     // Signature
                     const sigImg = document.getElementById('sdSignature');
                     const sigNone = document.getElementById('sdSignatureNone');
-                    if (s.signature_image_path) {
+                    if (s.signature_image_path && s.signature_image_path.trim()) {
                         sigImg.src = s.signature_image_path;
                         sigImg.style.display = 'block';
-                        sigNone.style.display = 'none';
+                        if (sigNone) sigNone.style.display = 'none';
                     } else {
                         sigImg.style.display = 'none';
-                        sigNone.style.display = 'inline';
+                        if (sigNone) sigNone.style.display = 'inline';
                     }
 
                     openModal('studentDetailsModal');
