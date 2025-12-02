@@ -4893,36 +4893,63 @@ app.put('/api/students/:id/archive', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // Get student info
-        const studentResult = await client.query(
-            'SELECT first_name, last_name, section_id FROM students WHERE id = $1',
-            [studentId]
-        );
+        // Check if this is an early_registration student (starts with 'ER')
+        if (String(studentId).startsWith('ER')) {
+            // It's an early_registration record - cannot archive, must delete from early_registration
+            const earlyRegId = parseInt(String(studentId).substring(2));
+            const earlyRegResult = await client.query(
+                'SELECT first_name, last_name FROM early_registration WHERE id = $1',
+                [earlyRegId]
+            );
+            
+            if (earlyRegResult.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return res.status(404).json({ success: false, message: 'Student not found' });
+            }
+            
+            const student = earlyRegResult.rows[0];
+            const fullName = `${student.last_name}, ${student.first_name}`;
+            
+            // Delete from early_registration
+            await client.query('DELETE FROM early_registration WHERE id = $1', [earlyRegId]);
+            
+            await client.query('COMMIT');
+            res.json({ 
+                success: true, 
+                message: `Student "${fullName}" has been permanently deleted.`
+            });
+        } else {
+            // It's a regular student - archive it
+            const studentResult = await client.query(
+                'SELECT first_name, last_name, section_id FROM students WHERE id = $1',
+                [studentId]
+            );
 
-        if (studentResult.rows.length === 0) {
-            await client.query('ROLLBACK');
-            return res.status(404).json({ success: false, message: 'Student not found' });
+            if (studentResult.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return res.status(404).json({ success: false, message: 'Student not found' });
+            }
+
+            const student = studentResult.rows[0];
+            const fullName = `${student.last_name}, ${student.first_name}`;
+
+            // Archive the student
+            await client.query(
+                'UPDATE students SET is_archived = true WHERE id = $1',
+                [studentId]
+            );
+
+            await client.query('COMMIT');
+            res.json({ 
+                success: true, 
+                message: `Student "${fullName}" has been archived successfully.`
+            });
         }
-
-        const student = studentResult.rows[0];
-        const fullName = `${student.last_name}, ${student.first_name}`;
-
-        // Archive the student
-        await client.query(
-            'UPDATE students SET is_archived = true WHERE id = $1',
-            [studentId]
-        );
-
-        await client.query('COMMIT');
-        res.json({ 
-            success: true, 
-            message: `Student "${fullName}" has been archived successfully.`
-        });
 
     } catch (err) {
         await client.query('ROLLBACK');
         console.error('Error archiving student:', err);
-        res.status(500).json({ success: false, message: 'Error archiving student' });
+        res.status(500).json({ success: false, message: 'Error archiving student: ' + err.message });
     } finally {
         client.release();
     }
@@ -4970,6 +4997,77 @@ app.put('/api/students/:id/unarchive', async (req, res) => {
         await client.query('ROLLBACK');
         console.error('Error restoring student:', err);
         res.status(500).json({ success: false, message: 'Error restoring student' });
+    } finally {
+        client.release();
+    }
+});
+
+// ICT Coordinator: Permanently delete an archived student
+app.delete('/api/students/:id/delete', async (req, res) => {
+    if (!req.session.user || req.session.user.role !== 'ictcoor') {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    const studentId = req.params.id;
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN');
+
+        // Check if this is an early_registration student (starts with 'ER')
+        if (String(studentId).startsWith('ER')) {
+            // It's an early_registration record - delete directly
+            const earlyRegId = parseInt(String(studentId).substring(2));
+            const earlyRegResult = await client.query(
+                'SELECT first_name, last_name FROM early_registration WHERE id = $1',
+                [earlyRegId]
+            );
+            
+            if (earlyRegResult.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return res.status(404).json({ success: false, message: 'Student not found' });
+            }
+            
+            const student = earlyRegResult.rows[0];
+            const fullName = `${student.last_name}, ${student.first_name}`;
+            
+            // Permanently delete from early_registration
+            await client.query('DELETE FROM early_registration WHERE id = $1', [earlyRegId]);
+            
+            await client.query('COMMIT');
+            res.json({ 
+                success: true, 
+                message: `Student "${fullName}" has been permanently deleted.`
+            });
+        } else {
+            // It's a regular student - delete permanently
+            const studentResult = await client.query(
+                'SELECT first_name, last_name FROM students WHERE id = $1',
+                [studentId]
+            );
+
+            if (studentResult.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return res.status(404).json({ success: false, message: 'Student not found' });
+            }
+
+            const student = studentResult.rows[0];
+            const fullName = `${student.last_name}, ${student.first_name}`;
+
+            // Permanently delete the student
+            await client.query('DELETE FROM students WHERE id = $1', [studentId]);
+
+            await client.query('COMMIT');
+            res.json({ 
+                success: true, 
+                message: `Student "${fullName}" has been permanently deleted.`
+            });
+        }
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Error deleting student:', err);
+        res.status(500).json({ success: false, message: 'Error deleting student: ' + err.message });
     } finally {
         client.release();
     }
@@ -6871,6 +6969,29 @@ app.get('/api/admin/test-pending-query', async (req, res) => {
     } catch (err) {
         debug.push(`Error: ${err.message}`);
         res.status(500).json({ success: false, error: err.message, debug_info: debug });
+    }
+});
+
+// Admin endpoint to clean up all test/sample student data
+app.post('/api/admin/cleanup-students', async (req, res) => {
+    try {
+        console.log('🧹 Cleaning up all student data...');
+        
+        // Delete all early registrations
+        const erResult = await pool.query('DELETE FROM early_registration');
+        console.log(`✅ Deleted ${erResult.rowCount} early registration records`);
+        
+        // Delete all students
+        const studResult = await pool.query('DELETE FROM students');
+        console.log(`✅ Deleted ${studResult.rowCount} student records`);
+        
+        res.json({ 
+            success: true, 
+            message: `Cleanup complete. Deleted ${erResult.rowCount} early registrations and ${studResult.rowCount} students.`
+        });
+    } catch (err) {
+        console.error('Error during cleanup:', err);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
