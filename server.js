@@ -363,7 +363,7 @@ const storage = multer.diskStorage({
 app.get('/api/teacher/me', requireTeacher, async (req, res) => {
     try {
         const t = await pool.query(
-            'SELECT id, username, first_name, middle_name, last_name, email, contact_number FROM teachers WHERE id = $1',
+            'SELECT id, username, first_name, last_name, email, phone as contact_number FROM teachers WHERE id = $1',
             [req.session.user.id]
         );
         if (t.rows.length === 0) return res.status(404).json({ success: false, error: 'Not found' });
@@ -5355,20 +5355,20 @@ app.get('/api/teachers/:id', async (req, res) => {
                 id,
                 username,
                 first_name,
-                middle_name,
                 last_name,
-                ext_name,
                 email,
-                contact_number,
-                birthday,
-                sex,
-                address,
-                employee_id,
-                department,
-                position,
+                phone as contact_number,
                 specialization,
-                date_hired,
-                is_active
+                department,
+                created_at as date_hired,
+                is_active,
+                NULL::text as middle_name,
+                NULL::text as ext_name,
+                NULL::text as address,
+                NULL::text as employee_id,
+                NULL::text as position,
+                NULL::date as birthday,
+                NULL::text as sex
             FROM teachers
             WHERE id = $1
         `, [teacherId]);
@@ -5434,36 +5434,19 @@ app.post('/api/teachers', async (req, res) => {
             });
         }
 
-        // Check if employee_id already exists (if provided)
-        if (employee_id) {
-            const existingEmpId = await pool.query(
-                'SELECT id FROM teachers WHERE employee_id = $1',
-                [employee_id]
-            );
-
-            if (existingEmpId.rows.length > 0) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Employee ID already exists' 
-                });
-            }
-        }
-
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Insert new teacher
+        // Insert new teacher (only columns that exist in teachers table)
         const result = await pool.query(`
             INSERT INTO teachers (
-                username, password, first_name, middle_name, last_name, ext_name,
-                email, contact_number, birthday, sex, address,
-                employee_id, department, position, specialization, date_hired
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-            RETURNING id, username, first_name, middle_name, last_name, ext_name
+                username, password, first_name, last_name,
+                email, phone, department, specialization, is_active
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING id, username, first_name, last_name, email
         `, [
-            username, hashedPassword, first_name, middle_name || null, last_name, ext_name || null,
-            email || null, contact_number || null, birthday || null, sex || null, address || null,
-            employee_id || null, department || null, position || null, specialization || null, date_hired || null
+            username, hashedPassword, first_name, last_name,
+            email || null, contact_number || null, department || null, specialization || null, true
         ]);
 
         res.json({ 
@@ -5533,48 +5516,23 @@ app.put('/api/teachers/:id', async (req, res) => {
             }
         }
 
-        // Check if new employee_id conflicts
-        if (employee_id) {
-            const empIdCheck = await pool.query(
-                'SELECT id FROM teachers WHERE employee_id = $1 AND id != $2',
-                [employee_id, teacherId]
-            );
-
-            if (empIdCheck.rows.length > 0) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Employee ID already taken by another teacher' 
-                });
-            }
-        }
-
-        // Build update query
+        // Build update query (only columns that exist in teachers table)
         let updateQuery = `
             UPDATE teachers SET
                 username = $1,
                 first_name = $2,
-                middle_name = $3,
-                last_name = $4,
-                ext_name = $5,
-                email = $6,
-                contact_number = $7,
-                birthday = $8,
-                sex = $9,
-                address = $10,
-                employee_id = $11,
-                department = $12,
-                position = $13,
-                specialization = $14,
-                date_hired = $15,
-                is_active = $16,
-                updated_at = CURRENT_TIMESTAMP
+                last_name = $3,
+                email = $4,
+                phone = $5,
+                department = $6,
+                specialization = $7,
+                is_active = $8
         `;
 
         let queryParams = [
-            username, first_name, middle_name || null, last_name, ext_name || null,
-            email || null, contact_number || null, birthday || null, sex || null, address || null,
-            employee_id || null, department || null, position || null, specialization || null, 
-            date_hired || null, is_active !== undefined ? is_active : true
+            username, first_name, last_name,
+            email || null, contact_number || null, department || null, specialization || null,
+            is_active !== undefined ? is_active : true
         ];
 
         // If password is provided, hash and update it
