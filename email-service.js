@@ -1,54 +1,8 @@
 require('dotenv').config();
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-// Create transporter for Gmail using port 587 with TLS (alternative to SSL port 465)
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587, // TLS port (alternative, sometimes less blocked than 465)
-    secure: false, // false for TLS (starttls)
-    requireTLS: true,
-    auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASSWORD,
-    },
-    connectionTimeout: 30000,
-    socketTimeout: 30000,
-    maxConnections: 5,
-    maxMessages: 100,
-    rateDelta: 1000,
-    rateLimit: 5,
-    logger: false,
-    debug: false,
-});
-
-/**
- * Helper: Retry email sending with exponential backoff
- * Attempts to send email with retries on timeout/network errors
- */
-async function sendMailWithRetry(mailOptions, maxRetries = 3) {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-            console.log(`   📧 Send attempt ${attempt}/${maxRetries}...`);
-            const result = await transporter.sendMail(mailOptions);
-            console.log(`   ✅ Success on attempt ${attempt}`);
-            return result;
-        } catch (err) {
-            const isLastAttempt = attempt === maxRetries;
-            const isTimeout = err.message.includes('timeout') || err.code === 'ETIMEDOUT' || err.code === 'ESOCKETTIMEDOUT';
-            const isNetworkError = err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.code === 'EHOSTUNREACH';
-            
-            if ((isTimeout || isNetworkError) && !isLastAttempt) {
-                const waitTime = Math.pow(2, attempt) * 1000; // Exponential backoff: 2s, 4s, 8s
-                console.log(`   ⏱️ Attempt ${attempt} failed (${err.message}), retrying in ${waitTime}ms...`);
-                await new Promise(resolve => setTimeout(resolve, waitTime));
-                continue; // Retry
-            }
-            
-            // If all retries failed or it's a different error, throw
-            throw err;
-        }
-    }
-}
+// Initialize Resend with API key
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
  * Send enrollment status update email to student
@@ -57,22 +11,20 @@ async function sendMailWithRetry(mailOptions, maxRetries = 3) {
 async function sendEnrollmentStatusUpdate(studentEmail, studentName, requestToken, status, rejectionReason = null) {
     try {
         console.log(`\n📧 === ENROLLMENT EMAIL SERVICE CALLED ===`);
+        console.log(`📧 Service: Resend API`);
         console.log(`📧 To: ${studentEmail}`);
         console.log(`📧 Student: ${studentName}`);
         console.log(`📧 Status: ${status}`);
         console.log(`📧 Token: ${requestToken}`);
         
-        if (!process.env.GMAIL_USER || !process.env.GMAIL_PASSWORD) {
+        if (!process.env.RESEND_API_KEY) {
             console.error('❌ EMAIL SERVICE NOT CONFIGURED');
-            console.error('Missing environment variables: GMAIL_USER or GMAIL_PASSWORD');
+            console.error('Missing environment variable: RESEND_API_KEY');
             console.error('📧 Please add to Render environment variables:');
-            console.error('   GMAIL_USER=your_email@gmail.com');
-            console.error('   GMAIL_PASSWORD=your_16_char_app_password');
+            console.error('   RESEND_API_KEY=your_api_key');
             console.error(`❌ NOT sending email to ${studentEmail} - configuration required`);
             return false;
         }
-
-        console.log(`✅ Email credentials found: ${process.env.GMAIL_USER}`);
 
         // Only send for approved or rejected
         if (status !== 'approved' && status !== 'rejected') {
@@ -94,11 +46,7 @@ async function sendEnrollmentStatusUpdate(studentEmail, studentName, requestToke
             color = '#dc3545';
         }
 
-        const mailOptions = {
-            from: `"${process.env.GMAIL_FROM_NAME}" <${process.env.GMAIL_USER}>`,
-            to: studentEmail,
-            subject: subject,
-            html: `
+        const html = `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
                     <h2 style="color: #333; border-bottom: 3px solid ${color}; padding-bottom: 10px;">${title}</h2>
                     
@@ -131,36 +79,29 @@ async function sendEnrollmentStatusUpdate(studentEmail, studentName, requestToke
                         This is an automated message. Please do not reply to this email.
                     </p>
                 </div>
-            `,
-        };
+            `;
 
-        await sendMailWithRetry(mailOptions);
+        // Send via Resend API
+        const result = await resend.emails.send({
+            from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+            to: studentEmail,
+            subject: subject,
+            html: html,
+        });
+
+        if (result.error) {
+            throw new Error(`Resend API error: ${result.error.message}`);
+        }
+
         console.log(`✅ Enrollment ${status} email sent successfully to ${studentEmail}`);
         console.log(`   Student: ${studentName} | Token: ${requestToken}`);
+        console.log(`   Message ID: ${result.data.id}`);
         return true;
     } catch (err) {
         console.error(`\n❌ FAILED to send enrollment ${status} email to ${studentEmail}:`);
         console.error(`   Error Type: ${err.code || err.name}`);
         console.error(`   Error Message: ${err.message}`);
         console.error(`   Student: ${studentName} | Token: ${requestToken}`);
-        
-        // Provide specific troubleshooting based on error type
-        if (err.message.includes('timeout') || err.code === 'ETIMEDOUT' || err.code === 'ESOCKETTIMEDOUT') {
-            console.error(`\n   ⏱️ CONNECTION TIMEOUT - Gmail SMTP server not responding after retries`);
-            console.error(`   Attempted 3 retries with exponential backoff`);
-            console.error(`\n   Possible causes:`);
-            console.error(`   1. Render network may be blocking outbound SMTP on port 465`);
-            console.error(`   2. Gmail SMTP server temporarily unreachable`);
-            console.error(`   3. Network firewall between Render and Gmail`);
-        } else if (err.message.includes('Invalid login') || err.code === 'EAUTH') {
-            console.error(`\n   🔐 AUTHENTICATION FAILED - Invalid Gmail credentials`);
-            console.error(`   Possible causes:`);
-            console.error(`   1. GMAIL_USER or GMAIL_PASSWORD is incorrect on Render`);
-            console.error(`   2. Gmail account doesn't have 2-factor authentication enabled`);
-            console.error(`   3. Not using App Password (must be 16 characters)`);
-        } else {
-            console.error(`\n   Unknown error. Check Render logs for more details.`);
-        }
         return false;
     }
 }
@@ -206,11 +147,7 @@ async function sendDocumentRequestStatusUpdate(studentEmail, studentName, reques
             color = '#dc3545';
         }
 
-        const mailOptions = {
-            from: `"${process.env.GMAIL_FROM_NAME}" <${process.env.GMAIL_USER}>`,
-            to: studentEmail,
-            subject: subject,
-            html: `
+        const html = `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
                     <h2 style="color: #333; border-bottom: 3px solid ${color}; padding-bottom: 10px;">${title}</h2>
                     
@@ -243,12 +180,23 @@ async function sendDocumentRequestStatusUpdate(studentEmail, studentName, reques
                         This is an automated message. Please do not reply to this email.
                     </p>
                 </div>
-            `,
-        };
+            `;
 
-        await sendMailWithRetry(mailOptions);
+        // Send via Resend API
+        const result = await resend.emails.send({
+            from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+            to: studentEmail,
+            subject: subject,
+            html: html,
+        });
+
+        if (result.error) {
+            throw new Error(`Resend API error: ${result.error.message}`);
+        }
+
         console.log(`✅ Document request ${status} email sent successfully to ${studentEmail}`);
         console.log(`   Student: ${studentName} | Document: ${documentType} | Token: ${requestToken}`);
+        console.log(`   Message ID: ${result.data.id}`);
         return true;
     } catch (err) {
         console.error(`\n❌ FAILED to send document request ${status} email to ${studentEmail}:`);
@@ -257,19 +205,14 @@ async function sendDocumentRequestStatusUpdate(studentEmail, studentName, reques
         console.error(`   Student: ${studentName} | Document: ${documentType} | Token: ${requestToken}`);
         
         // Provide specific troubleshooting based on error type
-        if (err.message.includes('timeout') || err.code === 'ETIMEDOUT' || err.code === 'ESOCKETTIMEDOUT') {
-            console.error(`\n   ⏱️ CONNECTION TIMEOUT - Gmail SMTP server not responding after retries`);
-            console.error(`   Attempted 3 retries with exponential backoff`);
+        if (err.message.includes('Resend API error')) {
+            console.error(`\n   🔌 RESEND API ERROR`);
             console.error(`   Possible causes:`);
-            console.error(`   1. Network connectivity issues on Render`);
-            console.error(`   2. Gmail SMTP server temporarily unreachable`);
-            console.error(`   3. Port 587 (TLS) blocked by network firewall`);
-        } else if (err.message.includes('Invalid login') || err.code === 'EAUTH') {
-            console.error(`\n   🔐 AUTHENTICATION FAILED - Invalid Gmail credentials`);
-            console.error(`   Possible causes:`);
-            console.error(`   1. GMAIL_USER or GMAIL_PASSWORD is incorrect on Render`);
-            console.error(`   2. Gmail account doesn't have 2-factor authentication enabled`);
-            console.error(`   3. Not using App Password (must be 16 characters)`);
+            console.error(`   1. RESEND_API_KEY is invalid or not configured on Render`);
+            console.error(`   2. Resend API temporarily unavailable`);
+        } else if (err.message.includes('Invalid login')) {
+            console.error(`\n   🔐 INVALID RESEND CREDENTIALS`);
+            console.error(`   Verify RESEND_API_KEY is set correctly on Render`);
         } else {
             console.error(`\n   Unknown error. Check Render logs for more details.`);
         }
@@ -282,11 +225,27 @@ async function sendDocumentRequestStatusUpdate(studentEmail, studentName, reques
  */
 async function testEmailConfiguration() {
     try {
-        await transporter.verify();
-        console.log('✅ Email configuration is valid');
+        if (!process.env.RESEND_API_KEY) {
+            throw new Error('RESEND_API_KEY environment variable is not configured');
+        }
+
+        // Test Resend API by sending a test email
+        const result = await resend.emails.send({
+            from: 'onboarding@resend.dev',
+            to: 'delivered@resend.dev',  // Resend's test email address
+            subject: 'Test Email from OMIAS',
+            html: '<p>✅ Email configuration test successful!</p>',
+        });
+
+        if (result.error) {
+            throw new Error(`Resend API test failed: ${result.error.message}`);
+        }
+
+        console.log('✅ Resend API configuration is valid');
+        console.log(`   Test email sent with ID: ${result.data.id}`);
         return true;
     } catch (err) {
-        console.error('❌ Email configuration error:', err.message);
+        console.error('❌ Resend API configuration error:', err.message);
         return false;
     }
 }

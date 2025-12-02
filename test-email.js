@@ -6,19 +6,18 @@ async function testEmail() {
     
     // Test configuration
     console.log('🔧 Configuration Details:');
-    console.log(`   GMAIL_USER: ${process.env.GMAIL_USER}`);
-    console.log(`   GMAIL_PASSWORD: ${process.env.GMAIL_PASSWORD ? '***' + process.env.GMAIL_PASSWORD.slice(-3) : 'NOT SET'}`);
-    console.log(`   GMAIL_FROM_NAME: ${process.env.GMAIL_FROM_NAME}\n`);
+    console.log(`   RESEND_API_KEY: ${process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 10) + '...' : 'NOT SET'}`);
+    console.log(`   RESEND_FROM_EMAIL: ${process.env.RESEND_FROM_EMAIL}\n`);
     
-    if (!process.env.GMAIL_USER || !process.env.GMAIL_PASSWORD) {
+    if (!process.env.RESEND_API_KEY) {
         console.error('❌ Email configuration incomplete!');
-        console.error('   Please set GMAIL_USER and GMAIL_PASSWORD in .env file');
+        console.error('   Please set RESEND_API_KEY in .env file');
         process.exit(1);
     }
 
     try {
         // Test basic configuration
-        console.log('📝 Testing email configuration...');
+        console.log('📝 Testing Resend API configuration...');
         const isConfigValid = await emailService.testEmailConfiguration();
         
         if (!isConfigValid) {
@@ -31,7 +30,7 @@ async function testEmail() {
         // Send test enrollment approved email
         console.log('📨 Sending test enrollment APPROVED status email...');
         await emailService.sendEnrollmentStatusUpdate(
-            process.env.GMAIL_USER,
+            'jamezbello93@gmail.com',
             'Test Student',
             'TEST123456',
             'approved'
@@ -41,7 +40,7 @@ async function testEmail() {
         // Send test enrollment rejected email
         console.log('📨 Sending test enrollment REJECTED status email...');
         await emailService.sendEnrollmentStatusUpdate(
-            process.env.GMAIL_USER,
+            'jamezbello93@gmail.com',
             'Test Student',
             'TEST123457',
             'rejected'
@@ -51,7 +50,7 @@ async function testEmail() {
         // Send test document request processing email
         console.log('📨 Sending test document request PROCESSING status email...');
         await emailService.sendDocumentRequestStatusUpdate(
-            process.env.GMAIL_USER,
+            'jamezbello93@gmail.com',
             'Test Student',
             'TESTDOC1234',
             'Certificate of Enrollment',
@@ -62,7 +61,7 @@ async function testEmail() {
         // Send test document request ready email
         console.log('📨 Sending test document request READY status email...');
         await emailService.sendDocumentRequestStatusUpdate(
-            process.env.GMAIL_USER,
+            'jamezbello93@gmail.com',
             'Test Student',
             'TESTDOC1235',
             'Certificate of Enrollment',
@@ -73,7 +72,7 @@ async function testEmail() {
         // Send test document request rejected email
         console.log('📨 Sending test document request REJECTED status email...');
         await emailService.sendDocumentRequestStatusUpdate(
-            process.env.GMAIL_USER,
+            'jamezbello93@gmail.com',
             'Test Student',
             'TESTDOC1236',
             'Certificate of Enrollment',
