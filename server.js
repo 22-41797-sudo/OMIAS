@@ -5355,10 +5355,19 @@ app.get('/api/teachers/:id', async (req, res) => {
                 id,
                 username,
                 first_name,
+                middle_name,
                 last_name,
+                ext_name,
                 email,
+                contact_number,
+                birthday,
+                sex,
+                address,
+                employee_id,
                 department,
+                position,
                 specialization,
+                date_hired,
                 is_active,
                 created_at
             FROM teachers
@@ -5369,19 +5378,7 @@ app.get('/api/teachers/:id', async (req, res) => {
             return res.status(404).json({ success: false, message: 'Teacher not found' });
         }
 
-        // Build response with optional fields set to NULL if they don't exist
-        const teacher = result.rows[0];
-        teacher.contact_number = null;
-        teacher.middle_name = null;
-        teacher.ext_name = null;
-        teacher.birthday = null;
-        teacher.sex = null;
-        teacher.address = null;
-        teacher.employee_id = null;
-        teacher.position = null;
-        teacher.date_hired = teacher.created_at;
-
-        res.json({ success: true, teacher });
+        res.json({ success: true, teacher: result.rows[0] });
     } catch (err) {
         console.error('Error fetching teacher:', err);
         res.status(500).json({ success: false, message: 'Error fetching teacher' });
@@ -5441,36 +5438,27 @@ app.post('/api/teachers', async (req, res) => {
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Insert new teacher (only columns that definitely exist in teachers table)
+        // Insert new teacher with all available fields
         const result = await pool.query(`
             INSERT INTO teachers (
-                username, password, first_name, last_name,
-                email, department, specialization, is_active
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                username, password, first_name, middle_name, last_name, ext_name,
+                email, contact_number, birthday, sex, address, employee_id,
+                department, position, specialization, date_hired, is_active
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
             RETURNING 
-                id, username, first_name, last_name, email,
-                department, specialization, is_active, created_at
+                id, username, first_name, middle_name, last_name, ext_name,
+                email, contact_number, birthday, sex, address, employee_id,
+                department, position, specialization, date_hired, is_active, created_at
         `, [
-            username, hashedPassword, first_name, last_name,
-            email || null, department || null, specialization || null, true
+            username, hashedPassword, first_name, middle_name || null, last_name, ext_name || null,
+            email || null, contact_number || null, birthday || null, sex || null, address || null, employee_id || null,
+            department || null, position || null, specialization || null, date_hired || null, true
         ]);
-
-        // Add NULL placeholders for optional fields
-        const teacher = result.rows[0];
-        teacher.contact_number = null;
-        teacher.middle_name = null;
-        teacher.ext_name = null;
-        teacher.birthday = null;
-        teacher.sex = null;
-        teacher.address = null;
-        teacher.employee_id = null;
-        teacher.position = null;
-        teacher.date_hired = teacher.created_at;
 
         res.json({ 
             success: true, 
             message: 'Teacher account created successfully',
-            teacher: teacher
+            teacher: result.rows[0]
         });
     } catch (err) {
         console.error('Error creating teacher:', err);
@@ -5534,22 +5522,32 @@ app.put('/api/teachers/:id', async (req, res) => {
             }
         }
 
-        // Build update query (only columns that definitely exist in teachers table)
+        // Build update query with all available columns
         let updateQuery = `
             UPDATE teachers SET
                 username = $1,
                 first_name = $2,
-                last_name = $3,
-                email = $4,
-                department = $5,
-                specialization = $6,
-                is_active = $7
+                middle_name = $3,
+                last_name = $4,
+                ext_name = $5,
+                email = $6,
+                contact_number = $7,
+                birthday = $8,
+                sex = $9,
+                address = $10,
+                employee_id = $11,
+                department = $12,
+                position = $13,
+                specialization = $14,
+                date_hired = $15,
+                is_active = $16
         `;
 
         let queryParams = [
-            username, first_name, last_name,
-            email || null, department || null, specialization || null,
-            is_active !== undefined ? is_active : true
+            username, first_name, middle_name || null, last_name, ext_name || null,
+            email || null, contact_number || null, birthday || null, sex || null, address || null,
+            employee_id || null, department || null, position || null, specialization || null,
+            date_hired || null, is_active !== undefined ? is_active : true
         ];
 
         // If password is provided, hash and update it
@@ -5559,27 +5557,15 @@ app.put('/api/teachers/:id', async (req, res) => {
             queryParams.push(hashedPassword);
         }
 
-        updateQuery += ` WHERE id = $${queryParams.length + 1} RETURNING id, username, first_name, last_name, email, department, specialization, is_active, created_at`;
+        updateQuery += ` WHERE id = $${queryParams.length + 1} RETURNING id, username, first_name, middle_name, last_name, ext_name, email, contact_number, birthday, sex, address, employee_id, department, position, specialization, date_hired, is_active, created_at`;
         queryParams.push(teacherId);
 
         const result = await pool.query(updateQuery, queryParams);
 
-        // Add NULL placeholders for optional fields
-        const teacher = result.rows[0];
-        teacher.contact_number = null;
-        teacher.middle_name = null;
-        teacher.ext_name = null;
-        teacher.birthday = null;
-        teacher.sex = null;
-        teacher.address = null;
-        teacher.employee_id = null;
-        teacher.position = null;
-        teacher.date_hired = teacher.created_at;
-
         res.json({ 
             success: true, 
             message: 'Teacher updated successfully',
-            teacher: teacher
+            teacher: result.rows[0]
         });
     } catch (err) {
         console.error('Error updating teacher:', err);
@@ -6360,17 +6346,19 @@ app.put('/api/teachers/:id/archive', async (req, res) => {
             );
         `);
 
-        // Insert teacher into archive (only columns that exist)
+        // Insert teacher into archive with all columns
         const insertRes = await client.query(`
             INSERT INTO teachers_archive (
-                original_id, username, password, first_name, last_name,
-                email, department, specialization, is_active, created_at, archived_by
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+                original_id, username, password, first_name, middle_name, last_name, ext_name,
+                email, contact_number, birthday, sex, address, employee_id, department, position,
+                specialization, date_hired, is_active, created_at, updated_at, archived_by
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
             RETURNING id
         `, [
-            teacher.id, teacher.username, teacher.password, teacher.first_name, teacher.last_name,
-            teacher.email || null, teacher.department || null, teacher.specialization || null, 
-            teacher.is_active !== undefined ? teacher.is_active : true, teacher.created_at || null, req.session.user.id
+            teacher.id, teacher.username, teacher.password, teacher.first_name, teacher.middle_name || null, teacher.last_name, teacher.ext_name || null,
+            teacher.email || null, teacher.contact_number || null, teacher.birthday || null, teacher.sex || null, teacher.address || null,
+            teacher.employee_id || null, teacher.department || null, teacher.position || null, teacher.specialization || null,
+            teacher.date_hired || null, teacher.is_active !== undefined ? teacher.is_active : true, teacher.created_at || null, teacher.updated_at || null, req.session.user.id
         ]);
 
         // Clear adviser references in sections (both by id and by name)
@@ -6440,17 +6428,22 @@ app.put('/api/teachers/:id/recover', async (req, res) => {
         }
         const archived = archRes.rows[0];
 
-        // Insert back into active teachers table (only core columns)
+        // Insert back into active teachers table with all columns
         const insertRes = await client.query(`
             INSERT INTO teachers (
-                id, username, password, first_name, last_name,
-                email, department, specialization, is_active, created_at
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+                id, username, password, first_name, middle_name, last_name, ext_name,
+                email, contact_number, birthday, sex, address, employee_id, department, position,
+                specialization, date_hired, is_active, created_at, updated_at
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
             RETURNING id
         `, [
-            archived.original_id, archived.username, archived.password, archived.first_name, archived.last_name,
-            archived.email || null, archived.department || null, archived.specialization || null, 
-            archived.is_active !== undefined ? archived.is_active : true, archived.created_at || null
+            archived.original_id, archived.username, archived.password, archived.first_name, 
+            archived.middle_name || null, archived.last_name, archived.ext_name || null,
+            archived.email || null, archived.contact_number || null, archived.birthday || null, 
+            archived.sex || null, archived.address || null, archived.employee_id || null, 
+            archived.department || null, archived.position || null, archived.specialization || null,
+            archived.date_hired || null, archived.is_active !== undefined ? archived.is_active : true, 
+            archived.created_at || null, archived.updated_at || null
         ]);
 
         // Delete from archive table
