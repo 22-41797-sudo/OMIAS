@@ -1,0 +1,5 @@
+RENDER_HOST=dpg-d4mpccpr0fns73ad6uv0-a.singapore-postgres.render.com
+RENDER_PORT=5432
+RENDER_USER=omias_user
+RENDER_PASSWORD=IxP0kZC2hXBNfDISoTx8BdtcWW2ci1sj
+RENDER_DATABASE=omias

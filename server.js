@@ -511,7 +511,7 @@ app.get('/api/teacher/sections/:id/students', requireTeacher, async (req, res) =
         }
         const students = await pool.query(`
             SELECT id, lrn, last_name, first_name, middle_name, ext_name, sex, age, grade_level, contact_number,
-                   last_name || ', ' || first_name || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') as full_name
+                   COALESCE(last_name, '') || ', ' || COALESCE(first_name, '') || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') as full_name
             FROM students
             WHERE section_id = $1 AND enrollment_status = 'active'
             ORDER BY last_name, first_name
@@ -540,7 +540,7 @@ app.get('/api/teacher/students/:id', requireTeacher, async (req, res) => {
         const detail = await pool.query(`
             SELECT id, enrollment_id, gmail_address, school_year, lrn, grade_level,
                    last_name, first_name, middle_name, ext_name,
-                   last_name || ', ' || first_name || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') AS full_name,
+                   COALESCE(last_name, '') || ', ' || COALESCE(first_name, '') || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') AS full_name,
                    birthday, age, sex, religion, current_address,
                    father_name, mother_name, guardian_name, contact_number
             FROM students WHERE id = $1
@@ -704,7 +704,7 @@ app.get('/api/behavior-reports', requireTeacher, async (req, res) => {
             if (sec.rows.length === 0) return res.status(403).json({ success: false, error: 'Access denied' });
             const list = await pool.query(`
                 SELECT r.id, r.report_date, r.category, r.severity, r.notes, r.student_id,
-                       s.last_name || ', ' || s.first_name || ' ' || COALESCE(s.middle_name || '', '') AS student_name
+                       COALESCE(s.last_name, '') || ', ' || COALESCE(s.first_name, '') || ' ' || COALESCE(s.middle_name || '', '') AS student_name
                 FROM student_behavior_reports r
                 JOIN students s ON s.id = r.student_id
                 WHERE r.section_id = $1
@@ -931,8 +931,8 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
                 r.section_id,
                 r.teacher_id,
                 r.is_done,
-                s.last_name || ', ' || s.first_name || ' ' || COALESCE(s.middle_name || '', '') AS student_full_name,
-                t.last_name || ', ' || t.first_name AS teacher_name,
+                COALESCE(s.last_name, '') || ', ' || COALESCE(s.first_name, '') || ' ' || COALESCE(s.middle_name || '', '') AS student_full_name,
+                COALESCE(t.last_name, '') || ', ' || COALESCE(t.first_name, '') AS teacher_name,
                 sec.section_name,
                 sec.grade_level
             FROM student_behavior_reports r
@@ -949,7 +949,7 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
                 s.first_name,
                 s.middle_name,
                 s.last_name,
-                s.last_name || ', ' || s.first_name || ' ' || COALESCE(s.middle_name || '', '') AS full_name,
+                COALESCE(s.last_name, '') || ', ' || COALESCE(s.first_name, '') || ' ' || COALESCE(s.middle_name || '', '') AS full_name,
                 sec.section_name
             FROM students s
             JOIN sections sec ON sec.id = s.section_id
@@ -1008,7 +1008,7 @@ app.get('/api/guidance/students', async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT s.id, 
-                   s.first_name || ' ' || s.middle_name || ' ' || s.last_name as full_name,
+                   COALESCE(s.first_name, '') || ' ' || COALESCE(s.middle_name, '') || ' ' || COALESCE(s.last_name, '') as full_name,
                    s.lrn, 
                    sec.section_name
             FROM students s
@@ -1077,8 +1077,8 @@ app.get('/api/guidance/messages', async (req, res) => {
         const result = await pool.query(`
             SELECT 
                 gtm.id, gtm.message, gtm.created_at, gtm.is_read, COALESCE(gtm.is_archived, false) as is_archived,
-                t.first_name || ' ' || t.last_name as teacher_name,
-                s.first_name || ' ' || s.middle_name || ' ' || s.last_name as student_name
+                COALESCE(t.first_name, '') || ' ' || COALESCE(t.last_name, '') as teacher_name,
+                COALESCE(s.first_name, '') || ' ' || COALESCE(s.middle_name, '') || ' ' || COALESCE(s.last_name, '') as student_name
             FROM guidance_teacher_messages gtm
             INNER JOIN teachers t ON gtm.teacher_id = t.id
             LEFT JOIN students s ON gtm.student_id = s.id
@@ -2073,7 +2073,7 @@ app.get('/registrar', async (req, res) => {
         // Fetch all registration records
         const result = await pool.query(`
             SELECT id, school_year, grade_level, 
-                   last_name || ', ' || first_name || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') as learner_name,
+                   COALESCE(last_name, '') || ', ' || COALESCE(first_name, '') || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') as learner_name,
                    lrn, mother_name, contact_number, registration_date, created_at
             FROM early_registration 
             ORDER BY created_at DESC
@@ -2082,7 +2082,7 @@ app.get('/registrar', async (req, res) => {
         // Fetch pending enrollment requests
         const requestsResult = await pool.query(`
             SELECT id, request_token, 
-                   last_name || ', ' || first_name || ' ' || COALESCE(middle_name || '', '') as learner_name,
+                   COALESCE(last_name, '') || ', ' || COALESCE(first_name, '') || ' ' || COALESCE(middle_name || '', '') as learner_name,
                    grade_level, gmail_address, contact_number, created_at, status
             FROM enrollment_requests 
             WHERE status = 'pending'
@@ -2092,7 +2092,7 @@ app.get('/registrar', async (req, res) => {
         // Fetch history of reviewed requests
         const historyResult = await pool.query(`
             SELECT id, request_token, 
-                   last_name || ', ' || first_name || ' ' || COALESCE(middle_name || '', '') as learner_name,
+                   COALESCE(last_name, '') || ', ' || COALESCE(first_name, '') || ' ' || COALESCE(middle_name || '', '') as learner_name,
                    grade_level, gmail_address, status, reviewed_at, rejection_reason
             FROM enrollment_requests 
             WHERE status IN ('approved', 'rejected')
@@ -3214,7 +3214,7 @@ app.get('/check-status/:token', async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT id, request_token, status, gmail_address,
-                   last_name || ', ' || first_name || ' ' || COALESCE(middle_name || '', '') as learner_name,
+                   COALESCE(last_name, '') || ', ' || COALESCE(first_name, '') || ' ' || COALESCE(middle_name, '') as learner_name,
                    grade_level, created_at, reviewed_at, rejection_reason
             FROM enrollment_requests 
             WHERE request_token = $1
