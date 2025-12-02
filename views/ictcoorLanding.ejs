@@ -1270,33 +1270,11 @@ q<!DOCTYPE html>
             <button type="button" class="modal-close" aria-label="Close" onclick="closeModal('snapshotItemsModal')">&times;</button>
             <h3 class="modal-title" id="snapshotItemsModalTitle">Snapshot Details</h3>
             
-            <!-- Tab Navigation -->
-            <div style="display:flex; gap:0; margin-bottom:12px; border-bottom:2px solid var(--gray-200); flex-shrink:0;">
-                <button type="button" class="snapshot-tab active" onclick="switchSnapshotTab('summary')" style="padding:10px 16px; background:none; border:none; border-bottom:3px solid var(--primary-red); color:var(--primary-red); font-weight:600; cursor:pointer;">
-                    📊 Summary
-                </button>
-            </div>
-            
             <!-- Scrollable content -->
             <div style="flex:1; overflow-y:auto; padding-right:8px; min-height:0;">
-                <!-- Summary Tab -->
-                <div id="snapshot-summary-tab">
-                    <h4 style="margin-top:12px; margin-bottom:12px; color:var(--primary-dark); font-size:14px;">Section Summary</h4>
-                    <div class="table-container" style="margin-bottom:20px;">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Grade Level</th>
-                                    <th>Section Name</th>
-                                    <th>Student Count</th>
-                                    <th>Adviser</th>
-                                </tr>
-                            </thead>
-                            <tbody id="snapshot-items-body">
-                                <tr><td colspan="4" style="padding:20px; text-align:center; color:#666;">No items</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+                <!-- Snapshot Sections with Students -->
+                <div id="snapshot-sections-container">
+                    <div style="padding:40px; text-align:center; color:#999;">Loading snapshot data...</div>
                 </div>
 
                 <!-- END: Content Scrollable Area -->
@@ -3821,84 +3799,154 @@ q<!DOCTYPE html>
 
         async function viewSnapshotItems(groupId, name) {
             try {
-                // Fetch both summary items and detailed students
-                const [itemsRes, studentsRes] = await Promise.all([
-                    fetch(`/api/sections/snapshots/${groupId}/items`),
-                    fetch(`/api/snapshots/${groupId}/students`)
-                ]);
+                // Fetch full snapshot data with sections organized
+                const res = await fetch(`/api/snapshots/${groupId}/full-data`);
+                const data = await res.json();
                 
-                const itemsData = await itemsRes.json();
-                const studentsData = await studentsRes.json();
-                
-                if (!itemsData.success) return alert('Failed to load snapshot items');
-                
-                // Populate summary section
-                const tb = document.getElementById('snapshot-items-body');
-                if (tb) {
-                    tb.innerHTML = '';
-                    itemsData.items.forEach(it => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td>${escapeHtml(it.grade_level || '')}</td>
-                            <td>${escapeHtml(it.section_name || '')}</td>
-                            <td>${it.count != null ? String(it.count) : '0'}</td>
-                            <td>${escapeHtml(it.adviser_name || '-')}</td>
+                if (!data.success) {
+                    alert('Failed to load snapshot data');
+                    return;
+                }
+
+                const { snapshot, sections } = data;
+
+                // Set the title with snapshot name
+                document.getElementById('snapshotItemsModalTitle').textContent = `📅 ${escapeHtml(snapshot.name)}`;
+
+                // Create sections display with students grouped by section
+                const sectionsContainer = document.getElementById('snapshot-sections-container');
+                if (sectionsContainer) {
+                    sectionsContainer.innerHTML = '';
+
+                    sections.forEach(section => {
+                        const sectionDiv = document.createElement('div');
+                        sectionDiv.className = 'snapshot-section-card';
+                        sectionDiv.style.cssText = `
+                            border: 1px solid var(--gray-300);
+                            border-radius: 8px;
+                            overflow: hidden;
+                            margin-bottom: 20px;
+                            background: white;
                         `;
-                        tb.appendChild(tr);
+
+                        // Section header with grade level, section name, adviser
+                        const headerDiv = document.createElement('div');
+                        headerDiv.style.cssText = `
+                            background: linear-gradient(135deg, #8B0000 0%, #C41E3A 100%);
+                            color: white;
+                            padding: 16px;
+                            display: grid;
+                            grid-template-columns: 1fr 1fr 1fr 1fr;
+                            gap: 16px;
+                            font-weight: 600;
+                        `;
+                        headerDiv.innerHTML = `
+                            <div>
+                                <div style="font-size: 12px; opacity: 0.9;">Grade Level</div>
+                                <div style="font-size: 16px; font-weight: 700;">${escapeHtml(section.grade_level || '-')}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; opacity: 0.9;">Section</div>
+                                <div style="font-size: 16px; font-weight: 700;">${escapeHtml(section.section_name || '-')}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; opacity: 0.9;">Adviser</div>
+                                <div style="font-size: 16px; font-weight: 700;">${escapeHtml(section.adviser_name || '-')}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; opacity: 0.9;">Students</div>
+                                <div style="font-size: 16px; font-weight: 700;">${section.student_count}</div>
+                            </div>
+                        `;
+                        sectionDiv.appendChild(headerDiv);
+
+                        // Students table
+                        if (section.students.length > 0) {
+                            const tableDiv = document.createElement('div');
+                            tableDiv.className = 'table-container';
+                            tableDiv.style.padding = '0';
+
+                            let tableHtml = `
+                                <table class="data-table" style="margin: 0;">
+                                    <thead>
+                                        <tr>
+                                            <th>Student Name</th>
+                                            <th>Barangay</th>
+                                            <th>Address</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+
+                            section.students.forEach(student => {
+                                tableHtml += `
+                                    <tr>
+                                        <td>${escapeHtml(student.name || 'N/A')}</td>
+                                        <td><span style="background: var(--gray-100); padding: 4px 8px; border-radius: 4px; font-size: 13px;">📍 ${escapeHtml(student.barangay || 'Others')}</span></td>
+                                        <td style="font-size: 13px; color: var(--gray-600);">${escapeHtml(student.address || '-')}</td>
+                                    </tr>
+                                `;
+                            });
+
+                            tableHtml += `
+                                    </tbody>
+                                </table>
+                            `;
+
+                            tableDiv.innerHTML = tableHtml;
+                            sectionDiv.appendChild(tableDiv);
+                        } else {
+                            const emptyDiv = document.createElement('div');
+                            emptyDiv.style.cssText = `
+                                padding: 40px 20px;
+                                text-align: center;
+                                color: var(--gray-500);
+                                font-style: italic;
+                            `;
+                            emptyDiv.textContent = 'No students in this section';
+                            sectionDiv.appendChild(emptyDiv);
+                        }
+
+                        sectionsContainer.appendChild(sectionDiv);
                     });
+
+                    // Add summary at the top
+                    const totalStudents = sections.reduce((sum, s) => sum + s.student_count, 0);
+                    const totalSections = sections.length;
+                    const summaryDiv = document.createElement('div');
+                    summaryDiv.style.cssText = `
+                        background: var(--gray-50);
+                        border: 1px solid var(--gray-200);
+                        border-radius: 6px;
+                        padding: 16px;
+                        margin-bottom: 20px;
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                        gap: 16px;
+                    `;
+                    summaryDiv.innerHTML = `
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: var(--primary-red);">${totalSections}</div>
+                            <div style="font-size: 12px; color: var(--gray-600); text-transform: uppercase;">Total Sections</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: var(--primary-red);">${totalStudents}</div>
+                            <div style="font-size: 12px; color: var(--gray-600); text-transform: uppercase;">Total Students</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 14px; color: var(--gray-700);">Saved: ${new Date(snapshot.created_at).toLocaleDateString()}</div>
+                        </div>
+                    `;
+                    
+                    // Insert summary at the beginning
+                    sectionsContainer.parentNode.insertBefore(summaryDiv, sectionsContainer);
                 }
 
-                // Populate barangay view with students grouped by barangay
-                if (studentsData.success && studentsData.students && studentsData.students.length > 0) {
-                    // Store full student data globally for filtering
-                    window.snapshotStudentsData = studentsData.students;
-                    
-                    // Get unique barangays and grade/sections
-                    const barangays = [...new Set(studentsData.students.map(s => s.barangay || 'Unknown'))].sort();
-                    const gradeLevels = [...new Set(studentsData.students.map(s => s.section_level || 'Unknown'))].sort();
-                    
-                    // Populate filter dropdowns
-                    const barangaySelect = document.getElementById('snapshotBarangayFilter');
-                    const gradeLevelSelect = document.getElementById('snapshotGradeLevelFilter');
-                    
-                    if (barangaySelect) {
-                        barangaySelect.innerHTML = '<option value="">All Barangays</option>';
-                        barangays.forEach(b => {
-                            const opt = document.createElement('option');
-                            opt.value = b;
-                            opt.textContent = b;
-                            barangaySelect.appendChild(opt);
-                        });
-                    }
-                    
-                    if (gradeLevelSelect) {
-                        gradeLevelSelect.innerHTML = '<option value="">All Grades/Sections</option>';
-                        gradeLevels.forEach(g => {
-                            const opt = document.createElement('option');
-                            opt.value = g;
-                            opt.textContent = g;
-                            gradeLevelSelect.appendChild(opt);
-                        });
-                    }
-                    
-                    // Clear search
-                    const searchInput = document.getElementById('snapshotStudentSearch');
-                    if (searchInput) searchInput.value = '';
-                    
-                    // Render all students initially
-                    renderSnapshotStudentsByBarangay(studentsData.students);
-                }
-
-                document.getElementById('snapshotItemsModalTitle').textContent = `Snapshot: ${name}`;
-                
-                // Reset to summary tab
-                const summaryTab = document.getElementById('snapshot-summary-tab');
-                const studentsTab = document.getElementById('snapshot-students-tab');
-                if (summaryTab) summaryTab.style.display = 'block';
-                if (studentsTab) studentsTab.style.display = 'none';
-                
                 openModal('snapshotItemsModal');
-            } catch (err) { console.error('View snapshot items error', err); alert('Error loading items'); }
+            } catch (err) {
+                console.error('View snapshot items error', err);
+                alert('Error loading snapshot: ' + err.message);
+            }
         }
 
         function renderSnapshotStudentsByBarangay(students) {

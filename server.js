@@ -4354,6 +4354,80 @@ app.get('/api/sections/snapshots/:id/students', async (req, res) => {
     }
 });
 
+// Get snapshot with sections and students grouped by section
+app.get('/api/snapshots/:id/full-data', async (req, res) => {
+    if (!req.session.user || req.session.user.role !== 'ictcoor') {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    const groupId = req.params.id;
+    try {
+        // Get snapshot group info
+        const groupRes = await pool.query(
+            'SELECT id, snapshot_name, created_at FROM section_snapshot_groups WHERE id = $1',
+            [groupId]
+        );
+        if (groupRes.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Snapshot not found' });
+        }
+        const group = groupRes.rows[0];
+
+        // Get all items (sections and students)
+        const itemsRes = await pool.query(`
+            SELECT 
+                id, group_id, section_name, grade_level, count, adviser_name,
+                student_full_name, current_address, barangay_extracted
+            FROM section_snapshot_items 
+            WHERE group_id = $1
+            ORDER BY grade_level, section_name, student_full_name
+        `, [groupId]);
+
+        // Organize by section
+        const sections = {};
+        const sectionOrder = []; // Keep track of section order
+
+        itemsRes.rows.forEach(item => {
+            const sectionKey = `${item.grade_level}|${item.section_name}`;
+            
+            if (!sections[sectionKey]) {
+                sections[sectionKey] = {
+                    grade_level: item.grade_level,
+                    section_name: item.section_name,
+                    adviser_name: item.adviser_name || '-',
+                    student_count: 0,
+                    students: []
+                };
+                sectionOrder.push(sectionKey);
+            }
+
+            // Only add if it's a student record (has student_full_name)
+            if (item.student_full_name && item.student_full_name !== '-') {
+                sections[sectionKey].students.push({
+                    name: item.student_full_name,
+                    barangay: item.barangay_extracted || 'Others',
+                    address: item.current_address || '-'
+                });
+                sections[sectionKey].student_count++;
+            }
+        });
+
+        // Build final response
+        const sectionsArray = sectionOrder.map(key => sections[key]);
+
+        res.json({
+            success: true,
+            snapshot: {
+                id: group.id,
+                name: group.snapshot_name,
+                created_at: group.created_at
+            },
+            sections: sectionsArray
+        });
+    } catch (err) {
+        console.error('Error fetching full snapshot data:', err);
+        res.status(500).json({ success: false, message: 'Error fetching snapshot data' });
+    }
+});
+
 // Archive (soft-delete) snapshot group
 app.put('/api/sections/snapshots/:id/archive', async (req, res) => {
     if (!req.session.user || req.session.user.role !== 'ictcoor') return res.status(403).json({ success: false, message: 'Access denied' });
