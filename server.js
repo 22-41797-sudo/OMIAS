@@ -7019,11 +7019,10 @@ app.get('/api/stats/barangay-distribution', async (req, res) => {
     }
 
     try {
-        // Get all active students with their addresses
+        // Get ONLY students assigned to sections (in Section Management) with their addresses
         const studentsRes = await pool.query(`
-            SELECT current_address FROM students WHERE enrollment_status = 'active'
-            UNION ALL
-            SELECT current_address FROM early_registration
+            SELECT current_address FROM students 
+            WHERE enrollment_status = 'active' AND section_id IS NOT NULL
         `);
         
         // Use flexible barangay extraction to count
@@ -7078,7 +7077,7 @@ app.get('/api/enrollment/live-count', async (req, res) => {
     }
 
     try {
-        // Count active students assigned to sections
+        // Count active students ASSIGNED TO SECTIONS (in Section Management)
         const result = await pool.query(`
             SELECT COUNT(*) as total
             FROM students
@@ -7090,7 +7089,8 @@ app.get('/api/enrollment/live-count', async (req, res) => {
         res.json({ 
             success: true, 
             total: liveCount,
-            label: 'Current Live Data'
+            label: 'Current School Year (Live)',
+            schoolYear: 'Current School Year (Live)'
         });
     } catch (err) {
         console.error('Error getting live enrollment count:', err);
