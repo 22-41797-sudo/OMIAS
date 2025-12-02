@@ -2,24 +2,35 @@ require('dotenv').config();
 const nodemailer = require('nodemailer');
 
 // Create transporter for Gmail using port 587 with TLS (alternative to SSL port 465)
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587, // TLS port (alternative, sometimes less blocked than 465)
-    secure: false, // false for TLS (starttls)
-    requireTLS: true,
-    auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASSWORD,
-    },
-    connectionTimeout: 30000,
-    socketTimeout: 30000,
-    maxConnections: 5,
-    maxMessages: 100,
-    rateDelta: 1000,
-    rateLimit: 5,
-    logger: false,
-    debug: false,
-});
+let transporter;
+try {
+    transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587, // TLS port (alternative, sometimes less blocked than 465)
+        secure: false, // false for TLS (starttls)
+        requireTLS: true,
+        auth: {
+            user: process.env.GMAIL_USER,
+            pass: process.env.GMAIL_PASSWORD,
+        },
+        connectionTimeout: 30000,
+        socketTimeout: 30000,
+        maxConnections: 5,
+        maxMessages: 100,
+        rateDelta: 1000,
+        rateLimit: 5,
+        logger: false,
+        debug: false,
+    });
+} catch (err) {
+    console.error('⚠️ Email transporter initialization error:', err.message);
+    // Create a dummy transporter that logs instead of sending
+    transporter = nodemailer.createTransport({
+        host: 'localhost',
+        port: 1025,
+        logger: false
+    });
+}
 
 /**
  * Helper: Retry email sending with exponential backoff
