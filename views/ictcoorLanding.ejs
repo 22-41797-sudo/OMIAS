@@ -4890,6 +4890,21 @@ q<!DOCTYPE html>
             try {
                 let rows = [];
 
+                // Always get live data first
+                try {
+                    const liveRes = await fetch('/api/enrollment/live-count');
+                    const liveData = await liveRes.json();
+                    if (liveData.success && liveData.total > 0) {
+                        rows.push({
+                            name: 'Current Live Data',
+                            total: liveData.total,
+                            isLiveData: true
+                        });
+                    }
+                } catch (e) {
+                    console.warn('Failed to load live enrollment count', e);
+                }
+
                 // Check if a snapshot is currently loaded
                 if (window.currentSnapshotData && Array.isArray(window.currentSnapshotData.items)) {
                     // Use the loaded snapshot data
@@ -4905,9 +4920,15 @@ q<!DOCTYPE html>
                     const res = await fetch('/api/sections/snapshots');
                     const meta = await res.json();
                     if (!meta || !meta.success || !Array.isArray(meta.groups) || meta.groups.length === 0) {
-                        const container = document.getElementById('chartInterpretation');
-                        if (container) {
-                            container.innerHTML = '<p style="padding:20px; text-align:center; color:var(--gray-600);">No enrollment snapshots available. Create a snapshot to view trends.</p>';
+                        // Even if no snapshots, show live data
+                        if (rows.length === 0) {
+                            const container = document.getElementById('chartInterpretation');
+                            if (container) {
+                                container.innerHTML = '<p style="padding:20px; text-align:center; color:var(--gray-600);">No enrollment snapshots available. Create a snapshot to view trends.</p>';
+                            }
+                        } else {
+                            renderSnapshotsChart(rows);
+                            try { renderInterpretationFromRows(rows); } catch (e) { console.warn('renderInterpretation error', e); }
                         }
                         return;
                     }
