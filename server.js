@@ -3992,13 +3992,9 @@ app.post('/api/snapshots/dataset', async (req, res) => {
 
     const client = await pool.connect();
     try {
-        // Drop and recreate tables to ensure correct schema
-        await client.query('DROP TABLE IF EXISTS section_snapshot_items CASCADE');
-        await client.query('DROP TABLE IF EXISTS section_snapshot_groups CASCADE');
-
-        // Create groups table
+        // Create tables if they don't exist (DO NOT DROP - keep all snapshots)
         await client.query(`
-            CREATE TABLE section_snapshot_groups (
+            CREATE TABLE IF NOT EXISTS section_snapshot_groups (
                 id SERIAL PRIMARY KEY,
                 snapshot_name TEXT NOT NULL UNIQUE,
                 created_by INTEGER,
@@ -4009,7 +4005,7 @@ app.post('/api/snapshots/dataset', async (req, res) => {
 
         // Create items table with proper structure
         await client.query(`
-            CREATE TABLE section_snapshot_items (
+            CREATE TABLE IF NOT EXISTS section_snapshot_items (
                 id SERIAL PRIMARY KEY,
                 group_id INTEGER NOT NULL REFERENCES section_snapshot_groups(id) ON DELETE CASCADE,
                 section_id INTEGER,
