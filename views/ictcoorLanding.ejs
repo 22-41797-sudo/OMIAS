@@ -4984,15 +4984,23 @@ q<!DOCTYPE html>
         function renderSnapshotsChart(rows) {
             const ctx = document.getElementById('enrollmentTrendChart');
             if (!ctx) return;
-            // Sort rows by year extracted from name if possible
+            
+            // Sort rows by created date or year extracted from name
             rows.sort((a,b) => {
-                const pa = (a.name || '').match(/(\d{4})/); const pb = (b.name || '').match(/(\d{4})/);
-                const na = pa ? Number(pa[1]) : a.name.localeCompare(b.name);
-                const nb = pb ? Number(pb[1]) : b.name.localeCompare(a.name);
-                return na - nb;
+                // Try to extract 4-digit year
+                const yearA = (a.name || '').match(/(\d{4})/);
+                const yearB = (b.name || '').match(/(\d{4})/);
+                
+                if (yearA && yearB) {
+                    return Number(yearA[1]) - Number(yearB[1]);
+                }
+                // Fallback to string comparison
+                return a.name.localeCompare(b.name);
             });
+            
             const labels = rows.map(r => r.name);
             const values = rows.map(r => r.total);
+            
             if (enrollmentChart) enrollmentChart.destroy();
             enrollmentChart = new Chart(ctx, {
                 type: 'line',
@@ -5002,23 +5010,47 @@ q<!DOCTYPE html>
                         label: 'Students',
                         data: values,
                         borderColor: '#1f78b4',
-                        backgroundColor: 'rgba(31,120,180,0.08)',
-                        fill: false,
-                        tension: 0.2,
+                        backgroundColor: 'rgba(31,120,180,0.1)',
+                        fill: true,
+                        tension: 0.3,
                         pointBackgroundColor: '#1f78b4',
-                        pointRadius: 6,
-                        pointHoverRadius: 8
+                        pointBorderColor: '#0d47a1',
+                        pointBorderWidth: 2,
+                        pointRadius: 7,
+                        pointHoverRadius: 9,
+                        borderWidth: 3
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        x: { title: { display: true, text: 'School Year' } },
-                        y: { beginAtZero: true, title: { display: true, text: 'Student Count' } }
+                        x: { 
+                            title: { display: true, text: 'School Year', font: { size: 14, weight: 'bold' } },
+                            ticks: { font: { size: 12 } }
+                        },
+                        y: { 
+                            beginAtZero: true, 
+                            title: { display: true, text: 'Student Count', font: { size: 14, weight: 'bold' } },
+                            ticks: { font: { size: 12 } }
+                        }
                     },
                     plugins: {
-                        tooltip: { mode: 'nearest', intersect: true }
+                        legend: {
+                            display: true,
+                            labels: { font: { size: 12 }, padding: 15 }
+                        },
+                        tooltip: { 
+                            mode: 'index', 
+                            intersect: false,
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            padding: 12,
+                            displayColors: true,
+                            borderColor: '#1f78b4',
+                            borderWidth: 1
+                        }
                     }
                 }
             });
