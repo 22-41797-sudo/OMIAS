@@ -3992,25 +3992,22 @@ app.post('/api/snapshots/dataset', async (req, res) => {
 
     const client = await pool.connect();
     try {
-        await client.query('BEGIN');
-
-        // Ensure the tables exist with all needed columns
+        // Ensure groups table exists
         await client.query(`
             CREATE TABLE IF NOT EXISTS section_snapshot_groups (
                 id SERIAL PRIMARY KEY,
-                snapshot_name TEXT NOT NULL,
+                snapshot_name TEXT NOT NULL UNIQUE,
                 created_by INTEGER,
                 is_archived BOOLEAN DEFAULT false,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
-        // Drop and recreate items table to ensure all columns exist
-        await client.query(`DROP TABLE IF EXISTS section_snapshot_items CASCADE`);
+        // Ensure items table exists
         await client.query(`
-            CREATE TABLE section_snapshot_items (
+            CREATE TABLE IF NOT EXISTS section_snapshot_items (
                 id SERIAL PRIMARY KEY,
-                group_id INTEGER REFERENCES section_snapshot_groups(id) ON DELETE CASCADE,
+                group_id INTEGER,
                 section_id INTEGER,
                 section_name TEXT,
                 grade_level TEXT,
@@ -4022,6 +4019,8 @@ app.post('/api/snapshots/dataset', async (req, res) => {
                 teacher_name TEXT
             )
         `);
+
+        await client.query('BEGIN');
 
         // Create snapshot group
         const groupResult = await client.query(
@@ -4056,7 +4055,7 @@ app.post('/api/snapshots/dataset', async (req, res) => {
             message: `Snapshot '${snapshotName}' saved with ${students.length} students`
         });
     } catch (err) {
-        await client.query('ROLLBACK');
+        try { await client.query('ROLLBACK'); } catch (e) {}
         console.error('Error saving snapshot dataset:', err);
         res.status(500).json({ success: false, message: 'Error saving snapshot: ' + err.message });
     } finally {
