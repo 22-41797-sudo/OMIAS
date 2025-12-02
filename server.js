@@ -968,44 +968,68 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
             FROM students s
             LEFT JOIN sections sec ON sec.id = s.section_id
             WHERE s.id IN (
-                SELECT DISTINCT student_id FROM student_behavior_reports
+                SELECT DISTINCT student_id FROM student_behavior_reports WHERE student_id IS NOT NULL
             )
         `);
 
         console.log('👥 Found', studentsResult.rows.length, 'students with reports');
 
-        // ===== DSS ENGINE: ANALYZE ALL REPORTS =====
+        // ===== DSS ENGINE: ANALYZE ALL REPORTS (with fallback) =====
         const reports = reportsResult.rows;
         
-        let dashboardAnalysis = {};
+        let dashboardAnalysis = {
+            totalReports: reports.length,
+            highSeverityCount: 0,
+            mediumSeverityCount: 0,
+            lowSeverityCount: 0,
+            categoryBreakdown: {},
+            atRiskStudents: [],
+            topRecommendations: [],
+        };
+        
         try {
-            if (dssEngine && dssEngine.analyzeAllReports) {
-                dashboardAnalysis = dssEngine.analyzeAllReports(reports);
+            if (dssEngine && dssEngine.analyzeAllReports && typeof dssEngine.analyzeAllReports === 'function') {
+                const engineAnalysis = dssEngine.analyzeAllReports(reports);
+                dashboardAnalysis = { ...dashboardAnalysis, ...engineAnalysis };
+                console.log('✅ DSS Engine analysis completed');
             } else {
-                console.warn('⚠️ DSS Engine not available, using empty analysis');
-                dashboardAnalysis = { totalReports: reports.length };
+                console.warn('⚠️ DSS Engine not properly initialized, using fallback analysis');
+                // Fallback: basic analysis
+                reports.forEach(report => {
+                    if (report.severity === 'High') dashboardAnalysis.highSeverityCount++;
+                    if (report.severity === 'Medium') dashboardAnalysis.mediumSeverityCount++;
+                    if (report.severity === 'Low') dashboardAnalysis.lowSeverityCount++;
+                    dashboardAnalysis.categoryBreakdown[report.category] = 
+                        (dashboardAnalysis.categoryBreakdown[report.category] || 0) + 1;
+                });
             }
         } catch (dssErr) {
-            console.error('⚠️ DSS Engine error:', dssErr.message);
-            dashboardAnalysis = { totalReports: reports.length, dssError: true };
+            console.warn('⚠️ DSS Engine error:', dssErr.message);
+            // Use fallback analysis
+            reports.forEach(report => {
+                if (report.severity === 'High') dashboardAnalysis.highSeverityCount++;
+                if (report.severity === 'Medium') dashboardAnalysis.mediumSeverityCount++;
+                if (report.severity === 'Low') dashboardAnalysis.lowSeverityCount++;
+                dashboardAnalysis.categoryBreakdown[report.category] = 
+                    (dashboardAnalysis.categoryBreakdown[report.category] || 0) + 1;
+            });
         }
 
-        // ===== ADD RECOMMENDATIONS TO EACH REPORT =====
+        // ===== ADD RECOMMENDATIONS TO EACH REPORT (with fallback) =====
         const reportsWithRecommendations = reports.map(report => {
             let recommendations = [];
             try {
-                if (dssEngine && dssEngine.generateRecommendations) {
+                if (dssEngine && dssEngine.generateRecommendations && typeof dssEngine.generateRecommendations === 'function') {
                     recommendations = dssEngine.generateRecommendations(report, reports);
                 }
             } catch (recErr) {
                 console.warn('⚠️ Recommendation generation error for report', report.id, ':', recErr.message);
-                recommendations = [];
             }
             
             return {
                 ...report,
-                recommendations: recommendations,
-                hasRecommendations: recommendations.length > 0,
+                recommendations: recommendations || [],
+                hasRecommendations: (recommendations && recommendations.length > 0) || false,
             };
         });
 
@@ -1019,6 +1043,7 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
         });
     } catch (err) {
         console.error('💥 Guidance behavior analytics error:', err);
+        console.error('Stack:', err.stack);
         res.status(500).json({ success: false, error: 'Failed to load analytics: ' + err.message });
     }
 });
