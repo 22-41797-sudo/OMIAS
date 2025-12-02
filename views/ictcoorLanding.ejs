@@ -2015,11 +2015,16 @@ q<!DOCTYPE html>
         }
 
         // Add a single event listener to the sidebar for better performance
-        document.querySelector('.sidebar-nav').addEventListener('click', (e) => {
-            const link = e.target.closest('a');
-            if (link && link.dataset.contentId) {
-                e.preventDefault();
-                showContent(link.dataset.contentId);
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebarNav = document.querySelector('.sidebar-nav');
+            if (sidebarNav) {
+                sidebarNav.addEventListener('click', (e) => {
+                    const link = e.target.closest('a');
+                    if (link && link.dataset.contentId) {
+                        e.preventDefault();
+                        showContent(link.dataset.contentId);
+                    }
+                });
             }
         });
         
@@ -4448,8 +4453,13 @@ q<!DOCTYPE html>
         }
 
         // Load sections when the Sections tab is clicked
-        document.getElementById('sections-link')?.addEventListener('click', () => {
-            loadSections();
+        document.addEventListener('DOMContentLoaded', () => {
+            const sectionsLink = document.getElementById('sections-link');
+            if (sectionsLink) {
+                sectionsLink.addEventListener('click', () => {
+                    loadSections();
+                });
+            }
         });
         
         // --- General UI Logic ---
