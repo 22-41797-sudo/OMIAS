@@ -9,6 +9,7 @@ const session = require('express-session'); // 1. Import session
 const multer = require('multer');
 const fs = require('fs');
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 const dssEngine = require('./dss-engine'); // Import DSS Engine
 const PDFDocument = require('pdfkit'); // Import pdfkit for PDF generation
 let emailService;
@@ -309,7 +310,7 @@ const enrollmentLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req, res) => req.ip || req.connection.remoteAddress,
+    keyGenerator: ipKeyGenerator,
 });
 
 // Limit document request submissions to 3 per hour per IP
@@ -322,7 +323,7 @@ const documentRequestLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req, res) => req.ip || req.connection.remoteAddress,
+    keyGenerator: ipKeyGenerator,
 });
 
 // General API rate limiter (100 requests per 15 minutes)
@@ -335,7 +336,7 @@ const apiLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req, res) => req.ip || req.connection.remoteAddress,
+    keyGenerator: ipKeyGenerator,
 });
 
 // (moved) session + parsers are now registered at the very top
@@ -2716,7 +2717,6 @@ app.get('/ictcoorLanding', async (req, res) => {
                     er.created_at as enrollment_date,
                     'pending' as enrollment_status
                 FROM early_registration er
-                WHERE (status = 'pending' OR status IS NULL)
                 ORDER BY er.last_name, er.first_name
             `);
             console.log(`✅ Found ${enrolleesResult.rows.length} pending enrollees`);
@@ -4694,8 +4694,8 @@ app.put('/api/students/:id/reassign', async (req, res) => {
                 INSERT INTO students (
                     lrn, school_year, grade_level, last_name, first_name, middle_name, ext_name,
                     birthday, age, sex, religion, current_address, contact_number,
-                    enrollment_status, section_id, ip_community
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                    enrollment_status, section_id, ip_community, pwd
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
                 ON CONFLICT DO NOTHING
             `, [
                 earlyReg.lrn,
@@ -4713,6 +4713,7 @@ app.put('/api/students/:id/reassign', async (req, res) => {
                 earlyReg.contact_number || null,
                 'active',
                 newSectionId,
+                'N/A',
                 'N/A'
             ]);
 
@@ -5341,7 +5342,7 @@ app.get('/api/teachers', async (req, res) => {
                 NULL::VARCHAR as ext_name,
                 first_name || ' ' || last_name AS full_name,
                 email,
-                phone as contact_number,
+                NULL::VARCHAR as contact_number,
                 NULL::DATE as birthday,
                 NULL::VARCHAR as sex,
                 NULL::VARCHAR as address,
