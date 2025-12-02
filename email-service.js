@@ -16,6 +16,12 @@ const transporter = nodemailer.createTransport({
  */
 async function sendEnrollmentStatusUpdate(studentEmail, studentName, requestToken, status, rejectionReason = null) {
     try {
+        console.log(`\n📧 === ENROLLMENT EMAIL SERVICE CALLED ===`);
+        console.log(`📧 To: ${studentEmail}`);
+        console.log(`📧 Student: ${studentName}`);
+        console.log(`📧 Status: ${status}`);
+        console.log(`📧 Token: ${requestToken}`);
+        
         if (!process.env.GMAIL_USER || !process.env.GMAIL_PASSWORD) {
             console.error('❌ EMAIL SERVICE NOT CONFIGURED');
             console.error('Missing environment variables: GMAIL_USER or GMAIL_PASSWORD');
@@ -25,6 +31,8 @@ async function sendEnrollmentStatusUpdate(studentEmail, studentName, requestToke
             console.error(`❌ NOT sending email to ${studentEmail} - configuration required`);
             return false;
         }
+
+        console.log(`✅ Email credentials found: ${process.env.GMAIL_USER}`);
 
         // Only send for approved or rejected
         if (status !== 'approved' && status !== 'rejected') {

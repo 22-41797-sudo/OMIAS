@@ -3328,6 +3328,7 @@ app.post('/approve-request/:id', async (req, res) => {
 
         // Send approval notification email AFTER transaction completes (non-blocking)
         // Don't await - let it send in background so response isn't blocked
+        console.log(`📧 Triggering approval email send to ${studentEmail} for ${learnerName}`);
         emailService.sendEnrollmentStatusUpdate(studentEmail, learnerName, studentToken, 'approved')
             .catch(err => console.error('❌ Error sending approval email:', err.message));
 
