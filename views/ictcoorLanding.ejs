@@ -1997,8 +1997,13 @@ q<!DOCTYPE html>
                 loadTeachers(); // Load teachers from API whenever the teachers tab is clicked
             } else if (contentId === 'students-content') {
                 pageTitle.innerText = 'Students Management';
+                setTimeout(() => loadStudents(), 100); // Load students when switching to this tab
+            } else if (contentId === 'unassigned-content') {
+                pageTitle.innerText = 'Unassigned Students';
+                setTimeout(() => loadUnassignedStudents(), 100); // Load unassigned students when switching to this tab
             } else if (contentId === 'sections-content') {
                 pageTitle.innerText = 'Sections Management';
+                loadSections(); // Load sections when switching to this tab
             } else if (contentId === 'settings-content') {
                 pageTitle.innerText = 'Settings';
             }
