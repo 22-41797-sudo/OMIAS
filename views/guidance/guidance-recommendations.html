@@ -296,6 +296,11 @@
         div.className = 'suggestion-item';
         div.onclick = () => copySuggestionToMessage(sug.text);
         
+        let sectionInfo = '';
+        if (sug.sections && sug.sections.length > 0) {
+          sectionInfo = `<div class="suggestion-section" style="font-size: 12px; color: #666; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f0f0f0;">📚 Section: ${sug.sections.join(', ')}</div>`;
+        }
+        
         div.innerHTML = `
           <div class="suggestion-title">${sug.icon} ${sug.title}</div>
           <div class="suggestion-text">${sug.text}</div>
@@ -303,6 +308,7 @@
             <span class="suggestion-badge">${sug.count} students</span>
             <span class="suggestion-badge">${sug.category}</span>
           </div>
+          ${sectionInfo}
         `;
         container.appendChild(div);
       });
@@ -397,12 +403,15 @@
         const matched = reports.filter(r => matchesRule(r, rule));
         if (matched.length >= rule.min) {
           const students = Array.from(new Set(matched.map(r => r.student_full_name))).slice(0, 4).join(', ');
+          // Get unique sections from matched reports
+          const sections = Array.from(new Set(matched.map(r => r.section_name).filter(s => s && s !== 'N/A')));
           suggestions.push({
             icon: rule.icon,
             title: rule.title,
             text: rule.text(students || 'student(s)'),
             count: matched.length,
-            category: rule.category
+            category: rule.category,
+            sections: sections
           });
         }
       });
@@ -411,12 +420,14 @@
       const highSeverity = reports.filter(r => (r.severity || '').toLowerCase() === 'high');
       if (highSeverity.length > 0) {
         const student = highSeverity[0];
+        const sections = Array.from(new Set(highSeverity.map(r => r.section_name).filter(s => s && s !== 'N/A')));
         suggestions.unshift({
           icon: '🚨',
           title: 'Urgent: High Severity Case',
           text: `Immediate action needed for ${student.student_full_name}. Call parent TODAY and schedule face-to-face meeting within 48 hours.`,
           count: highSeverity.length,
-          category: 'Urgent'
+          category: 'Urgent',
+          sections: sections
         });
       }
 
@@ -425,12 +436,14 @@
         Object.keys(byCategory).forEach(cat => {
           const list = byCategory[cat];
           const students = list.map(r => r.student_full_name).slice(0,3).join(', ');
+          const sections = Array.from(new Set(list.map(r => r.section_name).filter(s => s && s !== 'N/A')));
           suggestions.push({
             icon: 'ℹ️',
             title: `${cat} (${list.length})`,
             text: `Reports for: ${students}`,
             count: list.length,
-            category: cat
+            category: cat,
+            sections: sections
           });
         });
       }
