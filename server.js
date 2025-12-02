@@ -5443,7 +5443,17 @@ app.post('/api/teachers', async (req, res) => {
                 username, password, first_name, last_name,
                 email, phone, department, specialization, is_active
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            RETURNING id, username, first_name, last_name, email
+            RETURNING 
+                id, username, first_name, last_name, email, phone,
+                department, specialization, is_active,
+                NULL::text AS middle_name,
+                NULL::text AS ext_name,
+                NULL::date AS birthday,
+                NULL::text AS sex,
+                NULL::text AS address,
+                NULL::text AS employee_id,
+                NULL::text AS position,
+                created_at AS date_hired
         `, [
             username, hashedPassword, first_name, last_name,
             email || null, contact_number || null, department || null, specialization || null, true
