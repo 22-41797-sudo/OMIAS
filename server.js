@@ -6972,6 +6972,29 @@ app.get('/api/admin/test-pending-query', async (req, res) => {
     }
 });
 
+// Admin endpoint to clean up all snapshot data
+app.post('/api/admin/cleanup-snapshots', async (req, res) => {
+    try {
+        console.log('🧹 Cleaning up all snapshot data...');
+        
+        // Delete all snapshot items first (due to foreign key)
+        const itemResult = await pool.query('DELETE FROM section_snapshot_items');
+        console.log(`✅ Deleted ${itemResult.rowCount} snapshot items`);
+        
+        // Delete all snapshot groups
+        const groupResult = await pool.query('DELETE FROM section_snapshot_groups');
+        console.log(`✅ Deleted ${groupResult.rowCount} snapshot groups`);
+        
+        res.json({ 
+            success: true, 
+            message: `Cleanup complete. Deleted ${groupResult.rowCount} snapshots and ${itemResult.rowCount} items.`
+        });
+    } catch (err) {
+        console.error('Error during snapshot cleanup:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // Admin endpoint to clean up all test/sample student data
 app.post('/api/admin/cleanup-students', async (req, res) => {
     try {
