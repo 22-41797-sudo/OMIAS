@@ -4895,7 +4895,7 @@ app.put('/api/students/:id/archive', async (req, res) => {
 
         // Get student info
         const studentResult = await client.query(
-            'SELECT full_name, section_id FROM students WHERE id = $1',
+            'SELECT first_name, last_name, section_id FROM students WHERE id = $1',
             [studentId]
         );
 
@@ -4905,6 +4905,7 @@ app.put('/api/students/:id/archive', async (req, res) => {
         }
 
         const student = studentResult.rows[0];
+        const fullName = `${student.last_name}, ${student.first_name}`;
 
         // Archive the student
         await client.query(
@@ -4915,7 +4916,7 @@ app.put('/api/students/:id/archive', async (req, res) => {
         await client.query('COMMIT');
         res.json({ 
             success: true, 
-            message: `Student "${student.full_name}" has been archived successfully.`
+            message: `Student "${fullName}" has been archived successfully.`
         });
 
     } catch (err) {
@@ -4941,7 +4942,7 @@ app.put('/api/students/:id/unarchive', async (req, res) => {
 
         // Get student info
         const studentResult = await client.query(
-            'SELECT full_name FROM students WHERE id = $1',
+            'SELECT first_name, last_name FROM students WHERE id = $1',
             [studentId]
         );
 
@@ -4951,6 +4952,7 @@ app.put('/api/students/:id/unarchive', async (req, res) => {
         }
 
         const student = studentResult.rows[0];
+        const fullName = `${student.last_name}, ${student.first_name}`;
 
         // Restore the student
         await client.query(
@@ -4961,7 +4963,7 @@ app.put('/api/students/:id/unarchive', async (req, res) => {
         await client.query('COMMIT');
         res.json({ 
             success: true, 
-            message: `Student "${student.full_name}" has been restored successfully.`
+            message: `Student "${fullName}" has been restored successfully.`
         });
 
     } catch (err) {
