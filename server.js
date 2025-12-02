@@ -373,7 +373,7 @@ const storage = multer.diskStorage({
 app.get('/api/teacher/me', requireTeacher, async (req, res) => {
     try {
         const t = await pool.query(
-            'SELECT id, username, first_name, last_name, email, phone as contact_number FROM teachers WHERE id = $1',
+            'SELECT id, username, first_name, middle_name, last_name, email, phone as contact_number FROM teachers WHERE id = $1',
             [req.session.user.id]
         );
         if (t.rows.length === 0) return res.status(404).json({ success: false, error: 'Not found' });

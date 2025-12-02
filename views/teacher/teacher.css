@@ -94,8 +94,13 @@ body {
 .navbar-adviser-info {
   display: flex;
   align-items: center;
+  gap: 8px;
   padding: 0 12px;
   border-right: 1px solid #e2e8f0;
+}
+.adviser-icon {
+  font-size: 18px;
+  display: block;
 }
 .adviser-name {
   font-size: 13px;
