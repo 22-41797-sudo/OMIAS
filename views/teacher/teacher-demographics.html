@@ -51,38 +51,18 @@
       <!-- Tabbed Interface - Vertical Sidebar -->
       <div class="tabs-container-vertical">
         <div class="tabs-sidebar">
-          <button class="tab-btn active" onclick="switchTab(event, 'profile-tab')">My Profile</button>
-          <button class="tab-btn" onclick="switchTab(event, 'advisory-tab')">My Advisory</button>
+          <button class="tab-btn active" onclick="switchTab(event, 'advisory-tab')">My Advisory</button>
           <button class="tab-btn" onclick="switchTab(event, 'reports-tab')">Section Reports</button>
           <button class="tab-btn" onclick="switchTab(event, 'messages-tab')">📬 Messages <span id="messagesBadge" class="badge badge-hidden">0</span></button>
         </div>
         
         <div class="tabs-content-wrapper">
 
-        <!-- Tab 1: My Profile -->
-        <div id="profile-tab" class="tab-content active">
-          <div class="tab-profile-grid">
-            <div class="profile-item">
-              <div class="profile-label">Name:</div>
-              <div class="profile-value" id="profName">—</div>
-            </div>
-            <div class="profile-item">
-              <div class="profile-label">Username:</div>
-              <div class="profile-value" id="profUsername">—</div>
-            </div>
-            <div class="profile-item">
-              <div class="profile-label">Email:</div>
-              <div class="profile-value" id="profEmail">—</div>
-            </div>
-            <div class="profile-item">
-              <div class="profile-label">Contact:</div>
-              <div class="profile-value" id="profContact">—</div>
-            </div>
-          </div>
-        </div>
+        <!-- Tab 1: My Profile - HIDDEN -->
+        <div id="profile-tab" class="tab-content active hidden"></div>
 
         <!-- Tab 2: My Advisory -->
-        <div id="advisory-tab" class="tab-content">
+        <div id="advisory-tab" class="tab-content active">
           <div class="advisory-grid">
             <div class="advisory-item">
               <div class="advisory-item-label">Current Section</div>
