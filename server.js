@@ -1764,7 +1764,7 @@ app.post('/api/guidance/login', async (req, res) => {
         // Check guidance_accounts table for valid credentials
         console.log('📋 Querying guidance_accounts table...');
         const result = await pool.query(
-            'SELECT * FROM guidance_accounts WHERE username = $1 AND is_active = true',
+            'SELECT id, fullname, username, password, is_active FROM guidance_accounts WHERE username = $1',
             [username]
         );
         
@@ -1773,7 +1773,13 @@ app.post('/api/guidance/login', async (req, res) => {
         const user = result.rows[0];
         
         if (user) {
-            console.log('👤 User found:', user.fullname);
+            console.log('👤 User found:', user.fullname, '| is_active:', user.is_active);
+            
+            if (!user.is_active) {
+                console.log('❌ Account is inactive');
+                return res.status(401).json({ success: false, error: 'Account is inactive. Please contact administrator.' });
+            }
+            
             const passwordMatch = await bcrypt.compare(password, user.password);
             console.log('🔑 Password match:', passwordMatch);
             
@@ -1798,7 +1804,11 @@ app.post('/api/guidance/login', async (req, res) => {
                     });
                     return res.json({ success: true, message: 'Login successful' });
                 });
+            } else {
+                console.log('❌ Invalid password');
             }
+        } else {
+            console.log('❌ User not found with username:', username);
         }
         
         console.log('❌ Invalid credentials');
@@ -2046,10 +2056,15 @@ app.post('/create-guidance-account', async (req, res) => {
     try {
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
+        console.log('🔐 Creating guidance account:', { fullname, username, email });
+        
         await pool.query(
-            'INSERT INTO guidance_accounts (fullname, username, password, email, contact_number) VALUES ($1, $2, $3, $4, $5)', 
+            'INSERT INTO guidance_accounts (fullname, username, password, email, contact_number, is_active) VALUES ($1, $2, $3, $4, $5, true)', 
             [fullname, username, hashedPassword, email || null, contact_number || null]
         );
+        
+        console.log('✅ Guidance account created successfully');
+        
         // After creation, reload the list and stay on the same page
         const result = await pool.query('SELECT id, fullname, username, email, contact_number, is_active FROM guidance_accounts ORDER BY id');
         res.render('guidanceacc', { guidanceAccounts: result.rows });
