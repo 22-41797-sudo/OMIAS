@@ -17,8 +17,12 @@ const transporter = nodemailer.createTransport({
 async function sendEnrollmentStatusUpdate(studentEmail, studentName, requestToken, status, rejectionReason = null) {
     try {
         if (!process.env.GMAIL_USER || !process.env.GMAIL_PASSWORD) {
-            console.warn('⚠️ Email service not configured. Missing GMAIL_USER or GMAIL_PASSWORD environment variables.');
-            console.warn('📧 To configure: Add GMAIL_USER, GMAIL_PASSWORD, and GMAIL_FROM_NAME to your Render environment variables.');
+            console.error('❌ EMAIL SERVICE NOT CONFIGURED');
+            console.error('Missing environment variables: GMAIL_USER or GMAIL_PASSWORD');
+            console.error('📧 Please add to Render environment variables:');
+            console.error('   GMAIL_USER=your_email@gmail.com');
+            console.error('   GMAIL_PASSWORD=your_16_char_app_password');
+            console.error(`❌ NOT sending email to ${studentEmail} - configuration required`);
             return false;
         }
 
@@ -83,10 +87,17 @@ async function sendEnrollmentStatusUpdate(studentEmail, studentName, requestToke
         };
 
         await transporter.sendMail(mailOptions);
-        console.log(`✅ Enrollment ${status} email sent to ${studentEmail}`);
+        console.log(`✅ Enrollment ${status} email sent successfully to ${studentEmail}`);
+        console.log(`   Student: ${studentName} | Token: ${requestToken}`);
         return true;
     } catch (err) {
-        console.error('❌ Error sending enrollment email:', err.message);
+        console.error(`❌ FAILED to send enrollment ${status} email to ${studentEmail}:`);
+        console.error(`   Error: ${err.message}`);
+        console.error(`   Student: ${studentName} | Token: ${requestToken}`);
+        console.error('   This is likely due to:');
+        console.error('   1. Missing/invalid GMAIL_USER or GMAIL_PASSWORD on Render');
+        console.error('   2. Gmail account needs 2-factor authentication enabled');
+        console.error('   3. Must use App Password, not regular Gmail password');
         return false;
     }
 }
@@ -98,8 +109,12 @@ async function sendEnrollmentStatusUpdate(studentEmail, studentName, requestToke
 async function sendDocumentRequestStatusUpdate(studentEmail, studentName, requestToken, documentType, status, rejectionReason = null) {
     try {
         if (!process.env.GMAIL_USER || !process.env.GMAIL_PASSWORD) {
-            console.warn('⚠️ Email service not configured. Missing GMAIL_USER or GMAIL_PASSWORD environment variables.');
-            console.warn('📧 To configure: Add GMAIL_USER, GMAIL_PASSWORD, and GMAIL_FROM_NAME to your Render environment variables.');
+            console.error('❌ EMAIL SERVICE NOT CONFIGURED');
+            console.error('Missing environment variables: GMAIL_USER or GMAIL_PASSWORD');
+            console.error('📧 Please add to Render environment variables:');
+            console.error('   GMAIL_USER=your_email@gmail.com');
+            console.error('   GMAIL_PASSWORD=your_16_char_app_password');
+            console.error(`❌ NOT sending email to ${studentEmail} - configuration required`);
             return false;
         }
 
@@ -169,10 +184,17 @@ async function sendDocumentRequestStatusUpdate(studentEmail, studentName, reques
         };
 
         await transporter.sendMail(mailOptions);
-        console.log(`✅ Document request ${status} email sent to ${studentEmail}`);
+        console.log(`✅ Document request ${status} email sent successfully to ${studentEmail}`);
+        console.log(`   Student: ${studentName} | Document: ${documentType} | Token: ${requestToken}`);
         return true;
     } catch (err) {
-        console.error('❌ Error sending document request email:', err.message);
+        console.error(`❌ FAILED to send document request ${status} email to ${studentEmail}:`);
+        console.error(`   Error: ${err.message}`);
+        console.error(`   Student: ${studentName} | Document: ${documentType} | Token: ${requestToken}`);
+        console.error('   This is likely due to:');
+        console.error('   1. Missing/invalid GMAIL_USER or GMAIL_PASSWORD on Render');
+        console.error('   2. Gmail account needs 2-factor authentication enabled');
+        console.error('   3. Must use App Password, not regular Gmail password');
         return false;
     }
 }
