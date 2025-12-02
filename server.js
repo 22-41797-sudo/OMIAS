@@ -3750,7 +3750,7 @@ app.post('/assign-section/:id', async (req, res) => {
             // Increment section current_count
             await client.query(`
                 UPDATE sections 
-                SET current_count = current_count + 1, updated_at = CURRENT_TIMESTAMP 
+                SET current_count = current_count + 1
                 WHERE id = $1
             `, [section]);
 
@@ -3810,7 +3810,7 @@ app.post('/assign-section/:id', async (req, res) => {
             // Increment section current_count
             await client.query(`
                 UPDATE sections 
-                SET current_count = current_count + 1, updated_at = CURRENT_TIMESTAMP 
+                SET current_count = current_count + 1
                 WHERE id = $1
             `, [section]);
 
