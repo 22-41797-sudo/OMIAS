@@ -3317,15 +3317,18 @@ app.post('/approve-request/:id', async (req, res) => {
             [registrarId, requestId]
         );
 
-        // Send approval notification email
+        // Store learner name for email (before releasing client)
         const learnerName = `${request.first_name} ${request.last_name}`;
+        const studentEmail = request.gmail_address;
+        const studentToken = request.request_token;
         
+        // Commit transaction and release client
         await client.query('COMMIT');
         client.release();
 
         // Send approval notification email AFTER transaction completes (non-blocking)
-        // Don't await - let it send in background
-        emailService.sendEnrollmentStatusUpdate(request.gmail_address, learnerName, request.request_token, 'approved')
+        // Don't await - let it send in background so response isn't blocked
+        emailService.sendEnrollmentStatusUpdate(studentEmail, learnerName, studentToken, 'approved')
             .catch(err => console.error('❌ Error sending approval email:', err.message));
 
         res.json({ success: true, message: 'Request approved successfully', early_registration_id: inserted.rows[0].id });
@@ -3340,7 +3343,11 @@ app.post('/approve-request/:id', async (req, res) => {
         });
         res.status(500).json({ success: false, message: 'Error approving request: ' + err.message });
     } finally {
-        if (!client._released) client.release();
+        try {
+            if (client && !client._released) client.release();
+        } catch (e) {
+            // Client already released
+        }
     }
 });
 
