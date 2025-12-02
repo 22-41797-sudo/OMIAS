@@ -5100,6 +5100,7 @@ app.get('/api/students/all', async (req, res) => {
 
     try {
         // Get students from students table (both active and archived)
+        console.log('📚 Fetching all students...');
         const studentsResult = await pool.query(`
             SELECT 
                 s.id,
@@ -5115,7 +5116,7 @@ app.get('/api/students/all', async (req, res) => {
                 NULL::VARCHAR as sex,
                 NULL::VARCHAR as contact_number,
                 sec.section_name as assigned_section,
-                COALESCE(s.created_at, CURRENT_TIMESTAMP)::date as enrollment_date,
+                COALESCE(s.enrollment_date, CURRENT_TIMESTAMP)::date as enrollment_date,
                 s.enrollment_status,
                 CASE WHEN s.is_archived IS NULL THEN false ELSE s.is_archived END as is_archived
             FROM students s
@@ -5135,8 +5136,10 @@ app.get('/api/students/all', async (req, res) => {
                 END,
                 s.last_name, s.first_name
         `);
+        console.log(`✅ Found ${studentsResult.rows.length} active students`);
 
         // Also get enrollees who haven't been assigned yet (pending)
+        console.log('📝 Fetching pending enrollees...');
         const enrolleesResult = await pool.query(`
             SELECT 
                 'ER' || er.id::text as id,
@@ -5173,18 +5176,28 @@ app.get('/api/students/all', async (req, res) => {
                 END,
                 er.last_name, er.first_name
         `);
+        console.log(`✅ Found ${enrolleesResult.rows.length} pending enrollees`);
 
         // Combine: pending enrollees + all students (active & archived)
         const allStudents = [...enrolleesResult.rows, ...studentsResult.rows];
+        console.log(`✅ Total students (active + pending): ${allStudents.length}`);
 
         res.json({ success: true, students: allStudents });
     } catch (err) {
-        console.error('Error fetching all students:', err.message);
-        console.error('Full error:', err);
+        console.error('❌ Error fetching all students:', err.message);
+        console.error('Full error details:', {
+            code: err.code,
+            message: err.message,
+            detail: err.detail,
+            hint: err.hint,
+            position: err.position,
+            query: err.query
+        });
         res.status(500).json({ 
             success: false, 
             message: 'Error fetching students',
-            error: err.message 
+            error: err.message,
+            details: process.env.NODE_ENV === 'development' ? err.detail : undefined
         });
     }
 });
