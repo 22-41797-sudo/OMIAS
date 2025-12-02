@@ -542,7 +542,9 @@ async function initializeDatabase() {
         // Seed sections if they don't exist
         console.log('📚 Seeding sections...');
         const sectionCheckResult = await pool.query('SELECT COUNT(*) as cnt FROM sections');
+        console.log(`   Found ${sectionCheckResult.rows[0].cnt} existing sections`);
         if (sectionCheckResult.rows[0].cnt === 0) {
+            console.log('   Inserting 18 sections...');
             await pool.query(`
                 INSERT INTO sections (grade_level, section_name, max_capacity, room_number, is_active) VALUES
                 -- Kindergarten sections
