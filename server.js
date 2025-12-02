@@ -5355,20 +5355,20 @@ app.get('/api/teachers/:id', async (req, res) => {
                 id,
                 username,
                 first_name,
+                middle_name,
                 last_name,
+                ext_name,
                 email,
-                phone as contact_number,
+                contact_number,
+                birthday,
+                sex,
+                address,
+                employee_id,
                 specialization,
                 department,
+                position,
                 created_at as date_hired,
-                is_active,
-                NULL::text as middle_name,
-                NULL::text as ext_name,
-                NULL::text as address,
-                NULL::text as employee_id,
-                NULL::text as position,
-                NULL::date as birthday,
-                NULL::text as sex
+                is_active
             FROM teachers
             WHERE id = $1
         `, [teacherId]);
@@ -5440,23 +5440,18 @@ app.post('/api/teachers', async (req, res) => {
         // Insert new teacher (only columns that exist in teachers table)
         const result = await pool.query(`
             INSERT INTO teachers (
-                username, password, first_name, last_name,
-                email, phone, department, specialization, is_active
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                username, password, first_name, middle_name, last_name, ext_name,
+                email, contact_number, birthday, sex, address, employee_id,
+                department, position, specialization, is_active
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
             RETURNING 
-                id, username, first_name, last_name, email, phone,
+                id, username, first_name, last_name, email, contact_number,
                 department, specialization, is_active,
-                NULL::text AS middle_name,
-                NULL::text AS ext_name,
-                NULL::date AS birthday,
-                NULL::text AS sex,
-                NULL::text AS address,
-                NULL::text AS employee_id,
-                NULL::text AS position,
-                created_at AS date_hired
+                middle_name, ext_name, birthday, sex, address, employee_id, position, created_at AS date_hired
         `, [
-            username, hashedPassword, first_name, last_name,
-            email || null, contact_number || null, department || null, specialization || null, true
+            username, hashedPassword, first_name, middle_name || null, last_name, ext_name || null,
+            email || null, contact_number || null, birthday || null, sex || null, address || null, employee_id || null,
+            department || null, position || null, specialization || null, true
         ]);
 
         res.json({ 
@@ -5531,17 +5526,25 @@ app.put('/api/teachers/:id', async (req, res) => {
             UPDATE teachers SET
                 username = $1,
                 first_name = $2,
-                last_name = $3,
-                email = $4,
-                phone = $5,
-                department = $6,
-                specialization = $7,
-                is_active = $8
+                middle_name = $3,
+                last_name = $4,
+                ext_name = $5,
+                email = $6,
+                contact_number = $7,
+                birthday = $8,
+                sex = $9,
+                address = $10,
+                employee_id = $11,
+                department = $12,
+                position = $13,
+                specialization = $14,
+                is_active = $15
         `;
 
         let queryParams = [
-            username, first_name, last_name,
-            email || null, contact_number || null, department || null, specialization || null,
+            username, first_name, middle_name || null, last_name, ext_name || null,
+            email || null, contact_number || null, birthday || null, sex || null, address || null,
+            employee_id || null, department || null, position || null, specialization || null,
             is_active !== undefined ? is_active : true
         ];
 
@@ -5552,7 +5555,7 @@ app.put('/api/teachers/:id', async (req, res) => {
             queryParams.push(hashedPassword);
         }
 
-        updateQuery += ` WHERE id = $${queryParams.length + 1} RETURNING id, username, first_name, last_name`;
+        updateQuery += ` WHERE id = $${queryParams.length + 1} RETURNING id, username, first_name, last_name, email, contact_number, department, specialization, is_active, middle_name, ext_name, birthday, sex, address, employee_id, position, created_at AS date_hired`;
         queryParams.push(teacherId);
 
         const result = await pool.query(updateQuery, queryParams);
