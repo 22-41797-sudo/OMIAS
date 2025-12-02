@@ -17,7 +17,8 @@ const transporter = nodemailer.createTransport({
 async function sendEnrollmentStatusUpdate(studentEmail, studentName, requestToken, status, rejectionReason = null) {
     try {
         if (!process.env.GMAIL_USER || !process.env.GMAIL_PASSWORD) {
-            console.warn('⚠️ Email service not configured. Skipping email notification.');
+            console.warn('⚠️ Email service not configured. Missing GMAIL_USER or GMAIL_PASSWORD environment variables.');
+            console.warn('📧 To configure: Add GMAIL_USER, GMAIL_PASSWORD, and GMAIL_FROM_NAME to your Render environment variables.');
             return false;
         }
 
@@ -97,7 +98,8 @@ async function sendEnrollmentStatusUpdate(studentEmail, studentName, requestToke
 async function sendDocumentRequestStatusUpdate(studentEmail, studentName, requestToken, documentType, status, rejectionReason = null) {
     try {
         if (!process.env.GMAIL_USER || !process.env.GMAIL_PASSWORD) {
-            console.warn('⚠️ Email service not configured. Skipping email notification.');
+            console.warn('⚠️ Email service not configured. Missing GMAIL_USER or GMAIL_PASSWORD environment variables.');
+            console.warn('📧 To configure: Add GMAIL_USER, GMAIL_PASSWORD, and GMAIL_FROM_NAME to your Render environment variables.');
             return false;
         }
 
