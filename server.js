@@ -4033,15 +4033,21 @@ app.post('/api/snapshots/dataset', async (req, res) => {
         // Insert each student as a snapshot item
         for (const student of students) {
             const barangay = extractBarangayFlexible(student.barangay || student.current_address);
+            const fullName = student.name || student.full_name || '-';
+            const nameParts = fullName.split(',').map(p => p.trim());
+            const lastName = nameParts.length > 0 ? nameParts[0] : '-';
+            const firstName = nameParts.length > 1 ? nameParts[1] : '-';
+            
             await client.query(`
                 INSERT INTO section_snapshot_items 
-                (group_id, section_name, grade_level, student_name, current_address, barangay_extracted, adviser_name)
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                (group_id, section_name, grade_level, last_name, first_name, current_address, barangay_extracted, adviser_name)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             `, [
                 groupId,
                 student.sectionLevel || student.section_name || '-',
                 student.grade_level || '-',
-                student.name || student.full_name || '-',
+                lastName,
+                firstName,
                 student.current_address || '-',
                 barangay,
                 student.adviser || student.adviser_name || '-'
