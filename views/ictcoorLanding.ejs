@@ -3499,6 +3499,11 @@ q<!DOCTYPE html>
                 });
         }
 
+        // Wrapper for tab click handlers (calls loadAllStudents)
+        function loadStudents() {
+            loadAllStudents();
+        }
+
         // Populate the Section dropdown used for filtering
         async function populateSectionFilter() {
             const sel = document.getElementById('sectionFilter');
