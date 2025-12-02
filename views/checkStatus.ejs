@@ -40,7 +40,7 @@
             </div>
           </div>
           <div>
-            <span class="status-badge <%= request.status %>"><%= request.status.toUpperCase() %></span>
+            <span class="status-badge <%= (request.status || 'pending').toLowerCase() %>"><%= (request.status || 'pending').toUpperCase() %></span>
           </div>
         </div>
 

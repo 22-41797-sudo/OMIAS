@@ -2876,8 +2876,8 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
                 birthday, age, sex, religion, current_address,
                 ip_community, ip_community_specify, pwd, pwd_specify,
                 father_name, mother_name, guardian_name, contact_number,
-                registration_date, printed_name, signature_image_path
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
+                registration_date, printed_name, signature_image_path, status
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
             RETURNING id, request_token
         `;
 
@@ -2907,7 +2907,8 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
             contactNumber || null, 
             registrationDate, 
             sanitizeText(printedName), 
-            signatureImagePath
+            signatureImagePath,
+            'pending'  // Default status for new enrollment requests
         ];
 
         const result = await pool.query(insertQuery, values);
@@ -2950,8 +2951,8 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
                         birthday, age, sex, religion, current_address,
                         ip_community, ip_community_specify, pwd, pwd_specify,
                         father_name, mother_name, guardian_name, contact_number,
-                        registration_date, printed_name, signature_image_path
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
+                        registration_date, printed_name, signature_image_path, status
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
                     RETURNING id, request_token
                 `;
 
@@ -2980,7 +2981,8 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
                     contactNumber || null, 
                     registrationDate, 
                     sanitizeText(printedName), 
-                    signatureImagePath
+                    signatureImagePath,
+                    'pending'  // Default status for new enrollment requests
                 ];
 
                 const result = await pool.query(insertQuery, values);
