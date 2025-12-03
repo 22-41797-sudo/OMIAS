@@ -375,28 +375,7 @@
                     </table>
                 </div>
 
-                <div class="analytics-card">
-                    <h2>Monthly Summary</h2>
-                    <table class="mini-table">
-                        <thead>
-                            <tr><th>Month</th><th class="numeric">Requests</th></tr>
-                        </thead>
-                        <tbody>
-                            <% if (monthlySummary && monthlySummary.length) { %>
-                                <% monthlySummary.forEach(function(m){ %>
-                                    <tr>
-                                        <td><%= m.month %></td>
-                                        <td class="numeric"><%= m.count %></td>
-                                    </tr>
-                                <% }) %>
-                            <% } else { %>
-                                <tr><td colspan="2" class="empty-row">No monthly data</td></tr>
-                            <% } %>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Top Requesters removed per user request -->
+                <!-- Monthly Summary removed per user request -->
             </div>
 
             <!-- Charts for analytics (replaced old placeholders) -->
