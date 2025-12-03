@@ -46,7 +46,7 @@ function updateStats() {
     const pending = allRequests.filter(r => r.status === 'pending').length;
     const processing = allRequests.filter(r => r.status === 'processing').length;
     const ready = allRequests.filter(r => r.status === 'ready').length;
-    const completed = allRequests.filter(r => r.status === 'completed').length;
+    const completed = allRequests.filter(r => r.status === 'completed' || r.status === 'rejected').length;
     
     const statsHTML = `
         <div class="stat-card yellow">
@@ -63,11 +63,17 @@ function updateStats() {
         </div>
         <div class="stat-card purple">
             <div class="stat-number">${completed}</div>
-            <div class="stat-label">Completed</div>
+            <div class="stat-label">History</div>
         </div>
     `;
     
     document.getElementById('statsGrid').innerHTML = statsHTML;
+    
+    // Update history tab count
+    const historyCount = document.getElementById('historyCount');
+    if (historyCount) {
+        historyCount.textContent = `(${completed})`;
+    }
     
     // Populate document type filter
     const docTypes = [...new Set(allRequests.map(r => r.document_type))];
@@ -434,9 +440,34 @@ async function handleStatusUpdate(e) {
         const result = await response.json();
         
         if (result.success) {
+            // Update local data immediately
+            const requestIndex = allRequests.findIndex(r => r.id == requestId);
+            if (requestIndex !== -1) {
+                allRequests[requestIndex].status = newStatus;
+                allRequests[requestIndex].completion_notes = newStatus === 'rejected' ? null : completionNotes;
+                allRequests[requestIndex].rejection_reason = newStatus === 'rejected' ? rejectionReason : null;
+                allRequests[requestIndex].processed_at = new Date().toISOString();
+            }
+            
+            // Close modal immediately
             closeModal('statusModal');
-            loadRequests(); // Reload data
-            showToast('Status updated successfully!', 'success');
+            
+            // Update stats and re-render tables
+            updateStats();
+            renderRequests();
+            
+            // Show success modal with custom message
+            const statusText = {
+                'processing': 'moved to Processing',
+                'ready': 'marked as Ready for Pickup',
+                'completed': 'marked as Completed',
+                'rejected': 'rejected'
+            };
+            const successMessage = document.getElementById('successMessage');
+            if (successMessage) {
+                successMessage.textContent = `Request ${statusText[newStatus] || 'updated'}.`;
+            }
+            showSuccessModal();
         } else {
             showToast('Error: ' + (result.message || 'Failed to update status'), 'error');
         }
@@ -469,3 +500,23 @@ function formatDateTime(dateString) {
         minute: '2-digit'
     });
 }
+
+function showSuccessModal() {
+    const modal = document.getElementById('successModal');
+    if (modal) {
+        modal.classList.add('show');
+        
+        // Auto-close after 3 seconds
+        setTimeout(() => {
+            closeSuccessModal();
+        }, 3000);
+    }
+}
+
+function closeSuccessModal() {
+    const modal = document.getElementById('successModal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+}
+

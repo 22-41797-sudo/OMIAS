@@ -434,10 +434,10 @@
             <div class="analytics-charts" style="margin-bottom:22px; display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px;">
                 <div class="chart-card">
                     <h2>📊 Requests by Document Type</h2>
-                    <canvas id="chart-type" height="140"></canvas>
+                    <canvas id="chart-type" height="200"></canvas>
                     <div class="chart-interpretation" id="chart-type-interpretation"></div>
                 </div>
-                <div class="chart-card">
+                <div class="chart-card" style="display: none;">
                     <h2>📈 Monthly Requests Trend</h2>
                     <canvas id="chart-monthly" height="140"></canvas>
                     <div class="chart-interpretation" id="chart-monthly-interpretation"></div>
@@ -525,7 +525,7 @@
             const topLabels = topRequesters.map(x => x.name || x.email || 'Unknown');
             const topValues = topRequesters.map(x => Number(x.count || 0));
 
-            // Requests by Document Type (bar)
+            // Requests by Document Type (horizontal bar for better readability with many types)
             try {
                 const el = document.getElementById('chart-type');
                 if (el) {
@@ -536,13 +536,21 @@
                             datasets: [{
                                 label: 'Requests',
                                 data: typeValues,
-                                backgroundColor: '#dc2626'
+                                backgroundColor: ['#dc2626', '#f97316', '#eab308', '#22c55e', '#0ea5e9', '#6366f1', '#d946ef', '#ec4899']
                             }]
                         },
                         options: {
+                            indexAxis: 'y',
                             responsive: true,
-                            plugins: { legend: { display: false } },
-                            scales: { y: { beginAtZero: true } }
+                            maintainAspectRatio: true,
+                            plugins: { 
+                                legend: { display: false },
+                                tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', padding: 12, titleFont: { size: 13 }, bodyFont: { size: 12 } }
+                            },
+                            scales: { 
+                                x: { beginAtZero: true, ticks: { stepSize: 1 } },
+                                y: { ticks: { font: { size: 12 } } }
+                            }
                         }
                     });
 
