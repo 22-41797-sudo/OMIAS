@@ -245,7 +245,7 @@
             background: linear-gradient(135deg, #ffffff 0%, #f8f9fb 100%);
             border: 1px solid #e8ecf1;
             border-radius: 16px;
-            padding: 20px;
+            padding: 18px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.04);
             transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
             min-height: auto;
@@ -272,7 +272,7 @@
         }
 
         .chart-card h3 {
-            margin: 4px 0 12px 0;
+            margin: 4px 0 8px 0;
             font-size: 14px;
             color: #1f2937;
             font-weight: 700;
@@ -285,6 +285,7 @@
         .chart-card canvas {
             max-width: 100%;
             flex: 1;
+            max-height: 250px;
         }
 
         /* Chart Interpretation Styles */
@@ -672,64 +673,12 @@
             <!-- Filters -->
             <div class="filters-section">
                 <div class="filter-group">
-                    <label for="filterSection">Filter by Section:</label>
-                    <select id="filterSection">
-                        <option value="">All Sections</option>
-                    </select>
+                    <label for="filterFromDate">From Date:</label>
+                    <input type="date" id="filterFromDate">
                 </div>
                 <div class="filter-group">
-                    <label for="filterSeverity">Filter by Severity:</label>
-                    <select id="filterSeverity">
-                        <option value="">All Severity Levels</option>
-                        <option value="Low">Low</option>
-                        <option value="Medium">Medium</option>
-                        <option value="High">High</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="filterCategory">Filter by Category:</label>
-                    <select id="filterCategory">
-                        <option value="">All Categories</option>
-                        <option value="Disruption">Disruption</option>
-                        <option value="Attendance">Attendance</option>
-                        <option value="Academic">Academic Performance</option>
-                        <option value="Conduct">Conduct</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="filterSchoolYear">School Year:</label>
-                    <select id="filterSchoolYear">
-                        <option value="">All Years</option>
-                        <option value="2020-2021">2020-2021</option>
-                        <option value="2021-2022">2021-2022</option>
-                        <option value="2022-2023">2022-2023</option>
-                        <option value="2023-2024">2023-2024</option>
-                        <option value="2024-2025">2024-2025</option>
-                        <option value="2025-2026">2025-2026</option>
-                        <option value="2026-2027">2026-2027</option>
-                        <option value="2027-2028">2027-2028</option>
-                        <option value="2028-2029">2028-2029</option>
-                        <option value="2029-2030">2029-2030</option>
-                        <option value="2030-2031">2030-2031</option>
-                        <option value="2031-2032">2031-2032</option>
-                        <option value="2032-2033">2032-2033</option>
-                        <option value="2033-2034">2033-2034</option>
-                        <option value="2034-2035">2034-2035</option>
-                        <option value="2035-2036">2035-2036</option>
-                        <option value="2036-2037">2036-2037</option>
-                        <option value="2037-2038">2037-2038</option>
-                        <option value="2038-2039">2038-2039</option>
-                        <option value="2039-2040">2039-2040</option>
-                        <option value="2040-2041">2040-2041</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="filterStatus">Status</label>
-                    <select id="filterStatus">
-                        <option value="">All</option>
-                        <option value="active">Active</option>
-                        <option value="done">Done</option>
-                    </select>
+                    <label for="filterToDate">To Date:</label>
+                    <input type="date" id="filterToDate">
                 </div>
                 <div class="filter-actions">
                     <button type="button" class="filter-button" onclick="applyFilters()">Apply Filters</button>
@@ -973,17 +922,18 @@
             // Generate category interpretation
             updateCategoryInterpretation(sortedCategories, filtered.length);
 
-            // Trends Chart - Reports over time
+            // Trends Chart - Reports over time starting from Nov 30
             const trendsCtx = document.getElementById('trendsChart').getContext('2d');
-            const last30Days = [];
-            for (let i = 29; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                last30Days.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            const dateRange = [];
+            const startDate = new Date(2024, 10, 30); // Nov 30, 2024
+            const today = new Date();
+            
+            for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+                dateRange.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
             }
 
             const reportsByDate = {};
-            last30Days.forEach(d => reportsByDate[d] = 0);
+            dateRange.forEach(d => reportsByDate[d] = 0);
             filtered.forEach(r => {
                 const dateStr = new Date(r.report_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 if (reportsByDate.hasOwnProperty(dateStr)) {
@@ -991,14 +941,14 @@
                 }
             });
 
-            const dailyReports = last30Days.map(d => reportsByDate[d]);
-            const maxReports = Math.max(...dailyReports);
+            const dailyReports = dateRange.map(d => reportsByDate[d]);
+            const maxReports = Math.max(...dailyReports, 1);
             const avgReports = (dailyReports.reduce((a, b) => a + b, 0) / dailyReports.length).toFixed(1);
 
             charts.trends = new Chart(trendsCtx, {
                 type: 'line',
                 data: {
-                    labels: last30Days,
+                    labels: dateRange,
                     datasets: [{
                         label: 'Reports per Day',
                         data: dailyReports,
@@ -1142,28 +1092,22 @@
 
         function getFilteredReports() {
             let filtered = allReports;
-            const section = document.getElementById('filterSection').value;
-            const severity = document.getElementById('filterSeverity').value;
-            const category = document.getElementById('filterCategory').value;
-            const status = document.getElementById('filterStatus') ? document.getElementById('filterStatus').value : '';
-            const schoolYear = document.getElementById('filterSchoolYear').value;
-
-            if (section) filtered = filtered.filter(r => r.section_name === section);
-            if (severity) filtered = filtered.filter(r => r.severity === severity);
-            if (category) filtered = filtered.filter(r => r.category === category);
-            if (schoolYear) {
-                // Accepts 2024-2025, 2023-2024, etc. Match if report_date is within that school year (June 1 to May 31)
-                const [startYear, endYear] = schoolYear.split('-').map(Number);
-                const start = new Date(startYear, 5, 1); // June 1
-                const end = new Date(endYear, 4, 31, 23, 59, 59, 999); // May 31
-                filtered = filtered.filter(r => {
-                    const d = new Date(r.report_date);
-                    return d >= start && d <= end;
-                });
+            
+            // Date range filters
+            const fromDateInput = document.getElementById('filterFromDate');
+            const toDateInput = document.getElementById('filterToDate');
+            
+            if (fromDateInput && fromDateInput.value) {
+                const fromDate = new Date(fromDateInput.value);
+                filtered = filtered.filter(r => new Date(r.report_date) >= fromDate);
             }
-            // Filter by status (is_done flag)
-            if (status === 'done') filtered = filtered.filter(r => r.is_done === true);
-            else if (status === 'active') filtered = filtered.filter(r => !r.is_done);
+            
+            if (toDateInput && toDateInput.value) {
+                const toDate = new Date(toDateInput.value);
+                toDate.setHours(23, 59, 59, 999);
+                filtered = filtered.filter(r => new Date(r.report_date) <= toDate);
+            }
+            
             return filtered;
         }
 
@@ -1264,15 +1208,11 @@
         }
 
         function resetFilters() {
-            const sectionEl = document.getElementById('filterSection');
-            const severityEl = document.getElementById('filterSeverity');
-            const categoryEl = document.getElementById('filterCategory');
-            const yearEl = document.getElementById('filterSchoolYear');
+            const fromDateEl = document.getElementById('filterFromDate');
+            const toDateEl = document.getElementById('filterToDate');
 
-            if (sectionEl) sectionEl.value = '';
-            if (severityEl) severityEl.value = '';
-            if (categoryEl) categoryEl.value = '';
-            if (yearEl) yearEl.value = '';
+            if (fromDateEl) fromDateEl.value = '';
+            if (toDateEl) toDateEl.value = '';
 
             // Re-render full data with cleared filters
             updateAnalytics();
