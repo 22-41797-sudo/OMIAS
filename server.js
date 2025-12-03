@@ -4132,20 +4132,27 @@ app.post('/api/snapshots/dataset', async (req, res) => {
         const groupId = groupResult.rows[0].id;
         console.log('Created snapshot group:', groupId, 'with name:', finalSnapshotName);
 
-        // Insert each student as a snapshot item
+        // Batch insert all students for much better performance
+        // Process in chunks of 100 to avoid query size limits
+        const batchSize = 100;
         let insertedCount = 0;
-        for (const student of students) {
-            const barangay = extractBarangayFlexible(student.barangay || student.current_address);
-            const fullName = student.name || student.full_name || 'Unknown';
-            const sectionLevel = student.sectionLevel || student.section_name || 'Unassigned';
+        
+        for (let i = 0; i < students.length; i += batchSize) {
+            const batch = students.slice(i, Math.min(i + batchSize, students.length));
             
-            try {
-                await client.query(`
-                    INSERT INTO section_snapshot_items 
-                    (group_id, section_name, grade_level, student_full_name, current_address, barangay_extracted, adviser_name, sex)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                `, [
-                    groupId,
+            // Build batch insert query
+            let valuesList = [];
+            let params = [groupId];
+            let paramIdx = 2;
+            
+            for (const student of batch) {
+                const barangay = extractBarangayFlexible(student.barangay || student.current_address);
+                const fullName = student.name || student.full_name || 'Unknown';
+                const sectionLevel = student.sectionLevel || student.section_name || 'Unassigned';
+                
+                valuesList.push(`($${paramIdx}, $${paramIdx + 1}, $${paramIdx + 2}, $${paramIdx + 3}, $${paramIdx + 4}, $${paramIdx + 5}, $${paramIdx + 6}, $${paramIdx + 7})`);
+                
+                params.push(
                     sectionLevel,
                     student.grade_level || '-',
                     fullName,
@@ -4153,11 +4160,24 @@ app.post('/api/snapshots/dataset', async (req, res) => {
                     barangay,
                     student.adviser || student.adviser_name || '-',
                     student.sex || 'N/A'
-                ]);
-                insertedCount++;
+                );
+                
+                paramIdx += 8;
+            }
+            
+            const batchQuery = `
+                INSERT INTO section_snapshot_items 
+                (group_id, section_name, grade_level, student_full_name, current_address, barangay_extracted, adviser_name, sex)
+                VALUES ${valuesList.join(', ')}
+            `;
+            
+            try {
+                await client.query(batchQuery, params);
+                insertedCount += batch.length;
+                console.log(`Inserted batch of ${batch.length} students, total: ${insertedCount}`);
             } catch (err) {
-                console.warn('Error inserting student:', fullName, err.message);
-                // Continue with next student instead of failing completely
+                console.warn('Error inserting batch:', err.message);
+                // Continue with next batch instead of failing completely
             }
         }
 
