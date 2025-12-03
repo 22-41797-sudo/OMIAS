@@ -800,16 +800,6 @@
                     allReports = data.reports || [];
                     allStudents = data.students || [];
                     
-                    // Load sections for filter
-                    const sections = [...new Set(allReports.map(r => r.section_name))];
-                    const sectionSelect = document.getElementById('filterSection');
-                    sections.forEach(section => {
-                        const option = document.createElement('option');
-                        option.value = section;
-                        option.textContent = section;
-                        sectionSelect.appendChild(option);
-                    });
-                    
                     updateAnalytics();
                     displayReports(allReports);
                     initializeCharts();
