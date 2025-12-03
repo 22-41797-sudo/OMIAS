@@ -408,14 +408,14 @@
             margin-bottom: 20px;
         }
 
-        .reports-table thead { background: linear-gradient(135deg, #f3f4f9 0%, #f7f8fc 100%); color:#1f2937; border-bottom: 2px solid #e8ecf1; }
+        .reports-table thead { background: linear-gradient(135deg, #f3f4f9 0%, #f7f8fc 100%); color:#fff; border-bottom: 2px solid #e8ecf1; }
 
         .reports-table th {
             padding: 16px 14px;
             text-align: left;
             font-weight: 700;
             font-size: 13px;
-            color: #555;
+            color: #fff;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -912,33 +912,48 @@
             // Generate category interpretation
             updateCategoryInterpretation(sortedCategories, filtered.length);
 
-            // Trends Chart - Reports over time starting from Nov 30
+            // Trends Chart - Reports over time starting from Nov 25
             const trendsCtx = document.getElementById('trendsChart').getContext('2d');
-            const dateRange = [];
-            const startDate = new Date(2024, 10, 30); // Nov 30, 2024
-            const today = new Date();
             
-            for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
-                dateRange.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-            }
-
+            // Count reports by date
             const reportsByDate = {};
-            dateRange.forEach(d => reportsByDate[d] = 0);
             filtered.forEach(r => {
                 const dateStr = new Date(r.report_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                if (reportsByDate.hasOwnProperty(dateStr)) {
-                    reportsByDate[dateStr]++;
-                }
+                reportsByDate[dateStr] = (reportsByDate[dateStr] || 0) + 1;
             });
 
-            const dailyReports = dateRange.map(d => reportsByDate[d]);
+            // Get all dates with reports, sorted
+            const datesWithReports = Object.keys(reportsByDate).sort((a, b) => {
+                return new Date(a) - new Date(b);
+            });
+
+            // Create date range from Nov 25 to today
+            const startDate = new Date(2024, 10, 25); // Nov 25, 2024
+            const today = new Date();
+            const allDates = [];
+            for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+                allDates.push(new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            }
+
+            // Include start date and dates with reports
+            const displayDates = [allDates[0]]; // Start with Nov 25
+            datesWithReports.forEach(date => {
+                if (!displayDates.includes(date)) {
+                    displayDates.push(date);
+                }
+            });
+            displayDates.sort((a, b) => new Date(a) - new Date(b));
+
+            // Create chart data with only dates that have reports or is the start date
+            const chartLabels = displayDates;
+            const dailyReports = displayDates.map(d => reportsByDate[d] || 0);
             const maxReports = Math.max(...dailyReports, 1);
-            const avgReports = (dailyReports.reduce((a, b) => a + b, 0) / dailyReports.length).toFixed(1);
+            const avgReports = (dailyReports.reduce((a, b) => a + b, 0) / displayDates.length).toFixed(1);
 
             charts.trends = new Chart(trendsCtx, {
                 type: 'line',
                 data: {
-                    labels: dateRange,
+                    labels: chartLabels,
                     datasets: [{
                         label: 'Reports per Day',
                         data: dailyReports,
@@ -1053,28 +1068,41 @@
             charts.category.update();
             updateCategoryInterpretation(sortedCategories, filtered.length);
 
-            // Trends Chart
-            const last30Days = [];
-            for (let i = 29; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                last30Days.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-            }
-
+            // Trends Chart - Show only dates with reports
             const reportsByDate = {};
-            last30Days.forEach(d => reportsByDate[d] = 0);
             filtered.forEach(r => {
                 const dateStr = new Date(r.report_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                if (reportsByDate.hasOwnProperty(dateStr)) {
-                    reportsByDate[dateStr]++;
-                }
+                reportsByDate[dateStr] = (reportsByDate[dateStr] || 0) + 1;
             });
 
-            const dailyReports = last30Days.map(d => reportsByDate[d]);
-            const maxReports = Math.max(...dailyReports);
-            const avgReports = (dailyReports.reduce((a, b) => a + b, 0) / dailyReports.length).toFixed(1);
+            // Get all dates with reports, sorted
+            const datesWithReports = Object.keys(reportsByDate).sort((a, b) => {
+                return new Date(a) - new Date(b);
+            });
 
-            charts.trends.data.labels = last30Days;
+            // Create date range from Nov 25 to today
+            const startDate = new Date(2024, 10, 25); // Nov 25, 2024
+            const today = new Date();
+            const allDates = [];
+            for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+                allDates.push(new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            }
+
+            // Include start date and dates with reports
+            const displayDates = [allDates[0]]; // Start with Nov 25
+            datesWithReports.forEach(date => {
+                if (!displayDates.includes(date)) {
+                    displayDates.push(date);
+                }
+            });
+            displayDates.sort((a, b) => new Date(a) - new Date(b));
+
+            const chartLabels = displayDates;
+            const dailyReports = displayDates.map(d => reportsByDate[d] || 0);
+            const maxReports = Math.max(...dailyReports);
+            const avgReports = (dailyReports.reduce((a, b) => a + b, 0) / displayDates.length).toFixed(1);
+
+            charts.trends.data.labels = chartLabels;
             charts.trends.data.datasets[0].data = dailyReports;
             charts.trends.update();
             updateTrendsInterpretation(dailyReports, maxReports, avgReports);
