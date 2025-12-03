@@ -403,11 +403,6 @@
                     <div class="trend">Awaiting action</div>
                 </div>
                 <div class="stat-card">
-                    <h3>Approved</h3>
-                    <div class="number"><%= typeof approvedRequests !== 'undefined' ? approvedRequests : 0 %></div>
-                    <div class="trend">Ready for fulfillment</div>
-                </div>
-                <div class="stat-card">
                     <h3>Completed</h3>
                     <div class="number"><%= typeof completedRequests !== 'undefined' ? completedRequests : 0 %></div>
                     <div class="trend">Fulfilled</div>
@@ -452,63 +447,10 @@
                     </div>
                 </div>
 
-                <div class="analytics-card">
-                    <h2>📅 Monthly Summary</h2>
-                    <table class="mini-table">
-                        <thead>
-                            <tr><th>Month</th><th class="numeric">Requests</th></tr>
-                        </thead>
-                        <tbody>
-                            <% if (monthlySummary && monthlySummary.length) { %>
-                                <% monthlySummary.forEach(function(m){ %>
-                                    <tr>
-                                        <td><%= m.month %></td>
-                                        <td class="numeric"><%= m.count %></td>
-                                    </tr>
-                                <% }) %>
-                            <% } else { %>
-                                <tr><td colspan="2" class="empty-row">No monthly data</td></tr>
-                            <% } %>
-                        </tbody>
-                    </table>
-                    <div class="analytics-interpretation">
-                        <h4>📊 Trend Analysis</h4>
-                        <% if (monthlySummary && monthlySummary.length > 0) { %>
-                            <% 
-                                let totalMonthly = monthlySummary.reduce((sum, m) => sum + m.count, 0);
-                                let avgMonthly = (totalMonthly / monthlySummary.length).toFixed(1);
-                                let latestMonth = monthlySummary[monthlySummary.length - 1];
-                            %>
-                            <p><strong>Total Requests:</strong> <span class="interpretation-stat"><%= totalMonthly %></span> requests across <span class="interpretation-stat"><%= monthlySummary.length %></span> months.</p>
-                            <p><strong>Average per Month:</strong> <span class="interpretation-stat"><%= avgMonthly %></span> requests — showing the baseline request volume.</p>
-                            <p><strong>Latest Month (<%= latestMonth.month %>):</strong> <span class="interpretation-stat"><%= latestMonth.count %></span> requests recorded.</p>
-                        <% } else { %>
-                            <p>No monthly summary data available at this time.</p>
-                        <% } %>
-                    </div>
-                </div>
-
-                <!-- Top Requesters removed per user request -->
+                <!-- Top Requesters and Monthly Summary removed per user request -->
             </div>
 
-            <div class="chart-container">
-                <div class="chart-card">
-                    <h2>Request Type Distribution</h2>
-                    <!-- Static SVG placeholder for chart (no JS) -->
-                    <svg class="chart-svg" viewBox="0 0 200 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-                        <circle cx="60" cy="50" r="30" fill="#4CAF50"></circle>
-                        <circle cx="110" cy="50" r="20" fill="#2196F3"></circle>
-                        <circle cx="150" cy="50" r="12" fill="#FFC107"></circle>
-                    </svg>
-                </div>
-                <div class="chart-card">
-                    <h2>Monthly Requests Trend</h2>
-                    <!-- Static sparkline placeholder -->
-                    <svg class="chart-svg" viewBox="0 0 200 100" preserveAspectRatio="none" aria-hidden="true">
-                        <polyline points="0,80 30,60 60,70 90,40 120,50 150,30 180,40 200,20" fill="none" stroke="#2196F3" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                    </svg>
-                </div>
-            </div>
+            <!-- Charts container hidden per user request -->
 
             <div class="requests-list">
                 <h2>Recent Document Requests</h2>
