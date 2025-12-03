@@ -1187,7 +1187,14 @@ q<!DOCTYPE html>
                         &nbsp;&nbsp;&nbsp;&nbsp;• Grade level and section (e.g., "Grade 7 - A", "7A", "Second Year", etc.)<br>
                         <br>
                         ✓ <strong>Location/Barangay</strong> (Barangay, Purok, Village, Area, Address, Zone, etc.)<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;• Barangay name or address (e.g., Mainaga, San Francisco, Calamias, or Others)
+                        &nbsp;&nbsp;&nbsp;&nbsp;• Barangay name or address (e.g., Mainaga, San Francisco, Calamias, or Others)<br>
+                        <br>
+                        <strong style="color: var(--primary-dark);">Optional columns:</strong><br>
+                        ◦ <strong>Gender/Sex</strong> (Gender, Sex, Male/Female, etc.)<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;• Student gender (Male, Female, etc.)<br>
+                        <br>
+                        ◦ <strong>Adviser/Teacher</strong> (Adviser, Teacher, Adviser Name, Class Adviser, etc.)<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;• Class adviser or teacher name
                     </p>
                     <p style="margin: 12px 0 0 0; color: #666; font-size: 12px; font-style: italic;">
                         💡 Column headers are flexible - use any variation of the names above. The system automatically recognizes them.
@@ -3577,8 +3584,10 @@ q<!DOCTYPE html>
                 const nameIdx = findColumnIndex(normalizedHeaders, ['name', 'student', 'fullname', 'full_name', 'student_name', 'student_full_name', 'full name', 'lastname', 'firstname']);
                 const barangayIdx = findColumnIndex(normalizedHeaders, ['barangay', 'purok', 'village', 'sitio', 'address', 'location', 'area', 'zone', 'sector']);
                 const sectionIdx = findColumnIndex(normalizedHeaders, ['section', 'grade', 'class', 'level', 'section_level', 'section level', 'grade_level', 'grade level', 'classroom', 'classlevel']);
+                const genderIdx = findColumnIndex(normalizedHeaders, ['gender', 'sex', 'male', 'female', 'gender_type']);
+                const adviserIdx = findColumnIndex(normalizedHeaders, ['adviser', 'teacher', 'adviser_name', 'teacher_name', 'class_adviser', 'classadviser', 'advisor', 'class teacher']);
 
-                console.log('Found indices - Name:', nameIdx, 'Barangay:', barangayIdx, 'Section:', sectionIdx);
+                console.log('Found indices - Name:', nameIdx, 'Barangay:', barangayIdx, 'Section:', sectionIdx, 'Gender:', genderIdx, 'Adviser:', adviserIdx);
 
                 // Validate that we found at least the essential columns
                 const missingColumns = [];
@@ -3604,13 +3613,17 @@ q<!DOCTYPE html>
                     const name = (row[nameIdx] || 'Unknown').toString().trim();
                     const barangay = (row[barangayIdx] || 'Others').toString().trim();
                     const section = (row[sectionIdx] || 'Unassigned').toString().trim();
+                    const gender = genderIdx !== -1 ? (row[genderIdx] || 'N/A').toString().trim() : 'N/A';
+                    const adviser = adviserIdx !== -1 ? (row[adviserIdx] || '-').toString().trim() : '-';
 
                     // Only include rows with valid name
                     if (name && name.toLowerCase() !== 'unknown') {
                         dataRows.push({
                             name: name,
                             barangay: barangay || 'Others',
-                            sectionLevel: section || 'Unassigned'
+                            sectionLevel: section || 'Unassigned',
+                            sex: gender,
+                            adviser: adviser
                         });
                     }
                 }
