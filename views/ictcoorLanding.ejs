@@ -3536,18 +3536,16 @@ q<!DOCTYPE html>
             try {
                 let rows = [];
 
-                // Check file type
+                // Check file type and parse accordingly
                 if (file.name.endsWith('.csv')) {
-                    // Parse CSV
                     const text = await file.text();
-                    rows = text.split('\n').filter(line => line.trim());
+                    rows = parseCSV(text);
                 } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-                    // Parse XLSX using SheetJS library
                     const arrayBuffer = await file.arrayBuffer();
                     const workbook = XLSX.read(arrayBuffer, { type: 'array' });
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const csvData = XLSX.utils.sheet_to_csv(worksheet);
-                    rows = csvData.split('\n').filter(line => line.trim());
+                    rows = parseCSV(csvData);
                 } else {
                     showToast('Please upload a CSV or XLSX file', 'error');
                     return;
@@ -3558,55 +3556,63 @@ q<!DOCTYPE html>
                     return;
                 }
 
-                // Parse headers - case insensitive, flexible matching
+                // Extract and normalize headers
                 const headerRow = rows[0];
-                const headers = headerRow.toLowerCase().split(',').map(h => h.trim());
+                const normalizedHeaders = headerRow.map(h => normalizeHeader(h));
                 
-                // Find column indices by searching for keywords
-                let nameIdx = -1;
-                let barangayIdx = -1;
-                let sectionIdx = -1;
+                console.log('Raw headers:', headerRow);
+                console.log('Normalized headers:', normalizedHeaders);
 
-                headers.forEach((header, idx) => {
-                    if (nameIdx === -1 && (header.includes('name') || header === 'student')) {
-                        nameIdx = idx;
-                    }
-                    if (barangayIdx === -1 && (header.includes('barangay') || header.includes('purok') || header.includes('village'))) {
-                        barangayIdx = idx;
-                    }
-                    if (sectionIdx === -1 && (header.includes('section') || header.includes('grade') || header.includes('class') || header === 'level')) {
-                        sectionIdx = idx;
-                    }
-                });
+                // Find column indices using flexible matching
+                const nameIdx = findColumnIndex(normalizedHeaders, ['name', 'student', 'fullname', 'full_name', 'student_name', 'student_full_name', 'full name', 'lastname', 'firstname']);
+                const barangayIdx = findColumnIndex(normalizedHeaders, ['barangay', 'purok', 'village', 'sitio', 'address', 'location', 'area', 'zone', 'sector']);
+                const sectionIdx = findColumnIndex(normalizedHeaders, ['section', 'grade', 'class', 'level', 'section_level', 'section level', 'grade_level', 'grade level', 'classroom', 'classlevel']);
 
-                // Log for debugging
-                console.log('Excel headers:', headerRow);
-                console.log('Parsed headers:', headers);
                 console.log('Found indices - Name:', nameIdx, 'Barangay:', barangayIdx, 'Section:', sectionIdx);
 
-                if (nameIdx === -1 || barangayIdx === -1 || sectionIdx === -1) {
-                    showToast('❌ Column not found!\n\nYour file has: ' + headerRow + '\n\nRequired columns:\n✓ Name (or Student)\n✓ Barangay (or Purok/Village)\n✓ Section (or Grade/Class/Level)', 'error');
+                // Validate that we found at least the essential columns
+                const missingColumns = [];
+                if (nameIdx === -1) missingColumns.push('Name (Student, Full Name, etc.)');
+                if (barangayIdx === -1) missingColumns.push('Barangay (Purok, Village, Area, etc.)');
+                if (sectionIdx === -1) missingColumns.push('Section (Grade, Class, Level, etc.)');
+
+                if (missingColumns.length > 0) {
+                    showToast(`❌ Missing required columns:\n${missingColumns.map(c => '• ' + c).join('\n')}\n\nYour file columns: ${headerRow.join(', ')}`, 'error');
                     return;
                 }
 
-                const dataRows = rows.slice(1).map(row => {
-                    const cells = row.split(',').map(c => c.trim());
-                    return {
-                        name: cells[nameIdx] || 'Unknown',
-                        barangay: cells[barangayIdx] || 'Others',
-                        sectionLevel: cells[sectionIdx] || 'Unassigned'
-                    };
-                }).filter(r => r.name && r.name !== 'Unknown' || r.barangay || r.sectionLevel);
+                // Parse data rows with flexible handling
+                const dataRows = [];
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    
+                    // Skip empty rows
+                    if (!row || row.every(cell => !cell || !String(cell).trim())) {
+                        continue;
+                    }
+
+                    const name = (row[nameIdx] || 'Unknown').toString().trim();
+                    const barangay = (row[barangayIdx] || 'Others').toString().trim();
+                    const section = (row[sectionIdx] || 'Unassigned').toString().trim();
+
+                    // Only include rows with valid name
+                    if (name && name.toLowerCase() !== 'unknown') {
+                        dataRows.push({
+                            name: name,
+                            barangay: barangay || 'Others',
+                            sectionLevel: section || 'Unassigned'
+                        });
+                    }
+                }
 
                 if (dataRows.length === 0) {
-                    showToast('No valid data rows found in file.', 'error');
+                    showToast('No valid data rows found in file. Make sure rows have a Name value.', 'error');
                     return;
                 }
 
-                // Store data
+                // Store data and show preview
                 window.importDataset = dataRows;
 
-                // Show preview
                 const previewBody = document.getElementById('importPreviewBody');
                 if (previewBody) {
                     previewBody.innerHTML = dataRows.slice(0, 5).map(row => `
@@ -3633,8 +3639,63 @@ q<!DOCTYPE html>
                 showToast(`✓ Loaded ${dataRows.length} records successfully!`, 'success');
             } catch (err) {
                 console.error('Error parsing file:', err);
-                showToast('Error reading file: ' + err.message + '\n\nMake sure it\'s a valid CSV or XLSX file.', 'error');
+                showToast('Error reading file: ' + err.message + '\n\nMake sure it\'s a valid CSV or XLSX file with proper formatting.', 'error');
             }
+        }
+
+        // Helper function to parse CSV with flexible delimiter handling
+        function parseCSV(text) {
+            const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+            return lines.map(line => {
+                // Handle quotes and commas in values
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    const nextChar = line[i + 1];
+                    
+                    if (char === '"') {
+                        if (inQuotes && nextChar === '"') {
+                            current += '"';
+                            i++;
+                        } else {
+                            inQuotes = !inQuotes;
+                        }
+                    } else if (char === ',' && !inQuotes) {
+                        result.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                result.push(current.trim());
+                return result;
+            });
+        }
+
+        // Helper function to normalize header text
+        function normalizeHeader(header) {
+            return String(header)
+                .toLowerCase()
+                .trim()
+                .replace(/[_\s\-\.]/g, '') // Remove underscores, spaces, hyphens, dots
+                .replace(/^["']|["']$/g, ''); // Remove surrounding quotes
+        }
+
+        // Helper function to find column index by keywords
+        function findColumnIndex(normalizedHeaders, keywords) {
+            for (let i = 0; i < normalizedHeaders.length; i++) {
+                const header = normalizedHeaders[i];
+                for (const keyword of keywords) {
+                    const normalizedKeyword = normalizeHeader(keyword);
+                    if (header === normalizedKeyword || header.includes(normalizedKeyword)) {
+                        return i;
+                    }
+                }
+            }
+            return -1;
         }
 
         async function saveDatasetAsSnapshot() {
