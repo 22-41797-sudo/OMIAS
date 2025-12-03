@@ -525,7 +525,7 @@
             const topLabels = topRequesters.map(x => x.name || x.email || 'Unknown');
             const topValues = topRequesters.map(x => Number(x.count || 0));
 
-            // Requests by Document Type (horizontal bar for better readability with many types)
+            // Requests by Document Type (vertical bar chart)
             try {
                 const el = document.getElementById('chart-type');
                 if (el) {
@@ -540,7 +540,6 @@
                             }]
                         },
                         options: {
-                            indexAxis: 'y',
                             responsive: true,
                             maintainAspectRatio: true,
                             plugins: { 
@@ -548,8 +547,8 @@
                                 tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', padding: 12, titleFont: { size: 13 }, bodyFont: { size: 12 } }
                             },
                             scales: { 
-                                x: { beginAtZero: true, ticks: { stepSize: 1 } },
-                                y: { ticks: { font: { size: 12 } } }
+                                y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                                x: { ticks: { font: { size: 12 } } }
                             }
                         }
                     });
