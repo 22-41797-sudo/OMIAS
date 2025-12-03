@@ -193,6 +193,53 @@
             height: 150px;
         }
 
+        .chart-interpretation {
+            margin-top: 16px;
+            padding: 16px 18px;
+            background: linear-gradient(135deg, #f3f4f9 0%, #f7f8fc 100%);
+            border-left: 4px solid #dc2626;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #4b5563;
+        }
+
+        .chart-interpretation h4 {
+            margin: 0 0 10px 0;
+            font-size: 13px;
+            font-weight: 700;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .chart-interpretation p {
+            margin: 6px 0;
+            padding: 0;
+        }
+
+        .chart-interpretation ul {
+            margin: 6px 0;
+            padding-left: 18px;
+        }
+
+        .chart-interpretation li {
+            margin: 3px 0;
+            font-size: 13px;
+        }
+
+        .interpretation-stat {
+            display: inline-block;
+            background: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            color: #dc2626;
+            margin: 0 3px;
+            font-size: 12px;
+        }
+
         .analytics-grid {
             display:grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -381,12 +428,14 @@
             <!-- Charts for analytics (replaced old placeholders) -->
             <div class="analytics-charts" style="margin-bottom:22px; display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px;">
                 <div class="chart-card">
-                    <h2>Requests by Document Type</h2>
+                    <h2>📊 Requests by Document Type</h2>
                     <canvas id="chart-type" height="140"></canvas>
+                    <div class="chart-interpretation" id="chart-type-interpretation"></div>
                 </div>
                 <div class="chart-card">
-                    <h2>Monthly Requests Trend</h2>
+                    <h2>📈 Monthly Requests Trend</h2>
                     <canvas id="chart-monthly" height="140"></canvas>
+                    <div class="chart-interpretation" id="chart-monthly-interpretation"></div>
                 </div>
                 <!-- Top Requesters chart removed per user request -->
             </div>
@@ -491,6 +540,28 @@
                             scales: { y: { beginAtZero: true } }
                         }
                     });
+
+                    // Generate interpretation for document type chart
+                    const typeInterpEl = document.getElementById('chart-type-interpretation');
+                    if (typeInterpEl && typeLabels.length > 0) {
+                        const totalRequests = typeValues.reduce((a, b) => a + b, 0);
+                        const topType = typeLabels[0];
+                        const topCount = typeValues[0];
+                        const topPct = totalRequests > 0 ? Math.round((topCount / totalRequests) * 100) : 0;
+
+                        let html = '<h4>📊 Analysis Breakdown</h4>';
+                        html += `<p><strong>Most Requested:</strong> <span class="interpretation-stat">${topType}</span> leads with <span class="interpretation-stat">${topCount}</span> requests (<span class="interpretation-stat">${topPct}%</span>).</p>`;
+                        
+                        if (typeLabels.length > 1) {
+                            const secondType = typeLabels[1];
+                            const secondCount = typeValues[1];
+                            const secondPct = totalRequests > 0 ? Math.round((secondCount / totalRequests) * 100) : 0;
+                            html += `<p><strong>Second:</strong> <span class="interpretation-stat">${secondType}</span> has <span class="interpretation-stat">${secondCount}</span> requests (<span class="interpretation-stat">${secondPct}%</span>).</p>`;
+                        }
+                        
+                        html += `<p><strong>Key Insight:</strong> Document requests are distributed across <span class="interpretation-stat">${typeLabels.length}</span> types, with a focus on ${topType}.</p>`;
+                        typeInterpEl.innerHTML = html;
+                    }
                 }
             } catch (err) { console.error('Chart (type) error', err); }
 
@@ -508,7 +579,12 @@
                                 borderColor: '#2563eb',
                                 backgroundColor: 'rgba(37,99,235,0.08)',
                                 tension: 0.3,
-                                fill: true
+                                fill: true,
+                                pointBackgroundColor: '#2563eb',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 4,
+                                pointHoverRadius: 6
                             }]
                         },
                         options: {
@@ -517,6 +593,32 @@
                             scales: { y: { beginAtZero: true } }
                         }
                     });
+
+                    // Generate interpretation for monthly chart
+                    const monthInterpEl = document.getElementById('chart-monthly-interpretation');
+                    if (monthInterpEl && monthLabels.length > 0) {
+                        const totalMonthly = monthValues.reduce((a, b) => a + b, 0);
+                        const avgMonthly = monthValues.length > 0 ? (totalMonthly / monthValues.length).toFixed(1) : 0;
+                        const maxMonthly = Math.max(...monthValues, 0);
+                        const peakMonth = monthLabels[monthValues.indexOf(maxMonthly)] || '';
+                        const latestMonth = monthLabels[monthLabels.length - 1];
+                        const latestCount = monthValues[monthValues.length - 1] || 0;
+
+                        let html = '<h4>📈 Trends Analysis</h4>';
+                        html += `<p><strong>Total Requests:</strong> <span class="interpretation-stat">${totalMonthly}</span> across <span class="interpretation-stat">${monthLabels.length}</span> months.</p>`;
+                        html += `<p><strong>Average per Month:</strong> <span class="interpretation-stat">${avgMonthly}</span> requests — baseline monthly volume.</p>`;
+                        html += `<p><strong>Peak Activity:</strong> <span class="interpretation-stat">${peakMonth}</span> with <span class="interpretation-stat">${maxMonthly}</span> requests.</p>`;
+                        html += `<p><strong>Latest Month (${latestMonth}):</strong> <span class="interpretation-stat">${latestCount}</span> requests recorded.</p>`;
+                        
+                        if (monthValues.length >= 2) {
+                            const previousMonth = monthValues[monthValues.length - 2] || 0;
+                            const trend = latestCount > previousMonth ? 'increasing' : latestCount < previousMonth ? 'decreasing' : 'stable';
+                            const change = previousMonth > 0 ? Math.round(((latestCount - previousMonth) / previousMonth) * 100) : 0;
+                            html += `<p><strong>Trend:</strong> Requests are <strong style="color: ${trend === 'increasing' ? '#dc2626' : trend === 'decreasing' ? '#10b981' : '#6b7280'}">${trend}</strong> (${change > 0 ? '+' : ''}${change}% change).</p>`;
+                        }
+
+                        monthInterpEl.innerHTML = html;
+                    }
                 }
             } catch (err) { console.error('Chart (monthly) error', err); }
 
