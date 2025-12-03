@@ -3726,7 +3726,9 @@ q<!DOCTYPE html>
                 console.log('Response data:', result);
                 
                 if (result.success) {
-                    showToast(`Snapshot "${snapshotName}" saved successfully with ${window.importDataset.length} students`, 'success');
+                    const actualName = result.snapshotName || snapshotName;
+                    const studentCount = result.studentCount || window.importDataset.length;
+                    showToast(`✓ Snapshot "${actualName}" saved successfully with ${studentCount} students!`, 'success');
                     
                     // Close modal
                     closeModal('datasetImportModal');

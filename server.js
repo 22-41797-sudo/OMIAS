@@ -4051,7 +4051,7 @@ app.post('/api/snapshots/dataset', async (req, res) => {
         return res.status(403).json({ success: false, message: 'Access denied - only ICT Coordinator can import' });
     }
 
-    const { snapshotName, students } = req.body || {};
+    let { snapshotName, students } = req.body || {};
     console.log('Snapshot name:', snapshotName, 'Students count:', students?.length);
     
     if (!snapshotName || !String(snapshotName).trim()) {
@@ -4096,13 +4096,41 @@ app.post('/api/snapshots/dataset', async (req, res) => {
 
         await client.query('BEGIN');
 
+        // Handle duplicate snapshot names by auto-generating unique names
+        let finalSnapshotName = String(snapshotName).trim();
+        let counter = 1;
+        const originalName = finalSnapshotName;
+        
+        while (true) {
+            const checkResult = await client.query(
+                'SELECT id FROM section_snapshot_groups WHERE snapshot_name = $1 LIMIT 1',
+                [finalSnapshotName]
+            );
+            
+            if (checkResult.rows.length === 0) {
+                // Name is unique, we can use it
+                break;
+            }
+            
+            // Name exists, try with a counter
+            finalSnapshotName = `${originalName} (${counter})`;
+            counter++;
+            
+            // Safety check - stop after 100 attempts
+            if (counter > 100) {
+                throw new Error('Could not generate unique snapshot name');
+            }
+        }
+        
+        console.log('Using snapshot name:', finalSnapshotName);
+
         // Create snapshot group
         const groupResult = await client.query(
             'INSERT INTO section_snapshot_groups (snapshot_name, created_by) VALUES ($1, $2) RETURNING id, snapshot_name, created_at',
-            [String(snapshotName).trim(), req.session.user.id || null]
+            [finalSnapshotName, req.session.user.id || null]
         );
         const groupId = groupResult.rows[0].id;
-        console.log('Created snapshot group:', groupId);
+        console.log('Created snapshot group:', groupId, 'with name:', finalSnapshotName);
 
         // Insert each student as a snapshot item
         let insertedCount = 0;
@@ -4137,7 +4165,9 @@ app.post('/api/snapshots/dataset', async (req, res) => {
         console.log('✅ Snapshot saved successfully:', groupId, 'with', insertedCount, 'students');
         res.json({ 
             success: true, 
-            message: `Snapshot '${snapshotName}' saved with ${insertedCount} students`
+            message: `Snapshot '${finalSnapshotName}' saved with ${insertedCount} students`,
+            snapshotName: finalSnapshotName,
+            studentCount: insertedCount
         });
     } catch (err) {
         try { await client.query('ROLLBACK'); } catch (e) {}
