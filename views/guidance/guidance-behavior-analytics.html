@@ -214,7 +214,7 @@
         /* Charts Section */
         .charts-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: 1fr;
             gap: 24px;
             margin-bottom: 40px;
         }
@@ -248,6 +248,52 @@
         .chart-card canvas {
             max-width: 100%;
             flex: 1;
+        }
+
+        /* Chart Interpretation Styles */
+        .chart-interpretation {
+            margin-top: 20px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .chart-interpretation h4 {
+            margin: 0 0 10px 0;
+            font-size: 13px;
+            font-weight: 700;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .chart-interpretation p {
+            margin: 8px 0;
+            padding: 0;
+        }
+
+        .chart-interpretation ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .chart-interpretation li {
+            margin: 6px 0;
+        }
+
+        .interpretation-stat {
+            display: inline-block;
+            background: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-weight: 600;
+            color: #667eea;
+            margin: 0 4px;
         }
 
         /* Severity bars (previous style) */
@@ -695,21 +741,15 @@
 
             <!-- Analytics Charts -->
             <div class="charts-grid">
-                <div class="chart-card">
-                    <h3>📊 Severity Distribution</h3>
-                    <canvas id="severityChart"></canvas>
-                </div>
-                <div class="chart-card">
+                <div class="chart-card" id="categoryCardContainer">
                     <h3>🏷️ Issues by Category</h3>
                     <canvas id="categoryChart"></canvas>
+                    <div class="chart-interpretation" id="categoryInterpretation"></div>
                 </div>
-                <div class="chart-card">
+                <div class="chart-card" id="trendsCardContainer">
                     <h3>📈 Reports Over Time</h3>
                     <canvas id="trendsChart"></canvas>
-                </div>
-                <div class="chart-card">
-                    <h3>👥 Section Distribution</h3>
-                    <canvas id="sectionChart"></canvas>
+                    <div class="chart-interpretation" id="trendsInterpretation"></div>
                 </div>
             </div>
 
@@ -842,24 +882,26 @@
         function initializeCharts() {
             const filtered = getFilteredReports();
             
-            // Severity Distribution Chart
-            const severityCtx = document.getElementById('severityChart').getContext('2d');
-            const severityCounts = {
-                'Low': filtered.filter(r => r.severity === 'Low').length,
-                'Medium': filtered.filter(r => r.severity === 'Medium').length,
-                'High': filtered.filter(r => r.severity === 'High').length
-            };
-            
-            charts.severity = new Chart(severityCtx, {
-                type: 'doughnut',
+            // Category Chart - Pie Chart
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            const categoryCounts = {};
+            filtered.forEach(r => {
+                categoryCounts[r.category] = (categoryCounts[r.category] || 0) + 1;
+            });
+            const sortedCategories = Object.entries(categoryCounts)
+                .sort((a, b) => b[1] - a[1]);
+
+            const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe', '#43e97b', '#fa709a', '#ff6b9d'];
+
+            charts.category = new Chart(categoryCtx, {
+                type: 'pie',
                 data: {
-                    labels: ['Low', 'Medium', 'High'],
+                    labels: sortedCategories.map(c => c[0]),
                     datasets: [{
-                        data: [severityCounts['Low'], severityCounts['Medium'], severityCounts['High']],
-                        backgroundColor: ['#10b981', '#f59e0b', '#dc2626'],
-                        borderColor: ['#059669', '#d97706', '#991b1b'],
-                        borderWidth: 2,
-                        borderRadius: 4
+                        data: sortedCategories.map(c => c[1]),
+                        backgroundColor: colors.slice(0, sortedCategories.length),
+                        borderColor: '#fff',
+                        borderWidth: 2
                     }]
                 },
                 options: {
@@ -869,7 +911,7 @@
                         legend: {
                             position: 'bottom',
                             labels: {
-                                font: { size: 13, weight: '600' },
+                                font: { size: 12, weight: '600' },
                                 color: '#666',
                                 padding: 16,
                                 usePointStyle: true
@@ -879,46 +921,8 @@
                 }
             });
 
-            // Category Chart
-            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
-            const categoryCounts = {};
-            filtered.forEach(r => {
-                categoryCounts[r.category] = (categoryCounts[r.category] || 0) + 1;
-            });
-            const sortedCategories = Object.entries(categoryCounts)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 8); // Top 8 categories
-
-            charts.category = new Chart(categoryCtx, {
-                type: 'bar',
-                data: {
-                    labels: sortedCategories.map(c => c[0]),
-                    datasets: [{
-                        label: 'Number of Reports',
-                        data: sortedCategories.map(c => c[1]),
-                        backgroundColor: '#667eea',
-                        borderColor: '#5568d3',
-                        borderWidth: 0,
-                        borderRadius: 6,
-                        barThickness: 'flex'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    indexAxis: 'y',
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        x: {
-                            beginAtZero: true,
-                            ticks: { stepSize: 1 },
-                            grid: { color: '#f0f0f0' }
-                        }
-                    }
-                }
-            });
+            // Generate category interpretation
+            updateCategoryInterpretation(sortedCategories, filtered.length);
 
             // Trends Chart - Reports over time
             const trendsCtx = document.getElementById('trendsChart').getContext('2d');
@@ -938,13 +942,17 @@
                 }
             });
 
+            const dailyReports = last30Days.map(d => reportsByDate[d]);
+            const maxReports = Math.max(...dailyReports);
+            const avgReports = (dailyReports.reduce((a, b) => a + b, 0) / dailyReports.length).toFixed(1);
+
             charts.trends = new Chart(trendsCtx, {
                 type: 'line',
                 data: {
                     labels: last30Days,
                     datasets: [{
                         label: 'Reports per Day',
-                        data: last30Days.map(d => reportsByDate[d]),
+                        data: dailyReports,
                         borderColor: '#dc2626',
                         backgroundColor: 'rgba(220, 38, 38, 0.08)',
                         borderWidth: 3,
@@ -982,70 +990,79 @@
                 }
             });
 
-            // Section Distribution Chart
-            const sectionCtx = document.getElementById('sectionChart').getContext('2d');
-            const sectionCounts = {};
-            filtered.forEach(r => {
-                sectionCounts[r.section_name] = (sectionCounts[r.section_name] || 0) + 1;
-            });
+            // Generate trends interpretation
+            updateTrendsInterpretation(dailyReports, maxReports, avgReports);
+        }
 
-            const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe', '#43e97b', '#fa709a'];
-            const sectionLabels = Object.keys(sectionCounts);
-            const sectionData = Object.values(sectionCounts);
+        function updateCategoryInterpretation(sortedCategories, totalReports) {
+            const container = document.getElementById('categoryInterpretation');
+            if (!container) return;
 
-            charts.section = new Chart(sectionCtx, {
-                type: 'pie',
-                data: {
-                    labels: sectionLabels,
-                    datasets: [{
-                        data: sectionData,
-                        backgroundColor: colors.slice(0, sectionLabels.length),
-                        borderColor: '#fff',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                font: { size: 12, weight: '600' },
-                                color: '#666',
-                                padding: 12,
-                                usePointStyle: true
-                            }
-                        }
-                    }
-                }
+            const topCategory = sortedCategories[0];
+            const topPercentage = Math.round((topCategory[1] / totalReports) * 100);
+            const top3 = sortedCategories.slice(0, 3);
+
+            let html = '<h4>📊 Analysis Breakdown</h4>';
+            html += `<p><strong>Top Issue:</strong> <span class="interpretation-stat">${topCategory[0]}</span> accounts for <span class="interpretation-stat">${topPercentage}%</span> of all reported issues (${topCategory[1]} reports).</p>`;
+            html += '<p><strong>Top 3 Behavior Categories:</strong></p><ul>';
+            top3.forEach((cat, i) => {
+                const pct = Math.round((cat[1] / totalReports) * 100);
+                html += `<li>${i + 1}. <strong>${cat[0]}</strong>: ${cat[1]} reports (${pct}%)</li>`;
             });
+            html += '</ul>';
+            html += '<p><strong>Key Insight:</strong> ';
+            if (topPercentage > 30) {
+                html += `Focus on addressing <strong>${topCategory[0]}</strong> issues, as they represent over a third of all behavioral concerns.`;
+            } else {
+                html += 'Behavior issues are distributed across multiple categories. Consider addressing all areas equally.';
+            }
+            html += '</p>';
+
+            container.innerHTML = html;
+        }
+
+        function updateTrendsInterpretation(dailyReports, maxReports, avgReports) {
+            const container = document.getElementById('trendsInterpretation');
+            if (!container) return;
+
+            const totalReports = dailyReports.reduce((a, b) => a + b, 0);
+            const recentDays = dailyReports.slice(-7);
+            const recentTotal = recentDays.reduce((a, b) => a + b, 0);
+            const previousDays = dailyReports.slice(0, 23);
+            const previousTotal = previousDays.reduce((a, b) => a + b, 0);
+            const trend = recentTotal > previousTotal ? 'increasing' : 'decreasing';
+            const trendChange = Math.round(((recentTotal - previousTotal) / previousTotal) * 100);
+
+            let html = '<h4>📈 Trends Analysis</h4>';
+            html += `<p><strong>Total Reports (Last 30 Days):</strong> <span class="interpretation-stat">${totalReports}</span> reports | <strong>Average per Day:</strong> <span class="interpretation-stat">${avgReports}</span></p>`;
+            html += `<p><strong>Peak Activity:</strong> <span class="interpretation-stat">${maxReports}</span> reports in a single day</p>`;
+            html += `<p><strong>Recent Trend (Last 7 Days):</strong> Reports are <strong style="color: ${trend === 'increasing' ? '#dc2626' : '#10b981'}">${trend}</strong> by approximately <span class="interpretation-stat">${Math.abs(trendChange)}%</span></p>`;
+            html += '<p><strong>Recommendation:</strong> ';
+            if (trend === 'increasing') {
+                html += 'The increasing trend suggests more behavioral issues are being reported. Ensure support resources are available.';
+            } else {
+                html += 'The decreasing trend is positive, indicating improved student behavior or better prevention measures.';
+            }
+            html += '</p>';
+
+            container.innerHTML = html;
         }
 
         function updateCharts(filtered) {
-            if (!charts.severity) return;
+            if (!charts.category) return;
 
-            // Severity Distribution
-            const severityCounts = {
-                'Low': filtered.filter(r => r.severity === 'Low').length,
-                'Medium': filtered.filter(r => r.severity === 'Medium').length,
-                'High': filtered.filter(r => r.severity === 'High').length
-            };
-            charts.severity.data.datasets[0].data = [severityCounts['Low'], severityCounts['Medium'], severityCounts['High']];
-            charts.severity.update();
-
-            // Category Chart
+            // Category Chart - Pie
             const categoryCounts = {};
             filtered.forEach(r => {
                 categoryCounts[r.category] = (categoryCounts[r.category] || 0) + 1;
             });
             const sortedCategories = Object.entries(categoryCounts)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 8);
+                .sort((a, b) => b[1] - a[1]);
             
             charts.category.data.labels = sortedCategories.map(c => c[0]);
             charts.category.data.datasets[0].data = sortedCategories.map(c => c[1]);
             charts.category.update();
+            updateCategoryInterpretation(sortedCategories, filtered.length);
 
             // Trends Chart
             const last30Days = [];
@@ -1064,18 +1081,14 @@
                 }
             });
 
-            charts.trends.data.labels = last30Days;
-            charts.trends.data.datasets[0].data = last30Days.map(d => reportsByDate[d]);
-            charts.trends.update();
+            const dailyReports = last30Days.map(d => reportsByDate[d]);
+            const maxReports = Math.max(...dailyReports);
+            const avgReports = (dailyReports.reduce((a, b) => a + b, 0) / dailyReports.length).toFixed(1);
 
-            // Section Chart
-            const sectionCounts = {};
-            filtered.forEach(r => {
-                sectionCounts[r.section_name] = (sectionCounts[r.section_name] || 0) + 1;
-            });
-            charts.section.data.labels = Object.keys(sectionCounts);
-            charts.section.data.datasets[0].data = Object.values(sectionCounts);
-            charts.section.update();
+            charts.trends.data.labels = last30Days;
+            charts.trends.data.datasets[0].data = dailyReports;
+            charts.trends.update();
+            updateTrendsInterpretation(dailyReports, maxReports, avgReports);
         }
 
         function getFilteredReports() {
