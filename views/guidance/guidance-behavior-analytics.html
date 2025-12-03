@@ -179,6 +179,14 @@
 
         .analytics-card:hover { transform:translateY(-6px); box-shadow:0 8px 24px rgba(220,38,38,0.45); }
 
+        /* Hide specific cards */
+        .analytics-card:nth-child(2),
+        .analytics-card:nth-child(3),
+        .analytics-card:nth-child(4),
+        .analytics-card:nth-child(5) {
+            display: none;
+        }
+
         .analytics-card h3 {
             margin: 0 0 12px 0;
             font-size: 14px;
@@ -206,7 +214,7 @@
         /* Charts Section */
         .charts-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 24px;
             margin-bottom: 40px;
         }
@@ -215,9 +223,12 @@
             background: white;
             border: 1px solid #e0e0e0;
             border-radius: 14px;
-            padding: 28px;
+            padding: 24px;
             box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
             transition: all .2s;
+            min-height: 320px;
+            display: flex;
+            flex-direction: column;
         }
 
         .chart-card:hover {
@@ -225,8 +236,8 @@
         }
 
         .chart-card h3 {
-            margin: 0 0 24px 0;
-            font-size: 18px;
+            margin: 0 0 20px 0;
+            font-size: 16px;
             color: #333;
             font-weight: 700;
             display: flex;
@@ -236,6 +247,7 @@
 
         .chart-card canvas {
             max-width: 100%;
+            flex: 1;
         }
 
         /* Severity bars (previous style) */
@@ -512,12 +524,26 @@
             }
 
             .chart-card {
-                padding: 20px;
+                padding: 16px;
+                min-height: 280px;
+            }
+
+            .chart-card h3 {
+                margin: 0 0 12px 0;
+                font-size: 14px;
             }
 
             .analytics-container {
-                padding: 24px;
+                padding: 20px;
             }
+        }
+
+        @media (max-width: 600px) {
+            main { margin: 16px 8px 16px 100px; }
+            .sidebar { width: 100px; }
+            .sidebar .brand { flex-direction: column; margin-bottom: 4px; }
+            .sidebar .brand img { width: 32px; height: 32px; }
+            .sidebar .brand .school-name-text { font-size: 10px; }
         }
         .archive-btn { margin-left: 8px; }
         </style>
