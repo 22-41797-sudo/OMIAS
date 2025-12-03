@@ -245,7 +245,7 @@
             background: linear-gradient(135deg, #ffffff 0%, #f8f9fb 100%);
             border: 1px solid #e8ecf1;
             border-radius: 16px;
-            padding: 18px;
+            padding: 24px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.04);
             transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
             min-height: auto;
@@ -253,6 +253,10 @@
             flex-direction: column;
             position: relative;
             overflow: hidden;
+        }
+
+        .chart-card.hidden {
+            display: none;
         }
 
         .chart-card::before {
@@ -290,60 +294,52 @@
 
         /* Chart Interpretation Styles */
         .chart-interpretation {
-            margin-top: 12px;
-            padding: 12px 14px;
+            margin-top: 20px;
+            padding: 18px 20px;
             background: linear-gradient(135deg, #f3f4f9 0%, #f7f8fc 100%);
-            border-left: 4px solid #667eea;
-            border-radius: 8px;
-            font-size: 11px;
-            line-height: 1.5;
+            border-left: 4px solid #dc2626;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.6;
             color: #4b5563;
+            border: 1px solid #e8ecf1;
         }
 
         .chart-interpretation h4 {
-            margin: 0 0 8px 0;
-            font-size: 12px;
+            margin: 0 0 12px 0;
+            font-size: 14px;
             font-weight: 700;
             color: #1f2937;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
 
         .chart-interpretation p {
-            margin: 6px 0;
+            margin: 10px 0;
             padding: 0;
         }
 
         .chart-interpretation ul {
-            margin: 6px 0;
-            padding-left: 18px;
+            margin: 10px 0;
+            padding-left: 20px;
         }
 
         .chart-interpretation li {
-            margin: 3px 0;
-            font-size: 11px;
-        }
-
-        .interpretation-stat {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #5568d3 100%);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-weight: 600;
-            color: #fff;
-            margin: 0 3px;
-            font-size: 10px;
+            margin: 8px 0;
+            font-size: 13px;
         }
 
         .interpretation-stat {
             display: inline-block;
             background: white;
-            padding: 4px 10px;
-            border-radius: 4px;
+            padding: 4px 12px;
+            border-radius: 6px;
             font-weight: 600;
-            color: #667eea;
+            color: #dc2626;
             margin: 0 4px;
+            font-size: 13px;
+            border: 1px solid #e8ecf1;
         }
 
         /* Severity bars (previous style) */
@@ -739,12 +735,12 @@
 
             <!-- Analytics Charts -->
             <div class="charts-grid">
-                <div class="chart-card" id="categoryCardContainer">
+                <div class="chart-card hidden" id="categoryCardContainer">
                     <h3>🏷️ Issues by Category</h3>
                     <canvas id="categoryChart"></canvas>
                     <div class="chart-interpretation" id="categoryInterpretation"></div>
                 </div>
-                <div class="chart-card" id="trendsCardContainer">
+                <div class="chart-card hidden" id="trendsCardContainer">
                     <h3>📈 Reports Over Time</h3>
                     <canvas id="trendsChart"></canvas>
                     <div class="chart-interpretation" id="trendsInterpretation"></div>
@@ -1002,23 +998,35 @@
             const container = document.getElementById('categoryInterpretation');
             if (!container) return;
 
+            if (sortedCategories.length === 0) {
+                container.innerHTML = '<h4>📊 Analysis Breakdown</h4><p>No category data available at this time.</p>';
+                return;
+            }
+
             const topCategory = sortedCategories[0];
             const topPercentage = Math.round((topCategory[1] / totalReports) * 100);
             const top3 = sortedCategories.slice(0, 3);
+            const categoryCount = sortedCategories.length;
 
             let html = '<h4>📊 Analysis Breakdown</h4>';
-            html += `<p><strong>Top Issue:</strong> <span class="interpretation-stat">${topCategory[0]}</span> accounts for <span class="interpretation-stat">${topPercentage}%</span> of all reported issues (${topCategory[1]} reports).</p>`;
+            html += `<p><strong>Top Issue Category:</strong> <span class="interpretation-stat">${topCategory[0]}</span> is the most prevalent, accounting for <span class="interpretation-stat">${topPercentage}%</span> of all reported issues.</p>`;
+            html += `<p><strong>Total Reports:</strong> <span class="interpretation-stat">${totalReports}</span> across <span class="interpretation-stat">${categoryCount}</span> different behavioral categories.</p>`;
+            
             html += '<p><strong>Top 3 Behavior Categories:</strong></p><ul>';
             top3.forEach((cat, i) => {
                 const pct = Math.round((cat[1] / totalReports) * 100);
-                html += `<li>${i + 1}. <strong>${cat[0]}</strong>: ${cat[1]} reports (${pct}%)</li>`;
+                const barLength = Math.round((pct / 100) * 20); // For visual representation
+                html += `<li><strong>${i + 1}. ${cat[0]}</strong>: <span class="interpretation-stat">${cat[1]}</span> reports (<span class="interpretation-stat">${pct}%</span>)</li>`;
             });
             html += '</ul>';
-            html += '<p><strong>Key Insight:</strong> ';
-            if (topPercentage > 30) {
-                html += `Focus on addressing <strong>${topCategory[0]}</strong> issues, as they represent over a third of all behavioral concerns.`;
+            
+            html += '<p><strong>📌 Key Insight:</strong> ';
+            if (topPercentage > 40) {
+                html += `<strong>${topCategory[0]}</strong> is a critical focus area, representing over 40% of all behavioral concerns. Recommend targeted interventions and teacher training in this area.`;
+            } else if (topPercentage > 25) {
+                html += `Behavioral issues show moderate concentration in <strong>${topCategory[0]}</strong>. While significant, issues are distributed across multiple categories requiring balanced attention.`;
             } else {
-                html += 'Behavior issues are distributed across multiple categories. Consider addressing all areas equally.';
+                html += 'Behavior issues are well-distributed across multiple categories. A comprehensive, holistic approach addressing all areas equally is recommended.';
             }
             html += '</p>';
 
@@ -1032,20 +1040,32 @@
             const totalReports = dailyReports.reduce((a, b) => a + b, 0);
             const recentDays = dailyReports.slice(-7);
             const recentTotal = recentDays.reduce((a, b) => a + b, 0);
-            const previousDays = dailyReports.slice(0, 23);
-            const previousTotal = previousDays.reduce((a, b) => a + b, 0);
-            const trend = recentTotal > previousTotal ? 'increasing' : 'decreasing';
-            const trendChange = Math.round(((recentTotal - previousTotal) / previousTotal) * 100);
+            
+            // Calculate previous period (exclude last 7 days)
+            const previousDays = dailyReports.slice(0, -7);
+            const previousTotal = previousDays.length > 0 ? previousDays.reduce((a, b) => a + b, 0) : 0;
+            
+            const trend = previousTotal > 0 ? (recentTotal > previousTotal ? 'increasing' : 'decreasing') : 'stable';
+            const trendChange = previousTotal > 0 ? Math.round(((recentTotal - previousTotal) / previousTotal) * 100) : 0;
+            const trendColor = trend === 'increasing' ? '#dc2626' : trend === 'decreasing' ? '#10b981' : '#6b7280';
 
-            let html = '<h4>📈 Trends Analysis</h4>';
-            html += `<p><strong>Total Reports (Last 30 Days):</strong> <span class="interpretation-stat">${totalReports}</span> reports | <strong>Average per Day:</strong> <span class="interpretation-stat">${avgReports}</span></p>`;
-            html += `<p><strong>Peak Activity:</strong> <span class="interpretation-stat">${maxReports}</span> reports in a single day</p>`;
-            html += `<p><strong>Recent Trend (Last 7 Days):</strong> Reports are <strong style="color: ${trend === 'increasing' ? '#dc2626' : '#10b981'}">${trend}</strong> by approximately <span class="interpretation-stat">${Math.abs(trendChange)}%</span></p>`;
-            html += '<p><strong>Recommendation:</strong> ';
+            let html = '<h4>📈 Trends Analysis & Insights</h4>';
+            html += `<p><strong>Total Period Reports:</strong> <span class="interpretation-stat">${totalReports}</span> reports recorded across the tracking period.</p>`;
+            html += `<p><strong>Daily Average:</strong> <span class="interpretation-stat">${avgReports}</span> reports per day | <strong>Peak Activity:</strong> <span class="interpretation-stat">${maxReports}</span> reports on a single day.</p>`;
+            
+            html += `<p><strong>Recent Trend (Last 7 Days):</strong> <span class="interpretation-stat">${recentTotal}</span> reports — Reports are <strong style="color: ${trendColor}; font-weight: 700;">${trend}</strong>`;
+            if (trendChange !== 0) {
+                html += ` by approximately <span class="interpretation-stat">${Math.abs(trendChange)}%</span>`;
+            }
+            html += `.</p>`;
+            
+            html += '<p><strong>📌 Actionable Recommendation:</strong> ';
             if (trend === 'increasing') {
-                html += 'The increasing trend suggests more behavioral issues are being reported. Ensure support resources are available.';
+                html += `<strong style="color: #dc2626;">⚠️ Alert:</strong> The upward trend indicates growing behavioral issues. Recommend immediate action: increase teacher communication, implement targeted interventions, and ensure counseling resources are available.`;
+            } else if (trend === 'decreasing') {
+                html += `<strong style="color: #10b981;">✓ Positive:</strong> The downward trend shows improvement. Continue current prevention measures and recognize successful interventions. Consider sharing best practices across staff.`;
             } else {
-                html += 'The decreasing trend is positive, indicating improved student behavior or better prevention measures.';
+                html += `<strong>Stable:</strong> Report rates remain consistent. Maintain current monitoring and support strategies while evaluating effectiveness of existing interventions.`;
             }
             html += '</p>';
 
