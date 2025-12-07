@@ -158,6 +158,7 @@ h1, h2, h3, h4, h5, h6 {
     text-align: center;
     overflow: hidden;
     animation: fadeIn 1.5s ease-in-out;
+    background-image: url('../pictures/Schoolbench.png');
 }
 
 .hero-overlay {
@@ -433,6 +434,11 @@ footer {
         padding: 20px;
         background-position: center;
         background-size: cover;
+        background-attachment: fixed;
+    }
+
+    .hero-overlay {
+        background-color: rgba(0, 0, 0, 0.40);
     }
 
     .cta-button {
@@ -605,11 +611,12 @@ footer {
         padding: 16px;
         background-position: center;
         background-size: cover;
-        background-attachment: scroll;
+        background-attachment: fixed;
+        min-height: 280px;
     }
 
     .hero-overlay {
-        background-color: rgba(0, 0, 0, 0.45);
+        background-color: rgba(0, 0, 0, 0.40);
     }
 
     .hero-content h1 {
