@@ -40,15 +40,18 @@
             text-decoration: none;
             display: block;
             font-size: 14px;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
         }
         
-        .dropdown-content a:hover {
-            background-color: #f1f1f1;
+        .dropdown-content a:hover,
+        .dropdown-content a:active {
+            background-color: var(--primary-color);
+            color: white;
         }
         
         .dropdown.active .dropdown-content {
             display: block;
+            animation: slideDown 0.3s ease-out;
         }
         
         .dropdown > a {
@@ -64,6 +67,33 @@
         
         .dropdown.active > a::after {
             transform: rotate(180deg);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mobile enhancements */
+        @media (max-width: 768px) {
+            .dropdown-content {
+                min-width: 180px;
+                box-shadow: 0px 6px 12px rgba(0,0,0,0.15);
+            }
+
+            .dropdown-content a {
+                padding: 14px 16px;
+                font-size: 13px;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+            }
         }
 
         /* Background styling */
@@ -331,8 +361,8 @@
         <input type="text" id="signaturePrintedName" name="signaturePrintedName" placeholder="Type Printed Name Here" title="Type Printed Name Here" class="signature-line-input signature-name-input">
         <div class="signature-text">Printed Name</div>
       </div>
-      <div class="date-field-flex-1">
-        <input type="date" id="dateSigned" name="dateSigned" required title="Please select the date" placeholder="Select date" class="signature-line-input signature-date-input">
+      <div class="date-field-flex-1" style="min-width: 150px;">
+        <input type="date" id="dateSigned" name="dateSigned" required title="Please select the date" placeholder="Select date" class="signature-line-input signature-date-input" style="min-width: 100px;">
         <div class="signature-text">Date</div>
       </div>
     </div>
@@ -382,25 +412,71 @@
     const ctx = canvas.getContext('2d');
     let drawing = false;
 
-    canvas.addEventListener('mousedown', function(e) {
+    // Helper function to get correct coordinates for both mouse and touch
+    function getCoordinates(e, targetCanvas) {
+        const rect = targetCanvas.getBoundingClientRect();
+        const scaleX = targetCanvas.width / rect.width;
+        const scaleY = targetCanvas.height / rect.height;
+        
+        let x, y;
+        if (e.touches && e.touches.length > 0) {
+            // Touch event
+            x = (e.touches[0].clientX - rect.left) * scaleX;
+            y = (e.touches[0].clientY - rect.top) * scaleY;
+        } else {
+            // Mouse event
+            x = (e.clientX - rect.left) * scaleX;
+            y = (e.clientY - rect.top) * scaleY;
+        }
+        return { x, y };
+    }
+
+    function startDrawing(e, targetCanvas, isModal = false) {
+        const coords = getCoordinates(e, targetCanvas);
+        const targetCtx = isModal ? modalCtx : ctx;
+        targetCtx.beginPath();
+        targetCtx.moveTo(coords.x, coords.y);
         drawing = true;
-        ctx.beginPath();
-        ctx.moveTo(e.offsetX, e.offsetY);
+        e.preventDefault();
+    }
+
+    function draw(e, targetCanvas, isModal = false) {
+        if (!drawing) return;
+        const coords = getCoordinates(e, targetCanvas);
+        const targetCtx = isModal ? modalCtx : ctx;
+        targetCtx.lineTo(coords.x, coords.y);
+        targetCtx.strokeStyle = "#0056b3";
+        targetCtx.lineWidth = 2;
+        targetCtx.lineCap = 'round';
+        targetCtx.lineJoin = 'round';
+        targetCtx.stroke();
+        e.preventDefault();
+    }
+
+    function stopDrawing(e) {
+        drawing = false;
+        e.preventDefault();
+    }
+
+    // Canvas mouse events
+    canvas.addEventListener('mousedown', function(e) {
+        startDrawing(e, canvas);
     });
     canvas.addEventListener('mousemove', function(e) {
-        if (drawing) {
-            ctx.lineTo(e.offsetX, e.offsetY);
-            ctx.strokeStyle = "#0056b3";
-            ctx.lineWidth = 2;
-            ctx.stroke();
-        }
+        draw(e, canvas);
     });
-    canvas.addEventListener('mouseup', function(e) {
-        drawing = false;
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseleave', stopDrawing);
+
+    // Canvas touch events for mobile
+    canvas.addEventListener('touchstart', function(e) {
+        startDrawing(e, canvas);
     });
-    canvas.addEventListener('mouseleave', function(e) {
-        drawing = false;
+    canvas.addEventListener('touchmove', function(e) {
+        draw(e, canvas);
     });
+    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchcancel', stopDrawing);
 
     function clearSignaturePad() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -424,25 +500,38 @@
         img.src = dataURL;
     }
 
-    // Modal drawing events
+    // Modal drawing events - mouse
     modalCanvas.addEventListener('mousedown', function(e) {
+        startDrawing(e, modalCanvas, true);
         modalDrawing = true;
-        modalCtx.beginPath();
-        modalCtx.moveTo(e.offsetX, e.offsetY);
     });
     modalCanvas.addEventListener('mousemove', function(e) {
-        if (modalDrawing) {
-            modalCtx.lineTo(e.offsetX, e.offsetY);
-            modalCtx.strokeStyle = "#0056b3";
-            modalCtx.lineWidth = 2;
-            modalCtx.stroke();
-        }
+        if (modalDrawing) draw(e, modalCanvas, true);
     });
     modalCanvas.addEventListener('mouseup', function(e) {
         modalDrawing = false;
+        stopDrawing(e);
     });
     modalCanvas.addEventListener('mouseleave', function(e) {
         modalDrawing = false;
+        stopDrawing(e);
+    });
+
+    // Modal drawing events - touch
+    modalCanvas.addEventListener('touchstart', function(e) {
+        startDrawing(e, modalCanvas, true);
+        modalDrawing = true;
+    });
+    modalCanvas.addEventListener('touchmove', function(e) {
+        if (modalDrawing) draw(e, modalCanvas, true);
+    });
+    modalCanvas.addEventListener('touchend', function(e) {
+        modalDrawing = false;
+        stopDrawing(e);
+    });
+    modalCanvas.addEventListener('touchcancel', function(e) {
+        modalDrawing = false;
+        stopDrawing(e);
     });
 
     // Maximize button event

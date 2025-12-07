@@ -4,6 +4,7 @@ body {
     margin: 0;
     padding: 0;
     color: #222;
+    overflow-x: hidden;
 }
 .signature-upload-container {
     margin-top: 14px;
@@ -16,6 +17,7 @@ body {
     border-radius: 10px;
     border: 1px solid #e3e7ee;
     box-shadow: 0 2px 8px rgba(0,86,179,0.04);
+    box-sizing: border-box;
 }
 .gmail-label {
     font-weight: 600;
@@ -252,12 +254,19 @@ hr {
     position: relative;
     display: flex;
     align-items: center;
+    width: 100%;
+    gap: 12px;
 }
 .signature-canvas {
     border: 1px solid #bfcbe3;
     border-radius: 6px;
     background: #fff;
     cursor: crosshair;
+    flex-grow: 1;
+    touch-action: none;
+    display: block;
+    max-width: 100%;
+    height: auto;
 }
 .signature-maximize-btn {
     margin-left: 16px;
@@ -323,6 +332,10 @@ hr {
     cursor: crosshair;
     display: block;
     margin: 0 auto 18px auto;
+    touch-action: none;
+    max-width: 100%;
+    height: auto;
+    width: 100%;
 }
 .signature-modal-btn {
     background: #eee;
@@ -504,12 +517,14 @@ hr {
 @media (max-width: 768px) {
     body {
         background-attachment: scroll;
+        overflow-x: hidden;
     }
 
     .enroll-container { 
         margin: 12px; 
         padding: 20px 16px; 
         border-radius: 12px;
+        box-sizing: border-box;
     }
 
     .enroll-header {
@@ -531,6 +546,7 @@ hr {
         margin: 20px auto;
         padding: 16px 20px;
         max-width: 100%;
+        box-sizing: border-box;
     }
 
     .form-row, 
@@ -547,11 +563,13 @@ hr {
         flex: none !important; 
         max-width: none !important; 
         min-width: 100% !important; 
+        box-sizing: border-box;
     }
 
     .form-field input,
     .form-field select {
         font-size: 16px;
+        box-sizing: border-box;
     }
 
     .signature-section { 
@@ -570,16 +588,18 @@ hr {
 
     .signature-line-area {
         width: 100%;
+        box-sizing: border-box;
     }
 
     .signature-canvas-container {
         flex-direction: column;
         width: 100%;
+        gap: 12px;
     }
 
     .signature-maximize-btn {
         margin-left: 0;
-        margin-top: 8px;
+        margin-top: 0;
         width: 100%;
     }
 
@@ -587,15 +607,18 @@ hr {
         max-width: 95vw;
         width: 95vw;
         padding: 20px 16px;
+        box-sizing: border-box;
     }
 
     .signature-modal-canvas {
         max-width: 100%;
         height: auto;
+        width: 100%;
     }
 
     .parent-info-section {
         padding: 16px 12px;
+        box-sizing: border-box;
     }
 
     .form-section-title {
@@ -612,24 +635,31 @@ hr {
     .disclaimer {
         font-size: 0.88em;
         padding: 16px;
+        box-sizing: border-box;
     }
 
     .name-field-flex-2 {
         flex: 1;
+        min-width: 100%;
+        box-sizing: border-box;
     }
 
     .date-field-flex-1 {
         flex: 1;
+        min-width: 100%;
+        box-sizing: border-box;
     }
 
     .signature-name-input {
         min-width: auto;
         width: 100%;
+        box-sizing: border-box;
     }
 
     .signature-date-input {
         min-width: auto;
         width: 100%;
+        box-sizing: border-box;
     }
 }
 
@@ -638,6 +668,7 @@ hr {
         margin: 0; 
         padding: 16px 12px; 
         border-radius: 8px;
+        box-sizing: border-box;
     }
 
     .enroll-title {
@@ -654,6 +685,7 @@ hr {
     .gmail-container {
         margin: 16px 0;
         padding: 12px 16px;
+        box-sizing: border-box;
     }
 
     .gmail-label {
@@ -668,6 +700,7 @@ hr {
     .form-field select {
         padding: 10px;
         font-size: 16px;
+        box-sizing: border-box;
     }
 
     .radio-group {
@@ -687,6 +720,8 @@ hr {
     .enroll-form button {
         font-size: 0.95em;
         padding: 11px 24px;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .signature-section {
@@ -695,16 +730,42 @@ hr {
 
     .sig-block {
         margin-bottom: 12px;
+        width: 100%;
     }
 
     .signature-instruction {
         font-size: 0.9em;
     }
 
+    .signature-canvas-container {
+        flex-direction: column;
+        width: 100%;
+        gap: 12px;
+    }
+
+    .signature-maximize-btn {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .signature-modal-content {
+        width: 95vw;
+        max-width: 95vw;
+        padding: 16px 12px;
+        box-sizing: border-box;
+    }
+
+    .signature-modal-canvas {
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+    }
+
     .disclaimer {
         font-size: 0.85em;
         padding: 12px;
         margin-top: 24px;
+        box-sizing: border-box;
     }
 
     .footer-centered {
@@ -720,6 +781,7 @@ hr {
     .signature-maximize-btn-styled {
         height: 36px;
         padding: 0 16px;
+        width: 100%;
     }
 
     .signature-clear-btn-styled {
@@ -729,6 +791,28 @@ hr {
 
     .name-group-row {
         gap: 12px;
+        flex-direction: column;
+    }
+
+    .name-field-flex-2 {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .date-field-flex-1 {
+        width: 100%;
+        min-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .signature-name-input {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .signature-date-input {
+        width: 100%;
+        box-sizing: border-box;
     }
 
     hr {
