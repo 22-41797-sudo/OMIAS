@@ -83,8 +83,145 @@
             }
         }
 
+        /* Hamburger Menu */
+        .hamburger-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.8em;
+            color: var(--primary-color);
+            cursor: pointer;
+            padding: 8px 12px;
+            transition: all 0.3s ease;
+        }
+
+        .hamburger-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .mobile-nav-drawer {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9998;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .mobile-nav-drawer.active {
+            display: block;
+        }
+
+        .mobile-nav-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100%;
+            background: white;
+            z-index: 9999;
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+            animation: slideInLeft 0.3s ease-out;
+            overflow-y: auto;
+            padding-top: 16px;
+        }
+
+        .mobile-nav-menu.active {
+            display: block;
+        }
+
+        .mobile-nav-close {
+            background: none;
+            border: none;
+            font-size: 1.8em;
+            color: var(--primary-color);
+            cursor: pointer;
+            float: right;
+            padding: 8px 16px;
+            margin-bottom: 12px;
+        }
+
+        .mobile-nav-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .mobile-nav-menu ul li {
+            border-bottom: 1px solid #eee;
+        }
+
+        .mobile-nav-menu ul li a {
+            display: block;
+            padding: 16px 20px;
+            color: #333;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-size: 1em;
+        }
+
+        .mobile-nav-menu ul li a:active,
+        .mobile-nav-menu ul li a.active {
+            background-color: #f0f7ff;
+            color: var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+            padding-left: 16px;
+        }
+
+        .mobile-nav-submenu {
+            display: none;
+            background-color: #f9f9f9;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .mobile-nav-submenu.active {
+            display: block;
+        }
+
+        .mobile-nav-submenu a {
+            padding: 12px 20px 12px 32px !important;
+            font-size: 0.95em;
+            color: #666;
+        }
+
+        .mobile-nav-submenu a:active {
+            background-color: #eef3fa;
+            color: var(--primary-color);
+            border-left: none;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-100%);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+
         /* Mobile enhancements */
         @media (max-width: 768px) {
+            .hamburger-btn {
+                display: block;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
             .dropdown-content {
                 min-width: 180px;
                 box-shadow: 0px 6px 12px rgba(0,0,0,0.15);
@@ -101,6 +238,7 @@
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Desktop dropdown logic
             const dropdowns = document.querySelectorAll('.dropdown');
             
             dropdowns.forEach(dropdown => {
@@ -127,6 +265,55 @@
                         dropdown.classList.remove('active');
                     });
                 }
+            });
+
+            // Mobile hamburger menu logic
+            const hamburgerBtn = document.getElementById('hamburgerBtn');
+            const mobileNavDrawer = document.getElementById('mobileNavDrawer');
+            const mobileNavMenu = document.getElementById('mobileNavMenu');
+            const mobileNavClose = document.getElementById('mobileNavClose');
+            const mobileNavToggles = document.querySelectorAll('.mobile-nav-toggle');
+
+            // Open mobile menu
+            hamburgerBtn.addEventListener('click', function() {
+                mobileNavDrawer.classList.add('active');
+                mobileNavMenu.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            });
+
+            // Close mobile menu
+            mobileNavClose.addEventListener('click', function() {
+                mobileNavDrawer.classList.remove('active');
+                mobileNavMenu.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+
+            // Close menu when clicking on overlay
+            mobileNavDrawer.addEventListener('click', function() {
+                mobileNavDrawer.classList.remove('active');
+                mobileNavMenu.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+
+            // Mobile submenu toggle
+            mobileNavToggles.forEach(toggle => {
+                toggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const submenu = this.nextElementSibling;
+                    submenu.classList.toggle('active');
+                    // Rotate arrow
+                    this.style.transform = submenu.classList.contains('active') ? 'rotate(180deg)' : 'rotate(0)';
+                });
+            });
+
+            // Close menu when clicking on a link
+            const mobileNavLinks = document.querySelectorAll('#mobileNavMenu a:not(.mobile-nav-toggle)');
+            mobileNavLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    mobileNavDrawer.classList.remove('active');
+                    mobileNavMenu.classList.remove('active');
+                    document.body.style.overflow = '';
+                });
             });
         });
     </script>
@@ -159,8 +346,33 @@
                     </li>
                 </ul>
             </nav>
+            <button class="hamburger-btn" id="hamburgerBtn" title="Menu">☰</button>
         </div>
     </header>
+
+    <!-- Mobile Navigation Drawer -->
+    <div class="mobile-nav-drawer" id="mobileNavDrawer"></div>
+    <nav class="mobile-nav-menu" id="mobileNavMenu">
+        <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+        <ul>
+            <li><a href="index.html" class="active">HOME</a></li>
+            <li><a href="#about">ABOUT US</a></li>
+            <li>
+                <a href="javascript:void(0)" class="mobile-nav-toggle">DOCUMENT REQUEST ▼</a>
+                <div class="mobile-nav-submenu">
+                    <a href="document-request.html">Request Document</a>
+                    <a href="check-document-status.html">Check Status</a>
+                </div>
+            </li>
+            <li>
+                <a href="javascript:void(0)" class="mobile-nav-toggle">ENROLLMENT ▼</a>
+                <div class="mobile-nav-submenu">
+                    <a href="enrollment.html">Enroll Now</a>
+                    <a href="check-status.html">Check Enrollment Status</a>
+                </div>
+            </li>
+        </ul>
+    </nav>
 
     <main>
         <section class="hero-section">
