@@ -10,7 +10,299 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
-</head>
+  <style>
+        /* Hamburger Menu Styles */
+        .hamburger-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.8em;
+            color: var(--primary-color);
+            cursor: pointer;
+            padding: 8px 12px;
+            transition: all 0.3s ease;
+            z-index: 10001;
+        }
+
+        .hamburger-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .mobile-nav-drawer {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 9998;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .mobile-nav-drawer.active {
+            display: block;
+        }
+
+        .mobile-nav-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100%;
+            background: white;
+            z-index: 9999;
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+            animation: slideInLeft 0.3s ease-out;
+            overflow-y: auto;
+            padding: 0;
+            margin: 0;
+            display: none;
+        }
+
+        .mobile-nav-menu.active {
+            display: block;
+        }
+
+        .mobile-nav-header {
+            background: linear-gradient(135deg, #0056b3 0%, #007bff 100%);
+            padding: 20px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e3e7ee;
+        }
+
+        .mobile-nav-logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .mobile-nav-logo {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 8px;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mobile-nav-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .mobile-nav-school-name {
+            color: white;
+            font-weight: 700;
+            font-size: 0.85em;
+            line-height: 1.3;
+            flex: 1;
+        }
+
+        .mobile-nav-close {
+            background: none;
+            border: none;
+            font-size: 1.8em;
+            color: white;
+            cursor: pointer;
+            padding: 0;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        .mobile-nav-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .mobile-nav-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .mobile-nav-menu ul li {
+            border-bottom: 1px solid #eee;
+        }
+
+        .mobile-nav-menu ul li a {
+            display: block;
+            padding: 16px 20px;
+            color: #333;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-size: 1em;
+        }
+
+        .mobile-nav-menu ul li a:active,
+        .mobile-nav-menu ul li a.active {
+            background-color: #f0f7ff;
+            color: var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+            padding-left: 16px;
+        }
+
+        .mobile-nav-submenu {
+            display: none;
+            background-color: #f9f9f9;
+            border-left: 4px solid var(--primary-color);
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .mobile-nav-submenu.active {
+            display: block;
+            max-height: 500px;
+        }
+
+        .mobile-nav-submenu a {
+            padding: 12px 20px 12px 32px !important;
+            font-size: 0.95em;
+            color: #666;
+            font-weight: 400;
+        }
+
+        .mobile-nav-submenu a:active {
+            background-color: #eef3fa;
+            color: var(--primary-color);
+            border-left: none;
+            padding-left: 32px !important;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-100%);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hamburger-btn {
+                display: block;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Desktop dropdown logic
+            const dropdowns = document.querySelectorAll('.dropdown');
+            
+            dropdowns.forEach(dropdown => {
+                const toggle = dropdown.querySelector('a');
+                
+                toggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    dropdown.classList.toggle('active');
+                    
+                    // Close other dropdowns
+                    dropdowns.forEach(other => {
+                        if (other !== dropdown) {
+                            other.classList.remove('active');
+                        }
+                    });
+                });
+            });
+            
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.dropdown')) {
+                    dropdowns.forEach(dropdown => {
+                        dropdown.classList.remove('active');
+                    });
+                }
+            });
+
+            // Mobile hamburger menu logic
+            const hamburgerBtn = document.getElementById('hamburgerBtn');
+            const mobileNavDrawer = document.getElementById('mobileNavDrawer');
+            const mobileNavMenu = document.getElementById('mobileNavMenu');
+            const mobileNavClose = document.getElementById('mobileNavClose');
+            const mobileNavToggles = document.querySelectorAll('.mobile-nav-toggle');
+
+            if (hamburgerBtn) {
+                // Open mobile menu
+                hamburgerBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    mobileNavDrawer.classList.add('active');
+                    mobileNavMenu.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                });
+
+                // Close mobile menu
+                mobileNavClose.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    closeMenu();
+                });
+
+                // Close menu when clicking on overlay
+                mobileNavDrawer.addEventListener('click', function(e) {
+                    if (e.target === mobileNavDrawer) {
+                        closeMenu();
+                    }
+                });
+
+                // Function to close menu
+                function closeMenu() {
+                    mobileNavDrawer.classList.remove('active');
+                    mobileNavMenu.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+
+                // Mobile submenu toggle
+                mobileNavToggles.forEach(toggle => {
+                    toggle.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const submenu = this.nextElementSibling;
+                        submenu.classList.toggle('active');
+                    });
+                });
+
+                // Close menu when clicking on a regular link
+                const mobileNavLinks = document.querySelectorAll('#mobileNavMenu a:not(.mobile-nav-toggle)');
+                mobileNavLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        closeMenu();
+                    });
+                });
+
+                // Prevent menu from closing when clicking inside submenu
+                const mobileNavSubmenus = document.querySelectorAll('.mobile-nav-submenu');
+                mobileNavSubmenus.forEach(submenu => {
+                    submenu.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                    });
+                });
+            }
+        });
+    </script>
 <body>
 
   <header class="navbar">
@@ -19,6 +311,7 @@
             <img src="../pictures/SchoolLogo-removebg-preview.png" alt="Mainaga San Francisco Integrated School Logo">
             <span class="school-name-text">Mainaga San Francisco Integrated School</span>
         </div>
+        <button class="hamburger-btn" id="hamburgerBtn" title="Menu">☰</button>
         <nav class="nav-links">
             <ul>
                 <li><a href="index.html">HOME</a></li>
@@ -41,6 +334,38 @@
         </nav>
     </div>
   </header>
+
+  <!-- Mobile Navigation Drawer -->
+  <div class="mobile-nav-drawer" id="mobileNavDrawer"></div>
+  <nav class="mobile-nav-menu" id="mobileNavMenu">
+      <div class="mobile-nav-header">
+          <div class="mobile-nav-logo-container">
+              <div class="mobile-nav-logo">
+                  <img src="../pictures/SchoolLogo-removebg-preview.png" alt="School Logo">
+              </div>
+              <div class="mobile-nav-school-name">Mainaga San Francisco Integrated School</div>
+          </div>
+          <button class="mobile-nav-close" id="mobileNavClose" title="Close Menu">✕</button>
+      </div>
+      <ul>
+          <li><a href="index.html">HOME</a></li>
+          <li><a href="about-us.html">ABOUT US</a></li>
+          <li>
+              <a href="#" class="mobile-nav-toggle">DOCUMENT REQUEST</a>
+              <div class="mobile-nav-submenu">
+                  <a href="document-request.html">Request Document</a>
+                  <a href="check-document-status.html">Check Status</a>
+              </div>
+          </li>
+          <li>
+              <a href="#" class="mobile-nav-toggle">ENROLLMENT</a>
+              <div class="mobile-nav-submenu">
+                  <a href="enrollment.html">Enroll Now</a>
+                  <a href="check-status.html">Check Enrollment Status</a>
+              </div>
+          </li>
+      </ul>
+  </nav>
 
   <main>
     <div class="status-container">
