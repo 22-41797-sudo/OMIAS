@@ -93,6 +93,7 @@
             cursor: pointer;
             padding: 8px 12px;
             transition: all 0.3s ease;
+            z-index: 10001;
         }
 
         .hamburger-btn:hover {
@@ -106,7 +107,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.4);
             z-index: 9998;
             animation: fadeIn 0.3s ease-out;
         }
@@ -126,22 +127,74 @@
             box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
             animation: slideInLeft 0.3s ease-out;
             overflow-y: auto;
-            padding-top: 16px;
+            padding: 0;
+            margin: 0;
+            display: none;
         }
 
         .mobile-nav-menu.active {
             display: block;
         }
 
+        .mobile-nav-header {
+            background: linear-gradient(135deg, #0056b3 0%, #007bff 100%);
+            padding: 20px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e3e7ee;
+        }
+
+        .mobile-nav-logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .mobile-nav-logo {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 8px;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mobile-nav-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .mobile-nav-school-name {
+            color: white;
+            font-weight: 700;
+            font-size: 0.85em;
+            line-height: 1.3;
+            flex: 1;
+        }
+
         .mobile-nav-close {
             background: none;
             border: none;
             font-size: 1.8em;
-            color: var(--primary-color);
+            color: white;
             cursor: pointer;
-            float: right;
-            padding: 8px 16px;
-            margin-bottom: 12px;
+            padding: 0;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        .mobile-nav-close:hover {
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .mobile-nav-menu ul {
@@ -176,22 +229,28 @@
             display: none;
             background-color: #f9f9f9;
             border-left: 4px solid var(--primary-color);
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
         }
 
         .mobile-nav-submenu.active {
             display: block;
+            max-height: 500px;
         }
 
         .mobile-nav-submenu a {
             padding: 12px 20px 12px 32px !important;
             font-size: 0.95em;
             color: #666;
+            font-weight: 400;
         }
 
         .mobile-nav-submenu a:active {
             background-color: #eef3fa;
             color: var(--primary-color);
             border-left: none;
+            padding-left: 32px !important;
         }
 
         @keyframes fadeIn {
@@ -275,44 +334,56 @@
             const mobileNavToggles = document.querySelectorAll('.mobile-nav-toggle');
 
             // Open mobile menu
-            hamburgerBtn.addEventListener('click', function() {
+            hamburgerBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
                 mobileNavDrawer.classList.add('active');
                 mobileNavMenu.classList.add('active');
                 document.body.style.overflow = 'hidden';
             });
 
             // Close mobile menu
-            mobileNavClose.addEventListener('click', function() {
-                mobileNavDrawer.classList.remove('active');
-                mobileNavMenu.classList.remove('active');
-                document.body.style.overflow = '';
+            mobileNavClose.addEventListener('click', function(e) {
+                e.stopPropagation();
+                closeMenu();
             });
 
             // Close menu when clicking on overlay
-            mobileNavDrawer.addEventListener('click', function() {
+            mobileNavDrawer.addEventListener('click', function(e) {
+                if (e.target === mobileNavDrawer) {
+                    closeMenu();
+                }
+            });
+
+            // Function to close menu
+            function closeMenu() {
                 mobileNavDrawer.classList.remove('active');
                 mobileNavMenu.classList.remove('active');
                 document.body.style.overflow = '';
-            });
+            }
 
-            // Mobile submenu toggle
+            // Mobile submenu toggle - just show/hide without flipping
             mobileNavToggles.forEach(toggle => {
                 toggle.addEventListener('click', function(e) {
                     e.preventDefault();
+                    e.stopPropagation();
                     const submenu = this.nextElementSibling;
                     submenu.classList.toggle('active');
-                    // Rotate arrow
-                    this.style.transform = submenu.classList.contains('active') ? 'rotate(180deg)' : 'rotate(0)';
                 });
             });
 
-            // Close menu when clicking on a link
+            // Close menu when clicking on a regular link (not toggle)
             const mobileNavLinks = document.querySelectorAll('#mobileNavMenu a:not(.mobile-nav-toggle)');
             mobileNavLinks.forEach(link => {
                 link.addEventListener('click', function() {
-                    mobileNavDrawer.classList.remove('active');
-                    mobileNavMenu.classList.remove('active');
-                    document.body.style.overflow = '';
+                    closeMenu();
+                });
+            });
+
+            // Prevent menu from closing when clicking inside submenu
+            const mobileNavSubmenus = document.querySelectorAll('.mobile-nav-submenu');
+            mobileNavSubmenus.forEach(submenu => {
+                submenu.addEventListener('click', function(e) {
+                    e.stopPropagation();
                 });
             });
         });
@@ -353,19 +424,27 @@
     <!-- Mobile Navigation Drawer -->
     <div class="mobile-nav-drawer" id="mobileNavDrawer"></div>
     <nav class="mobile-nav-menu" id="mobileNavMenu">
-        <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+        <div class="mobile-nav-header">
+            <div class="mobile-nav-logo-container">
+                <div class="mobile-nav-logo">
+                    <img src="../pictures/SchoolLogo-removebg-preview.png" alt="School Logo">
+                </div>
+                <div class="mobile-nav-school-name">Mainaga San Francisco Integrated School</div>
+            </div>
+            <button class="mobile-nav-close" id="mobileNavClose" title="Close Menu">✕</button>
+        </div>
         <ul>
             <li><a href="index.html" class="active">HOME</a></li>
             <li><a href="#about">ABOUT US</a></li>
             <li>
-                <a href="javascript:void(0)" class="mobile-nav-toggle">DOCUMENT REQUEST ▼</a>
+                <a href="javascript:void(0)" class="mobile-nav-toggle">DOCUMENT REQUEST</a>
                 <div class="mobile-nav-submenu">
                     <a href="document-request.html">Request Document</a>
                     <a href="check-document-status.html">Check Status</a>
                 </div>
             </li>
             <li>
-                <a href="javascript:void(0)" class="mobile-nav-toggle">ENROLLMENT ▼</a>
+                <a href="javascript:void(0)" class="mobile-nav-toggle">ENROLLMENT</a>
                 <div class="mobile-nav-submenu">
                     <a href="enrollment.html">Enroll Now</a>
                     <a href="check-status.html">Check Enrollment Status</a>

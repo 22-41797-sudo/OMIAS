@@ -150,6 +150,7 @@ h1, h2, h3, h4, h5, h6 {
     height: 450px;
     background-size: cover;
     background-position: center;
+    background-attachment: fixed;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -172,6 +173,7 @@ h1, h2, h3, h4, h5, h6 {
     position: relative;
     z-index: 1;
     padding: 20px;
+    max-width: 100%;
 }
 
 .hero-content h1 {
@@ -429,6 +431,8 @@ footer {
     .hero-section {
         height: 320px;
         padding: 20px;
+        background-position: center;
+        background-size: cover;
     }
 
     .cta-button {
@@ -599,6 +603,9 @@ footer {
     .hero-section {
         height: 260px;
         padding: 16px;
+        background-position: center;
+        background-size: cover;
+        background-attachment: scroll;
     }
 
     .hero-overlay {
