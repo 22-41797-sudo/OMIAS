@@ -1,4 +1,4 @@
-const dotenv = require('dotenv');
+﻿const dotenv = require('dotenv');
 dotenv.config(); // Load environment variables from .env file
 
 const express = require('express');
@@ -16,7 +16,7 @@ let emailService;
 try {
     emailService = require('./email-service'); // Import email service for notifications
 } catch (err) {
-    console.error('⚠️ Failed to load email service:', err.message);
+    console.error('âš ï¸ Failed to load email service:', err.message);
     emailService = null;
 }
 const compression = require('compression'); // Import compression middleware
@@ -204,7 +204,7 @@ app.get('/api/security/blocked-ips', async (req, res) => {
 app.post('/api/security/block-ip', async (req, res) => {
     try {
         console.log('='.repeat(50));
-        console.log('🔒 BLOCK IP REQUEST RECEIVED');
+        console.log('ðŸ”’ BLOCK IP REQUEST RECEIVED');
         console.log('='.repeat(50));
         console.log('Session exists:', !!req.session);
         console.log('Session user:', JSON.stringify(req.session?.user, null, 2));
@@ -212,14 +212,14 @@ app.post('/api/security/block-ip', async (req, res) => {
         console.log('='.repeat(50));
         
         if (!req.session.user || !['admin', 'guidance', 'registrar'].includes(req.session.user.role)) {
-            console.log('❌ [Block IP] Unauthorized - no session or wrong role');
+            console.log('âŒ [Block IP] Unauthorized - no session or wrong role');
             return res.status(401).json({ success: false, error: 'Unauthorized' });
         }
         const {ipAddress, reason, duration} = req.body;
         console.log('Parsed data:', { ipAddress, reason, duration, userId: req.session.user.id });
         
         if (!ipAddress || !reason) {
-            console.log('❌ [Block IP] Missing required fields');
+            console.log('âŒ [Block IP] Missing required fields');
             return res.status(400).json({ success: false, error: 'IP address and reason required' });
         }
 
@@ -238,11 +238,11 @@ app.post('/api/security/block-ip', async (req, res) => {
         `, [ipAddress, reason, req.session.user.id, expiresAt]);
 
         const blockedByName = req.session.user.username || req.session.user.name || req.session.user.role || 'Admin';
-        console.log(`🚫 IP ${ipAddress} blocked by ${blockedByName}. Reason: ${reason}`);
+        console.log(`ðŸš« IP ${ipAddress} blocked by ${blockedByName}. Reason: ${reason}`);
         res.json({ success: true, blockedIP: result.rows[0] });
     } catch (err) {
         console.error('='.repeat(50));
-        console.error('❌ ERROR BLOCKING IP');
+        console.error('âŒ ERROR BLOCKING IP');
         console.error('='.repeat(50));
         console.error('Error message:', err.message);
         console.error('Error code:', err.code);
@@ -289,10 +289,10 @@ app.post('/api/security/unblock-ip', async (req, res) => {
         }
 
         const unblockedByName = req.session.user.username || req.session.user.name || req.session.user.role || 'Admin';
-        console.log(`✅ IP ${ipAddress} unblocked by ${unblockedByName}`);
+        console.log(`âœ… IP ${ipAddress} unblocked by ${unblockedByName}`);
         res.json({ success: true, unblocked: result.rows[0] });
     } catch (err) {
-        console.error('❌ Error unblocking IP:', err);
+        console.error('âŒ Error unblocking IP:', err);
         console.error('Error details:', { message: err.message, code: err.code, detail: err.detail });
         res.status(500).json({ success: false, error: err.message });
     }
@@ -905,7 +905,7 @@ app.get('/guidance/dashboard', async (req, res) => {
         });
     } catch (err) {
         console.error('Error rendering guidance dashboard:', err);
-        // Rendering failed — return a simple error response instead of serving the static template
+        // Rendering failed â€” return a simple error response instead of serving the static template
         return res.status(500).send('Failed to load guidance dashboard');
     }
 });
@@ -929,7 +929,7 @@ app.get('/guidance/behavior-archive', (req, res) => {
 // Guidance Behavior Analytics API (DSS-powered)
 app.get('/api/guidance/behavior-analytics', async (req, res) => {
     try {
-        console.log('📊 Loading behavior analytics...');
+        console.log('ðŸ“Š Loading behavior analytics...');
         
         // Get all behavior reports with full details
         const reportsResult = await pool.query(`
@@ -953,7 +953,7 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
             ORDER BY r.report_date DESC
         `);
 
-        console.log('📋 Found', reportsResult.rows.length, 'reports');
+        console.log('ðŸ“‹ Found', reportsResult.rows.length, 'reports');
 
         // Get unique students
         const studentsResult = await pool.query(`
@@ -971,7 +971,7 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
             )
         `);
 
-        console.log('👥 Found', studentsResult.rows.length, 'students with reports');
+        console.log('ðŸ‘¥ Found', studentsResult.rows.length, 'students with reports');
 
         // ===== DSS ENGINE: ANALYZE ALL REPORTS (with fallback) =====
         const reports = reportsResult.rows;
@@ -990,9 +990,9 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
             if (dssEngine && dssEngine.analyzeAllReports && typeof dssEngine.analyzeAllReports === 'function') {
                 const engineAnalysis = dssEngine.analyzeAllReports(reports);
                 dashboardAnalysis = { ...dashboardAnalysis, ...engineAnalysis };
-                console.log('✅ DSS Engine analysis completed');
+                console.log('âœ… DSS Engine analysis completed');
             } else {
-                console.warn('⚠️ DSS Engine not properly initialized, using fallback analysis');
+                console.warn('âš ï¸ DSS Engine not properly initialized, using fallback analysis');
                 // Fallback: basic analysis
                 reports.forEach(report => {
                     if (report.severity === 'High') dashboardAnalysis.highSeverityCount++;
@@ -1003,7 +1003,7 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
                 });
             }
         } catch (dssErr) {
-            console.warn('⚠️ DSS Engine error:', dssErr.message);
+            console.warn('âš ï¸ DSS Engine error:', dssErr.message);
             // Use fallback analysis
             reports.forEach(report => {
                 if (report.severity === 'High') dashboardAnalysis.highSeverityCount++;
@@ -1022,7 +1022,7 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
                     recommendations = dssEngine.generateRecommendations(report, reports);
                 }
             } catch (recErr) {
-                console.warn('⚠️ Recommendation generation error for report', report.id, ':', recErr.message);
+                console.warn('âš ï¸ Recommendation generation error for report', report.id, ':', recErr.message);
             }
             
             return {
@@ -1032,7 +1032,7 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
             };
         });
 
-        console.log('✅ Successfully loaded behavior analytics');
+        console.log('âœ… Successfully loaded behavior analytics');
         
         res.json({
             success: true,
@@ -1041,7 +1041,7 @@ app.get('/api/guidance/behavior-analytics', async (req, res) => {
             dashboardAnalysis: dashboardAnalysis,
         });
     } catch (err) {
-        console.error('💥 Guidance behavior analytics error:', err);
+        console.error('ðŸ’¥ Guidance behavior analytics error:', err);
         console.error('Stack:', err.stack);
         res.status(500).json({ success: false, error: 'Failed to load analytics: ' + err.message });
     }
@@ -1096,7 +1096,7 @@ app.post('/api/guidance/messages', async (req, res) => {
     console.log('[DEBUG] Has user?', !!req.session.user);
     
     if (!req.session.guidance_id) {
-        console.log('[DEBUG] ❌ Not authenticated - no guidance_id in session');
+        console.log('[DEBUG] âŒ Not authenticated - no guidance_id in session');
         console.log('[DEBUG] Full session object:', req.session);
         return res.status(401).json({ success: false, error: 'Not authenticated as guidance' });
     }
@@ -1252,11 +1252,11 @@ const upload = multer({
 
 // PostgreSQL connection pool
 // ============= DATABASE CONNECTION =============
-console.log('\n📍 Database Configuration Check:');
+console.log('\nðŸ“ Database Configuration Check:');
 console.log('   DATABASE_URL set:', !!process.env.DATABASE_URL);
 console.log('   NODE_ENV:', process.env.NODE_ENV);
 if (process.env.DATABASE_URL) {
-    console.log('   ✅ Using DATABASE_URL for connection');
+    console.log('   âœ… Using DATABASE_URL for connection');
 } else {
     console.log('   Using individual DB parameters (localhost)');
 }
@@ -1288,7 +1288,7 @@ const pool = new Pool({
 // Test database connection
 pool.connect((err, client, release) => {
     if (err) {
-        console.error('❌ Error connecting to database:', err.stack);
+        console.error('âŒ Error connecting to database:', err.stack);
         console.error('Connection details:', {
             host: process.env.DB_HOST || 'localhost',
             port: process.env.DB_PORT || 5432,
@@ -1300,14 +1300,14 @@ pool.connect((err, client, release) => {
             console.log('Retrying database connection...');
             pool.connect((err2, client2, release2) => {
                 if (!err2 && client2) {
-                    console.log('✅ Database reconnected successfully');
+                    console.log('âœ… Database reconnected successfully');
                     release2();
                     initializeSchemas();
                 }
             });
         }, 5000);
     } else {
-        console.log('✅ Database connected successfully');
+        console.log('âœ… Database connected successfully');
         release();
         initializeSchemas();
     }
@@ -1318,7 +1318,7 @@ pool.connect((err, client, release) => {
  */
 async function initializeSchemas() {
     try {
-        console.log('📋 Initializing database schemas...');
+        console.log('ðŸ“‹ Initializing database schemas...');
         
         // Initialize all schemas - catch errors individually so one failure doesn't stop others
         await ensureDocumentRequestsSchema().catch(e => console.error('Document requests schema error:', e.message));
@@ -1329,9 +1329,9 @@ async function initializeSchemas() {
         await ensureMessagingSchema().catch(e => console.error('Messaging schema error:', e.message));
         await createPerformanceIndexes().catch(e => console.error('Performance indexes error:', e.message));
         
-        console.log('✅ All schemas and indexes initialized successfully');
+        console.log('âœ… All schemas and indexes initialized successfully');
     } catch (err) {
-        console.error('❌ Schema initialization error:', err.message);
+        console.error('âŒ Schema initialization error:', err.message);
         // Retry after 5 seconds
         setTimeout(initializeSchemas, 5000);
     }
@@ -1369,9 +1369,9 @@ async function createPerformanceIndexes() {
         for (const query of indexQueries) {
             await pool.query(query);
         }
-        console.log('✅ Performance indexes created successfully');
+        console.log('âœ… Performance indexes created successfully');
     } catch (err) {
-        console.error('❌ Error creating indexes:', err.message);
+        console.error('âŒ Error creating indexes:', err.message);
     }
 }
 
@@ -1437,14 +1437,14 @@ async function ensureTeachersArchiveSchema() {
     `;
     try {
         await pool.query(ddl);
-        console.log('✅ teachers_archive schema ensured');
+        console.log('âœ… teachers_archive schema ensured');
         
         // Also ensure is_archived column on teachers table
         await pool.query(`ALTER TABLE teachers ADD COLUMN IF NOT EXISTS is_archived BOOLEAN DEFAULT false`);
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_teachers_is_archived ON teachers(is_archived)`);
-        console.log('✅ teachers.is_archived column ensured');
+        console.log('âœ… teachers.is_archived column ensured');
     } catch (err) {
-        console.error('❌ Failed ensuring teachers_archive schema:', err.message);
+        console.error('âŒ Failed ensuring teachers_archive schema:', err.message);
         // Don't throw - allow other schemas to initialize
     }
 }
@@ -1515,9 +1515,9 @@ async function ensureEnrollmentRequestsSchema() {
     `;
     try {
         await pool.query(ddl);
-        console.log('✅ enrollment_requests schema ensured');
+        console.log('âœ… enrollment_requests schema ensured');
     } catch (err) {
-        console.error('❌ Failed ensuring enrollment_requests schema:', err.message);
+        console.error('âŒ Failed ensuring enrollment_requests schema:', err.message);
         // Don't throw - allow other schemas to initialize
     }
 }
@@ -1569,9 +1569,9 @@ async function ensureDocumentRequestsSchema() {
     `;
     try {
         await pool.query(ddl);
-        console.log('✅ document_requests schema ensured');
+        console.log('âœ… document_requests schema ensured');
     } catch (err) {
-        console.error('❌ Failed ensuring document_requests schema:', err.message);
+        console.error('âŒ Failed ensuring document_requests schema:', err.message);
         // Don't throw - allow other schemas to initialize
     }
 }
@@ -1602,9 +1602,9 @@ async function ensureSubmissionLogsSchema() {
     `;
     try {
         await pool.query(ddl);
-        console.log('✅ submission_logs schema ensured');
+        console.log('âœ… submission_logs schema ensured');
     } catch (err) {
-        console.error('❌ Failed ensuring submission_logs schema:', err.message);
+        console.error('âŒ Failed ensuring submission_logs schema:', err.message);
         // Don't throw - allow other schemas to initialize
     }
 }
@@ -1632,9 +1632,9 @@ async function ensureSubmissionLogsSchema() {
         `;
         try {
             await pool.query(ddl);
-            console.log('✅ blocked_ips schema ensured');
+            console.log('âœ… blocked_ips schema ensured');
     } catch (err) {
-        console.error('❌ Failed ensuring blocked_ips schema:', err.message);
+        console.error('âŒ Failed ensuring blocked_ips schema:', err.message);
         // Don't throw - allow other schemas to initialize
     }
 }    // ============= SECURITY: IP BLOCKLIST =============
@@ -1705,7 +1705,7 @@ async function logSubmission(type, req, status, errorMessage = null, token = nul
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         `, [type, ip, userAgent, email, lrn, JSON.stringify(formData), status, errorMessage, token]);
     } catch (err) {
-        console.error('❌ Error logging submission:', err.message);
+        console.error('âŒ Error logging submission:', err.message);
         // Don't throw - logging failure shouldn't block submissions
     }
 }
@@ -1724,7 +1724,7 @@ async function checkSuspiciousActivity(ip, email, type) {
         
         const count = parseInt(result.rows[0].count);
         if (count >= 5) {
-            console.warn(`⚠️ Suspicious activity detected: ${count} ${type} submissions from IP ${ip} or email ${email} in last hour`);
+            console.warn(`âš ï¸ Suspicious activity detected: ${count} ${type} submissions from IP ${ip} or email ${email} in last hour`);
             return true;
         }
         return false;
@@ -1811,30 +1811,30 @@ app.use('/views', express.static(path.join(__dirname, 'views')));
 // Guidance Login API
 app.post('/api/guidance/login', async (req, res) => {
     const { username, password } = req.body;
-    console.log('🔐 Guidance login attempt:', { username });
+    console.log('ðŸ” Guidance login attempt:', { username });
     
     try {
         // Check guidance_accounts table for valid credentials
-        console.log('📋 Querying guidance_accounts table...');
+        console.log('ðŸ“‹ Querying guidance_accounts table...');
         const result = await pool.query(
             'SELECT id, fullname, username, password, is_active FROM guidance_accounts WHERE username = $1',
             [username]
         );
         
-        console.log('📊 Query result:', result.rows.length, 'users found');
+        console.log('ðŸ“Š Query result:', result.rows.length, 'users found');
         
         const user = result.rows[0];
         
         if (user) {
-            console.log('👤 User found:', user.fullname, '| is_active:', user.is_active);
+            console.log('ðŸ‘¤ User found:', user.fullname, '| is_active:', user.is_active);
             
             if (!user.is_active) {
-                console.log('❌ Account is inactive');
+                console.log('âŒ Account is inactive');
                 return res.status(401).json({ success: false, error: 'Account is inactive. Please contact administrator.' });
             }
             
             const passwordMatch = await bcrypt.compare(password, user.password);
-            console.log('🔑 Password match:', passwordMatch);
+            console.log('ðŸ”‘ Password match:', passwordMatch);
             
             if (passwordMatch) {
                 req.session.user = {
@@ -1847,10 +1847,10 @@ app.post('/api/guidance/login', async (req, res) => {
                 // Explicitly save session before responding
                 return req.session.save((err) => {
                     if (err) {
-                        console.error('❌ Session save error:', err);
+                        console.error('âŒ Session save error:', err);
                         return res.status(500).json({ success: false, error: 'Failed to save session' });
                     }
-                    console.log('✅ Login successful! Session saved:', { 
+                    console.log('âœ… Login successful! Session saved:', { 
                         user_id: user.id, 
                         guidance_id: user.id,
                         session_id: req.sessionID 
@@ -1858,16 +1858,16 @@ app.post('/api/guidance/login', async (req, res) => {
                     return res.json({ success: true, message: 'Login successful' });
                 });
             } else {
-                console.log('❌ Invalid password');
+                console.log('âŒ Invalid password');
             }
         } else {
-            console.log('❌ User not found with username:', username);
+            console.log('âŒ User not found with username:', username);
         }
         
-        console.log('❌ Invalid credentials');
+        console.log('âŒ Invalid credentials');
         res.status(401).json({ success: false, error: 'Invalid credentials' });
     } catch (err) {
-        console.error('💥 Guidance login error:', err.message);
+        console.error('ðŸ’¥ Guidance login error:', err.message);
         console.error('Stack:', err.stack);
         res.status(500).json({ success: false, error: 'Login failed: ' + err.message });
     }
@@ -2056,7 +2056,7 @@ app.post('/create-registrar-account', async (req, res) => {
             
             await client.query('COMMIT');
             
-            console.log('✅ Registrar account created successfully - Username:', username);
+            console.log('âœ… Registrar account created successfully - Username:', username);
             
             // Reload the list
             let registrarAccounts = [];
@@ -2109,14 +2109,14 @@ app.post('/create-guidance-account', async (req, res) => {
     try {
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
-        console.log('🔐 Creating guidance account:', { fullname, username, email });
+        console.log('ðŸ” Creating guidance account:', { fullname, username, email });
         
         await pool.query(
             'INSERT INTO guidance_accounts (fullname, username, password, email, contact_number, is_active) VALUES ($1, $2, $3, $4, $5, true)', 
             [fullname, username, hashedPassword, email || null, contact_number || null]
         );
         
-        console.log('✅ Guidance account created successfully');
+        console.log('âœ… Guidance account created successfully');
         
         // After creation, reload the list and stay on the same page
         const result = await pool.query('SELECT id, fullname, username, email, contact_number, is_active FROM guidance_accounts ORDER BY id');
@@ -2301,7 +2301,7 @@ app.post('/add-registration', upload.single('signatureImage'), async (req, res) 
         });
 
     } catch (err) {
-        console.error('❌ Error adding registration:', err);
+        console.error('âŒ Error adding registration:', err);
         console.error('Error message:', err.message);
         console.error('Error details:', err);
         console.error('SQL Error Code:', err.code);
@@ -2309,7 +2309,7 @@ app.post('/add-registration', upload.single('signatureImage'), async (req, res) 
         
         // Check if it's a missing column error
         if (err.message && err.message.includes('column')) {
-            console.error('⚠️ MISSING COLUMN ERROR - Check if database initialization completed');
+            console.error('âš ï¸ MISSING COLUMN ERROR - Check if database initialization completed');
         }
         
         res.status(500).json({ 
@@ -2372,11 +2372,11 @@ app.get('/teacher', (req, res) => {
     console.log('Cookies:', req.headers.cookie);
     
     if (!req.session.user || req.session.user.role !== 'teacher') {
-        console.log('❌ No valid session - redirecting to login');
+        console.log('âŒ No valid session - redirecting to login');
         return res.redirect('/teacher-login');
     }
     
-    console.log('✅ Valid session found - serving dashboard');
+    console.log('âœ… Valid session found - serving dashboard');
     res.sendFile(path.join(__dirname, 'views', 'teacher', 'teacher-demographics.html'));
 });
 
@@ -2737,7 +2737,7 @@ app.get('/ictcoorLanding', async (req, res) => {
     }
     
     try {
-        console.log('📋 Fetching students for ICT Coordinator...');
+        console.log('ðŸ“‹ Fetching students for ICT Coordinator...');
         
         // Fetch officially enrolled students from students table (joined with sections)
         let studentsResult = { rows: [] };
@@ -2762,9 +2762,9 @@ app.get('/ictcoorLanding', async (req, res) => {
                     AND (st.is_archived IS NULL OR st.is_archived = false)
                 ORDER BY st.last_name, st.first_name
             `);
-            console.log(`✅ Found ${studentsResult.rows.length} enrolled students`);
+            console.log(`âœ… Found ${studentsResult.rows.length} enrolled students`);
         } catch (studentErr) {
-            console.error('⚠️  Error fetching students:', studentErr.message);
+            console.error('âš ï¸  Error fetching students:', studentErr.message);
         }
 
         // Fetch pending enrollees from early_registration
@@ -2787,29 +2787,29 @@ app.get('/ictcoorLanding', async (req, res) => {
                 FROM early_registration er
                 ORDER BY er.last_name, er.first_name
             `);
-            console.log(`✅ Found ${enrolleesResult.rows.length} pending enrollees`);
+            console.log(`âœ… Found ${enrolleesResult.rows.length} pending enrollees`);
         } catch (enrolleeErr) {
-            console.error('⚠️  Error fetching pending enrollees:', enrolleeErr.message);
+            console.error('âš ï¸  Error fetching pending enrollees:', enrolleeErr.message);
         }
 
         // Combine both lists: officially enrolled students first, then pending enrollees
         const allStudents = [...studentsResult.rows, ...enrolleesResult.rows];
         
-        console.log(`✅ Total: ${allStudents.length} students (${studentsResult.rows.length} enrolled + ${enrolleesResult.rows.length} pending)`);
+        console.log(`âœ… Total: ${allStudents.length} students (${studentsResult.rows.length} enrolled + ${enrolleesResult.rows.length} pending)`);
         
         // Debug: log the data being sent to template
         if (allStudents.length > 0) {
-            console.log('📤 Sending to template:');
+            console.log('ðŸ“¤ Sending to template:');
             allStudents.forEach((s, i) => {
                 console.log(`   [${i}] ${s.full_name || 'Unknown'} (${s.enrollment_status || 'unknown status'})`);
             });
         } else {
-            console.log('⚠️  WARNING: No students to display!');
+            console.log('âš ï¸  WARNING: No students to display!');
         }
 
         res.render('ictcoorLanding', { students: allStudents });
     } catch (err) {
-        console.error('❌ CRITICAL ERROR in ictcoorLanding:', err.message);
+        console.error('âŒ CRITICAL ERROR in ictcoorLanding:', err.message);
         console.error('Stack:', err.stack);
         res.render('ictcoorLanding', { students: [] });
     }
@@ -2996,6 +2996,16 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
             gmail, lrn, gradeLevel, lastName, givenName 
         });
         
+        // ============= SEND ENROLLMENT CONFIRMATION EMAIL =============
+        if (emailService && emailService.sendEnrollmentConfirmation) {
+            const studentName = `${sanitizeText(givenName)} ${sanitizeText(lastName)}`.trim();
+            const studentEmail = gmail.toLowerCase().trim();
+            const dateToSend = registrationDate instanceof Date ? registrationDate.toISOString() : registrationDate;
+            
+            emailService.sendEnrollmentConfirmation(studentEmail, studentName, token, dateToSend)
+                .catch(err => console.error('Error sending enrollment confirmation email:', err.message));
+        }
+        
         // Return success with token
         res.json({ 
             success: true, 
@@ -3008,7 +3018,7 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
         
         // Auto-create schema if missing
         if (err.message && /relation "enrollment_requests" does not exist/i.test(err.message)) {
-            console.warn('⚠️ enrollment_requests table missing – creating now...');
+            console.warn('âš ï¸ enrollment_requests table missing â€“ creating now...');
             try {
                 await ensureEnrollmentRequestsSchema();
                 
@@ -3075,7 +3085,7 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
                     token: token
                 });
             } catch (inner) {
-                console.error('❌ Failed after creating schema:', inner.message);
+                console.error('âŒ Failed after creating schema:', inner.message);
                 await logSubmission('enrollment', req, 'error', inner.message, null, { gmail, lrn });
                 return res.status(500).json({ success: false, message: 'Error after schema creation: ' + inner.message });
             }
@@ -3405,12 +3415,12 @@ app.post('/approve-request/:id', async (req, res) => {
 
         // Send approval notification email AFTER transaction completes (non-blocking)
         // Don't await - let it send in background so response isn't blocked
-        console.log(`📧 Triggering approval email send to ${studentEmail} for ${learnerName}`);
+        console.log(`ðŸ“§ Triggering approval email send to ${studentEmail} for ${learnerName}`);
         if (emailService) {
             emailService.sendEnrollmentStatusUpdate(studentEmail, learnerName, studentToken, 'approved')
-                .catch(err => console.error('❌ Error sending approval email:', err.message));
+                .catch(err => console.error('âŒ Error sending approval email:', err.message));
         } else {
-            console.warn('⚠️ Email service not available, skipping approval email');
+            console.warn('âš ï¸ Email service not available, skipping approval email');
         }
 
         res.json({ success: true, message: 'Request approved successfully', early_registration_id: inserted.rows[0].id });
@@ -3467,9 +3477,9 @@ app.post('/reject-request/:id', async (req, res) => {
         const learnerName = `${enrollmentRequest.first_name} ${enrollmentRequest.last_name}`;
         if (emailService) {
             emailService.sendEnrollmentStatusUpdate(enrollmentRequest.gmail_address, learnerName, enrollmentRequest.request_token, 'rejected', reason || 'No reason provided')
-                .catch(err => console.error('❌ Error sending rejection email:', err.message));
+                .catch(err => console.error('âŒ Error sending rejection email:', err.message));
         } else {
-            console.warn('⚠️ Email service not available, skipping rejection email');
+            console.warn('âš ï¸ Email service not available, skipping rejection email');
         }
 
         res.json({ success: true, message: 'Request rejected' });
@@ -3535,7 +3545,7 @@ app.post('/api/document-request/submit', documentRequestLimiter, async (req, res
     } catch (err) {
         // Auto-create schema if missing
         if (err.message && /relation "document_requests" does not exist/i.test(err.message)) {
-            console.warn('⚠️ document_requests table missing – creating now...');
+            console.warn('âš ï¸ document_requests table missing â€“ creating now...');
             try {
                 await ensureDocumentRequestsSchema();
                 const token = await insertRequest();
@@ -3544,7 +3554,7 @@ app.post('/api/document-request/submit', documentRequestLimiter, async (req, res
                 });
                 return res.json({ success: true, message: 'Document request submitted successfully!', token });
             } catch (inner) {
-                console.error('❌ Failed after creating schema:', inner.message);
+                console.error('âŒ Failed after creating schema:', inner.message);
                 await logSubmission('document_request', req, 'error', inner.message, null, { email });
                 return res.status(500).json({ success: false, message: 'Error after schema creation: ' + inner.message });
             }
@@ -3714,7 +3724,7 @@ app.put('/api/guidance/document-requests/:id/status', async (req, res) => {
                     rejection_reason || null
                 );
             } else {
-                console.warn('⚠️ Email service not available, skipping document request email');
+                console.warn('âš ï¸ Email service not available, skipping document request email');
             }
         }
 
@@ -4043,11 +4053,11 @@ app.get('/api/sections/all', async (req, res) => {
 
 // Save snapshot with student dataset
 app.post('/api/snapshots/dataset', async (req, res) => {
-    console.log('📸 POST /api/snapshots/dataset called');
+    console.log('ðŸ“¸ POST /api/snapshots/dataset called');
     console.log('Session user:', req.session.user);
     
     if (!req.session.user || req.session.user.role !== 'ictcoor') {
-        console.log('❌ Access denied - user role:', req.session.user?.role);
+        console.log('âŒ Access denied - user role:', req.session.user?.role);
         return res.status(403).json({ success: false, message: 'Access denied - only ICT Coordinator can import' });
     }
 
@@ -4182,7 +4192,7 @@ app.post('/api/snapshots/dataset', async (req, res) => {
         }
 
         await client.query('COMMIT');
-        console.log('✅ Snapshot saved successfully:', groupId, 'with', insertedCount, 'students');
+        console.log('âœ… Snapshot saved successfully:', groupId, 'with', insertedCount, 'students');
         res.json({ 
             success: true, 
             message: `Snapshot '${finalSnapshotName}' saved with ${insertedCount} students`,
@@ -4221,18 +4231,18 @@ function extractBarangayFlexible(address) {
 
 // New snapshot/grouped snapshot endpoints
 app.post('/api/sections/snapshots', async (req, res) => {
-    console.log('📸 POST /api/sections/snapshots called');
+    console.log('ðŸ“¸ POST /api/sections/snapshots called');
     console.log('Session user:', req.session.user);
     console.log('Request body:', req.body);
     
     if (!req.session.user || req.session.user.role !== 'ictcoor') {
-        console.log('❌ Access denied - not ictcoor');
+        console.log('âŒ Access denied - not ictcoor');
         return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
     const { name } = req.body || {};
     if (!name || !String(name).trim()) {
-        console.log('❌ No snapshot name provided');
+        console.log('âŒ No snapshot name provided');
         return res.status(400).json({ success: false, message: 'Snapshot name is required' });
     }
 
@@ -4997,7 +5007,7 @@ app.put('/api/students/:id/reassign', async (req, res) => {
     const studentId = req.params.id;
     const { newSectionId } = req.body;
     
-    console.log(`🔄 REASSIGN REQUEST: studentId=${studentId}, newSectionId=${newSectionId}`);
+    console.log(`ðŸ”„ REASSIGN REQUEST: studentId=${studentId}, newSectionId=${newSectionId}`);
 
     const client = await pool.connect();
     try {
@@ -5121,7 +5131,7 @@ app.put('/api/students/:id/reassign', async (req, res) => {
         }
     } catch (err) {
         await client.query('ROLLBACK');
-        console.error('❌ Error reassigning student ER19:', err);
+        console.error('âŒ Error reassigning student ER19:', err);
         console.error('Error Code:', err.code);
         console.error('Error Detail:', err.detail);
         console.error('Error Hint:', err.hint);
@@ -5556,7 +5566,7 @@ app.get('/api/students/all', async (req, res) => {
 
     try {
         // Get students from students table (both active and archived)
-        console.log('📚 Fetching all students...');
+        console.log('ðŸ“š Fetching all students...');
         const studentsResult = await pool.query(`
             SELECT 
                 s.id,
@@ -5595,10 +5605,10 @@ app.get('/api/students/all', async (req, res) => {
                 END,
                 s.last_name, s.first_name
         `);
-        console.log(`✅ Found ${studentsResult.rows.length} active students`);
+        console.log(`âœ… Found ${studentsResult.rows.length} active students`);
 
         // Also get enrollees who haven't been assigned yet (pending)
-        console.log('📝 Fetching pending enrollees...');
+        console.log('ðŸ“ Fetching pending enrollees...');
         const enrolleesResult = await pool.query(`
             SELECT 
                 'ER' || er.id::text as id,
@@ -5638,15 +5648,15 @@ app.get('/api/students/all', async (req, res) => {
                 END,
                 er.last_name, er.first_name
         `);
-        console.log(`✅ Found ${enrolleesResult.rows.length} pending enrollees`);
+        console.log(`âœ… Found ${enrolleesResult.rows.length} pending enrollees`);
 
         // Combine: pending enrollees + all students (active & archived)
         const allStudents = [...enrolleesResult.rows, ...studentsResult.rows];
-        console.log(`✅ Total students (active + pending): ${allStudents.length}`);
+        console.log(`âœ… Total students (active + pending): ${allStudents.length}`);
 
         res.json({ success: true, students: allStudents });
     } catch (err) {
-        console.error('❌ Error fetching all students:', err.message);
+        console.error('âŒ Error fetching all students:', err.message);
         console.error('Full error details:', {
             code: err.code,
             message: err.message,
@@ -6729,9 +6739,9 @@ async function ensureMessagingSchema() {
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_gtm_unread ON guidance_teacher_messages(teacher_id, is_read) WHERE is_read = false;`);
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_gtm_archived ON guidance_teacher_messages(guidance_id, is_archived);`);
 
-        console.log('✅ ensureMessagingSchema OK');
+        console.log('âœ… ensureMessagingSchema OK');
     } catch (err) {
-        console.error('❌ ensureMessagingSchema failed:', err.message);
+        console.error('âŒ ensureMessagingSchema failed:', err.message);
     }
 }
 
@@ -7354,15 +7364,15 @@ app.get('/api/admin/test-pending-query', async (req, res) => {
 // Admin endpoint to clean up all snapshot data
 app.post('/api/admin/cleanup-snapshots', async (req, res) => {
     try {
-        console.log('🧹 Cleaning up all snapshot data...');
+        console.log('ðŸ§¹ Cleaning up all snapshot data...');
         
         // Delete all snapshot items first (due to foreign key)
         const itemResult = await pool.query('DELETE FROM section_snapshot_items');
-        console.log(`✅ Deleted ${itemResult.rowCount} snapshot items`);
+        console.log(`âœ… Deleted ${itemResult.rowCount} snapshot items`);
         
         // Delete all snapshot groups
         const groupResult = await pool.query('DELETE FROM section_snapshot_groups');
-        console.log(`✅ Deleted ${groupResult.rowCount} snapshot groups`);
+        console.log(`âœ… Deleted ${groupResult.rowCount} snapshot groups`);
         
         res.json({ 
             success: true, 
@@ -7377,15 +7387,15 @@ app.post('/api/admin/cleanup-snapshots', async (req, res) => {
 // Admin endpoint to clean up all test/sample student data
 app.post('/api/admin/cleanup-students', async (req, res) => {
     try {
-        console.log('🧹 Cleaning up all student data...');
+        console.log('ðŸ§¹ Cleaning up all student data...');
         
         // Delete all early registrations
         const erResult = await pool.query('DELETE FROM early_registration');
-        console.log(`✅ Deleted ${erResult.rowCount} early registration records`);
+        console.log(`âœ… Deleted ${erResult.rowCount} early registration records`);
         
         // Delete all students
         const studResult = await pool.query('DELETE FROM students');
-        console.log(`✅ Deleted ${studResult.rowCount} student records`);
+        console.log(`âœ… Deleted ${studResult.rowCount} student records`);
         
         res.json({ 
             success: true, 
@@ -7524,7 +7534,7 @@ app.post('/api/debug/insert-sections', async (req, res) => {
     }
 
     try {
-        console.log('🔧 Manual section insertion requested...');
+        console.log('ðŸ”§ Manual section insertion requested...');
         
         const sections = [
             { grade: 'Kindergarten', name: 'angel', capacity: 35, room: 'Room 101' },
@@ -7557,7 +7567,7 @@ app.post('/api/debug/insert-sections', async (req, res) => {
             );
             if (result.rows.length > 0) {
                 inserted++;
-                console.log(`   ✅ Inserted: ${section.grade} - ${section.name}`);
+                console.log(`   âœ… Inserted: ${section.grade} - ${section.name}`);
             } else {
                 skipped++;
             }
@@ -7578,14 +7588,15 @@ app.post('/api/debug/insert-sections', async (req, res) => {
 
 // Start the server
 app.listen(port, async () => {
-    console.log(`\n🚀 Server running at http://localhost:${port}\n`);
+    console.log(`\nðŸš€ Server running at http://localhost:${port}\n`);
     
     // Initialize database and create default ictcoor account if needed
-    console.log('═'.repeat(60));
+    console.log('â•'.repeat(60));
     const dbInitialized = await initializeDatabase();
-    console.log('═'.repeat(60));
+    console.log('â•'.repeat(60));
     
     if (!dbInitialized) {
-        console.warn('⚠️  Database initialization encountered issues. Some features may not work correctly.');
+        console.warn('âš ï¸  Database initialization encountered issues. Some features may not work correctly.');
     }
 });
+
