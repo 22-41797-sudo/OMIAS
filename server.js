@@ -2907,14 +2907,7 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
     ].filter(Boolean).join(' ');
 
     // Registration date from client or default now
-    let registrationDate;
-    const dateValue = (date || req.body.dateSigned || '').trim();
-    if (dateValue) {
-        const parsedDate = new Date(dateValue);
-        registrationDate = isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
-    } else {
-        registrationDate = new Date().toISOString();
-    }
+    const registrationDate = date || req.body.dateSigned || new Date();
 
     // Ensure NOT NULL friendly values for ip_community and pwd
     const ipCommunityFinal = (ipCommunity || req.body.ipCommunity || 'No');

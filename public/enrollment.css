@@ -443,7 +443,6 @@ hr {
 }
 .date-field-flex-1 {
     flex: 1;
-    min-width: 150px;
 }
 .signature-name-input {
     margin-bottom: 0; 
@@ -453,7 +452,7 @@ hr {
 }
 .signature-date-input {
     margin-bottom: 0; 
-    min-width: 100px;
+    min-width: 140px;
 }
 .signature-upload-container-full {
     width: 100%;

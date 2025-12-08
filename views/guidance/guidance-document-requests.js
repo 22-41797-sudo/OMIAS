@@ -422,30 +422,13 @@ async function handleStatusUpdate(e) {
     const completionNotes = document.getElementById('completionNotes').value;
     const rejectionReason = document.getElementById('rejectionReason').value;
     
-    // Validate required fields
-    if (!requestId || !newStatus) {
-        showToast('Please select a status', 'error');
-        return;
-    }
-    
-    if (newStatus === 'rejected' && !rejectionReason.trim()) {
-        showToast('Rejection reason is required', 'error');
-        return;
-    }
-    
     const data = {
         status: newStatus,
-        completion_notes: newStatus === 'rejected' ? null : (completionNotes || null),
+        completion_notes: newStatus === 'rejected' ? null : completionNotes,
         rejection_reason: newStatus === 'rejected' ? rejectionReason : null
     };
     
     try {
-        const updateBtn = document.querySelector('#statusForm .btn-submit');
-        if (updateBtn) {
-            updateBtn.disabled = true;
-            updateBtn.textContent = 'Updating...';
-        }
-        
         const response = await fetch(`/api/guidance/document-requests/${requestId}/status`, {
             method: 'PUT',
             headers: {
@@ -461,19 +444,13 @@ async function handleStatusUpdate(e) {
             const requestIndex = allRequests.findIndex(r => r.id == requestId);
             if (requestIndex !== -1) {
                 allRequests[requestIndex].status = newStatus;
-                allRequests[requestIndex].completion_notes = newStatus === 'rejected' ? null : (completionNotes || null);
+                allRequests[requestIndex].completion_notes = newStatus === 'rejected' ? null : completionNotes;
                 allRequests[requestIndex].rejection_reason = newStatus === 'rejected' ? rejectionReason : null;
                 allRequests[requestIndex].processed_at = new Date().toISOString();
-                if (newStatus === 'completed' || newStatus === 'rejected') {
-                    allRequests[requestIndex].updated_at = new Date().toISOString();
-                }
             }
             
             // Close modal immediately
             closeModal('statusModal');
-            
-            // Reset form
-            document.getElementById('statusForm').reset();
             
             // Update stats and re-render tables
             updateStats();
@@ -488,7 +465,7 @@ async function handleStatusUpdate(e) {
             };
             const successMessage = document.getElementById('successMessage');
             if (successMessage) {
-                successMessage.textContent = `Request has been ${statusText[newStatus] || 'updated'} successfully.`;
+                successMessage.textContent = `Request ${statusText[newStatus] || 'updated'}.`;
             }
             showSuccessModal();
         } else {
@@ -497,12 +474,6 @@ async function handleStatusUpdate(e) {
     } catch (error) {
         console.error('Error updating status:', error);
         showToast('An error occurred while updating the status.', 'error');
-    } finally {
-        const updateBtn = document.querySelector('#statusForm .btn-submit');
-        if (updateBtn) {
-            updateBtn.disabled = false;
-            updateBtn.textContent = 'Update Status';
-        }
     }
 }
 
@@ -535,10 +506,10 @@ function showSuccessModal() {
     if (modal) {
         modal.classList.add('show');
         
-        // Auto-close after 4 seconds
+        // Auto-close after 3 seconds
         setTimeout(() => {
             closeSuccessModal();
-        }, 4000);
+        }, 3000);
     }
 }
 
