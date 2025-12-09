@@ -2871,23 +2871,24 @@ q<!DOCTYPE html>
                     throw new Error('Failed to fetch student data for snapshot');
                 }
                 
-                // Extract only ASSIGNED students (exclude unassigned) - must have assigned_section
-                const assignedStudents = studentsData.students.filter(s => 
+                // Extract only students in SECTIONS MANAGEMENT (have section_id assigned)
+                const studentsInSections = studentsData.students.filter(s => 
                     s && 
                     s.full_name && 
                     s.assigned_section && 
+                    s.assigned_section.trim() !== '' &&
                     s.assigned_section.trim() !== 'Unassigned'
                 );
                 
                 console.log('Total students available:', studentsData.students.length);
-                console.log('Assigned students (for snapshot):', assignedStudents.length);
+                console.log('Students in sections (for snapshot):', studentsInSections.length);
                 
-                if (assignedStudents.length === 0) {
-                    throw new Error('No assigned students found to save in snapshot. Please assign students to sections first.');
+                if (studentsInSections.length === 0) {
+                    throw new Error('No students found in sections. Please assign students to sections first.');
                 }
                 
                 // Extract the necessary student data in the format expected by the API
-                const studentsForSnapshot = assignedStudents.map(s => ({
+                const studentsForSnapshot = studentsInSections.map(s => ({
                     name: s.full_name || 'Unknown',
                     barangay: s.current_address || 'N/A',
                     sectionLevel: s.assigned_section || 'Unassigned',
@@ -4128,36 +4129,20 @@ q<!DOCTYPE html>
             }
         }
 
-        // Helper function to extract barangay from address
-        // Returns first word in uppercase if it matches MAINAGA, SAN FRANCISCO, CALAMIAS
-        // Otherwise returns "OTHERS"
+        // Helper function to extract barangay from address - matches known barangays only
         function extractBarangay(address) {
-            if (!address || typeof address !== 'string') return 'OTHERS';
+            if (!address || typeof address !== 'string') return 'Others';
             
-            const trimmed = address.trim().toUpperCase();
-            if (!trimmed) return 'OTHERS';
+            const addressStr = String(address).trim();
+            const addressLower = addressStr.toLowerCase();
             
-            // Get the first word
-            const firstWord = trimmed.split(/\s+/)[0];
+            // Check for known barangays
+            if (addressLower.includes('mainaga')) return 'Mainaga';
+            if (addressLower.includes('san francisco')) return 'San Francisco';
+            // Map Mabini to Calamias OR if address contains Calamias
+            if (addressLower.includes('mabini') || addressLower.includes('calamias')) return 'Calamias';
             
-            // Special barangays that should show their exact name
-            const knownBarangays = ['MAINAGA', 'SAN', 'CALAMIAS'];
-            
-            // Check if it's a known barangay
-            if (firstWord === 'MAINAGA' || firstWord === 'CALAMIAS') {
-                return firstWord;
-            }
-            
-            // Special handling for "SAN FRANCISCO"
-            if (firstWord === 'SAN') {
-                const secondWord = trimmed.split(/\s+/)[1];
-                if (secondWord === 'FRANCISCO') {
-                    return 'SAN FRANCISCO';
-                }
-            }
-            
-            // For GASANG or any other first word, use it directly
-            return firstWord;
+            return 'Others';
         }
 
         function renderSnapshotStudentsByBarangay(students) {
@@ -4173,9 +4158,9 @@ q<!DOCTYPE html>
                 groupedByBarangay[barangay].push(student);
             });
             
-            // Sort barangays with special ordering: MAINAGA, SAN FRANCISCO, CALAMIAS first, then others alphabetically
+            // Sort barangays with special ordering: Mainaga, San Francisco, Calamias first, then Others
             const sortedBarangays = Object.keys(groupedByBarangay).sort((a, b) => {
-                const order = ['MAINAGA', 'SAN FRANCISCO', 'CALAMIAS'];
+                const order = ['Mainaga', 'San Francisco', 'Calamias', 'Others'];
                 const aIndex = order.indexOf(a);
                 const bIndex = order.indexOf(b);
                 
@@ -4830,7 +4815,7 @@ q<!DOCTYPE html>
                                     } else if (student.sex && student.sex.toLowerCase() === 'female') {
                                         femaleCount++;
                                     }
-                                    // Count barangay using extractBarangay helper
+                                    // Count barangay - use helper for consistent mapping
                                     const barangay = extractBarangay(student.barangay);
                                     barangayDistribution[barangay] = (barangayDistribution[barangay] || 0) + 1;
                                 });

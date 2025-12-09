@@ -7151,29 +7151,18 @@ app.get('/api/teachers/archive/:archiveId', async (req, res) => {
 
 // Helper function for barangay extraction (server-side) - matches frontend logic
 function extractBarangayServer(address) {
-    if (!address || typeof address !== 'string') return 'OTHERS';
+    if (!address || typeof address !== 'string') return 'Others';
     
-    const trimmed = address.trim().toUpperCase();
-    if (!trimmed) return 'OTHERS';
+    const addressStr = String(address).trim();
+    const addressLower = addressStr.toLowerCase();
     
-    // Get the first word
-    const firstWord = trimmed.split(/\s+/)[0];
+    // Check for known barangays
+    if (addressLower.includes('mainaga')) return 'Mainaga';
+    if (addressLower.includes('san francisco')) return 'San Francisco';
+    // Map Mabini to Calamias OR if address contains Calamias
+    if (addressLower.includes('mabini') || addressLower.includes('calamias')) return 'Calamias';
     
-    // Check if it's a known barangay
-    if (firstWord === 'MAINAGA' || firstWord === 'CALAMIAS') {
-        return firstWord;
-    }
-    
-    // Special handling for "SAN FRANCISCO"
-    if (firstWord === 'SAN') {
-        const secondWord = trimmed.split(/\s+/)[1];
-        if (secondWord === 'FRANCISCO') {
-            return 'SAN FRANCISCO';
-        }
-    }
-    
-    // For any other first word, use it directly
-    return firstWord;
+    return 'Others';
 }
 
 // Barangay distribution stats (counts for specific barangays)
