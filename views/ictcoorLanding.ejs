@@ -2857,7 +2857,8 @@ q<!DOCTYPE html>
                             // Refresh dashboard/sections
                             try { loadSections(); } catch (e) {}
                             try { loadDashboard(); } catch (e) {}
-                            try { loadSnapshots(); } catch (e) {}
+                            // Open snapshots modal to show the newly saved snapshot
+                            try { openSnapshotsModal(); } catch (e) { try { loadSnapshots(); } catch (e2) {} }
                         } else {
                             alert('Error: ' + (data.message || 'Failed to save snapshot'));
                         }
