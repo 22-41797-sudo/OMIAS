@@ -5767,31 +5767,36 @@ app.get('/api/teachers', async (req, res) => {
     }
 
     try {
-        // Fetch active teachers
+        // Fetch active teachers with their assigned sections
         const activeResult = await pool.query(`
             SELECT 
-                id,
-                username,
-                first_name,
-                NULL::VARCHAR as middle_name,
-                last_name,
-                NULL::VARCHAR as ext_name,
-                first_name || ' ' || last_name AS full_name,
-                email,
-                NULL::VARCHAR as contact_number,
-                NULL::DATE as birthday,
-                NULL::VARCHAR as sex,
-                NULL::VARCHAR as address,
-                NULL::VARCHAR as employee_id,
-                COALESCE(department, 'N/A') as department,
-                NULL::VARCHAR as position,
-                specialization,
-                NULL::DATE as date_hired,
-                is_active,
-                created_at,
-                false AS is_archived
-            FROM teachers
-            ORDER BY last_name, first_name
+                t.id,
+                t.username,
+                t.first_name,
+                t.middle_name,
+                t.last_name,
+                t.ext_name,
+                t.first_name || ' ' || COALESCE(t.middle_name || ' ', '') || t.last_name || COALESCE(' ' || t.ext_name, '') AS full_name,
+                t.email,
+                t.contact_number,
+                t.birthday,
+                t.sex,
+                t.address,
+                t.employee_id,
+                COALESCE(t.department, 'N/A') as department,
+                t.position,
+                t.specialization,
+                t.date_hired,
+                t.is_active,
+                t.created_at,
+                false AS is_archived,
+                s.section_name AS assigned_section,
+                s.id AS assigned_section_id
+            FROM teachers t
+            LEFT JOIN sections s ON s.adviser_teacher_id = t.id OR s.adviser_name = (
+                t.first_name || ' ' || COALESCE(t.middle_name || ' ', '') || t.last_name || COALESCE(' ' || t.ext_name, '')
+            )
+            ORDER BY t.last_name, t.first_name
         `);
 
         // Fetch archived teachers (if table exists)

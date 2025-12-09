@@ -929,7 +929,7 @@ q<!DOCTYPE html>
                                 <tr>
                                     <th>Name</th>
                                     <th>Email</th>
-                                    <th>Contact</th>
+                                    <th>Assigned Section</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -2109,7 +2109,7 @@ q<!DOCTYPE html>
                         .join(' ')
                         .replace(/\s+/g, ' ')
                         .trim();
-                const isAdviser = adviserSet.has(fullName);
+                const isAdviser = !!(teacher.assigned_section && teacher.assigned_section.trim());
                 const isArchived = teacher.is_archived === true || teacher.is_archived === 1 || teacher.is_archived === '1';
                 const row = document.createElement('tr');
                 
@@ -2145,7 +2145,7 @@ q<!DOCTYPE html>
                 row.innerHTML = `
                     <td><strong>${fullName || '—'}</strong></td>
                     <td>${teacher.email || 'N/A'}</td>
-                    <td>${teacher.contact_number || 'N/A'}</td>
+                    <td>${teacher.assigned_section ? '<span class="badge" style="background: var(--primary-red); color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">' + teacher.assigned_section + '</span>' : '<span style="color: var(--gray-500); font-size: 13px;">Not assigned</span>'}</td>
                     <td class="table-actions">${actionButtons}</td>
                 `;
                 tableBody.appendChild(row);
