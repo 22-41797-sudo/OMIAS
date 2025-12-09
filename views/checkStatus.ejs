@@ -341,22 +341,28 @@
 
       // Dropdown menu functionality
       const dropdowns = document.querySelectorAll('.dropdown');
+      console.log('Setting up dropdowns:', dropdowns.length);
+      
       dropdowns.forEach((dropdown, index) => {
         const dropdownToggle = dropdown.querySelector('a');
+        console.log('Dropdown', index, ':', dropdownToggle?.textContent);
         
-        // Toggle dropdown on click
-        dropdownToggle.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          dropdown.classList.toggle('active');
-          
-          // Close other dropdowns
-          dropdowns.forEach(other => {
-            if (other !== dropdown) {
-              other.classList.remove('active');
-            }
+        if (dropdownToggle) {
+          // Toggle dropdown on click
+          dropdownToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Clicked dropdown', index);
+            dropdown.classList.toggle('active');
+            
+            // Close other dropdowns
+            dropdowns.forEach(other => {
+              if (other !== dropdown) {
+                other.classList.remove('active');
+              }
+            });
           });
-        });
+        }
       });
       
       // Close dropdowns when clicking outside
@@ -367,6 +373,34 @@
           });
         }
       });
+    });
+  </script>
+  <script>
+    // Additional dropdown handler to ensure it works
+    document.addEventListener('click', function(e) {
+      const dropdownLink = e.target.closest('.dropdown > a');
+      if (dropdownLink) {
+        e.preventDefault();
+        const dropdown = dropdownLink.closest('.dropdown');
+        if (dropdown) {
+          dropdown.classList.toggle('active');
+          // Close other dropdowns
+          document.querySelectorAll('.dropdown.active').forEach(other => {
+            if (other !== dropdown) {
+              other.classList.remove('active');
+            }
+          });
+        }
+      }
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown.active').forEach(dropdown => {
+          dropdown.classList.remove('active');
+        });
+      }
     });
   </script>
 </body>
