@@ -4128,6 +4128,13 @@ q<!DOCTYPE html>
                         </div>
                     `;
                     
+                    // Remove any existing summary divs first
+                    const existingSummaries = sectionsContainer.parentNode.querySelectorAll('.snapshot-summary-card');
+                    existingSummaries.forEach(el => el.remove());
+                    
+                    // Mark this summary div so we can find and remove it later
+                    summaryDiv.className = 'snapshot-summary-card';
+                    
                     // Insert summary at the beginning
                     sectionsContainer.parentNode.insertBefore(summaryDiv, sectionsContainer);
                 }
