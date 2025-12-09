@@ -79,6 +79,9 @@
           </div>
         </div>
 
+        <!-- Store dateString for JavaScript access -->
+        <input type="hidden" id="submittedDateInput" value="<%= submittedDate.getFullYear() > 1970 ? submittedDate.toLocaleString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Manila' }) : 'Not yet submitted' %>" />
+
         <% if (request.status === 'approved') { %>
           <div class="alert alert-success">
             <strong>Approved!</strong> Your enrollment has been approved.
@@ -140,7 +143,7 @@
           const gradeLevel = '<%= request.grade_level %>';
           const email = '<%= request.gmail_address %>';
           const status = '<%= (request.status || "pending").toUpperCase() %>';
-          const submittedOn = '<%= dateString %>';
+          const submittedOn = document.getElementById('submittedDateInput').value;
 
           const htmlContent = `
             <!DOCTYPE html>
