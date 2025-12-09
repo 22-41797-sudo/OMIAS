@@ -887,7 +887,6 @@ q<!DOCTYPE html>
                         </div>
                         <div style="display:flex; gap:6px; align-items:center; flex-wrap: wrap;">
                             <button id="toggleInterpretationBtn" type="button" class="btn btn-cancel" style="padding:6px 10px; font-size:12px;" onclick="toggleInterpretation()"><i class="fas fa-lightbulb"></i> Insights</button>
-                            <button id="clearSnapshotBtn" type="button" class="btn btn-cancel" style="padding:6px 10px; font-size:12px; display: none;" onclick="clearLoadedSnapshot()"><i class="fas fa-times-circle"></i> Clear</button>
                         </div>
                         <div id="chartInterpretation" style="margin-top:8px; padding:8px; background: #f9f9f9; border-radius:6px; border:1px solid var(--gray-100); color:var(--gray-700); font-size:12px; display:none;"></div>
                     </div>
@@ -5117,72 +5116,69 @@ q<!DOCTYPE html>
                 let rows = [];
                 const filterSelect = document.getElementById('schoolYearFilter');
                 const selectedFilter = filterSelect ? filterSelect.value : 'current';
-                console.log('Filter selected:', selectedFilter, 'currentSnapshotData:', window.currentSnapshotData);
+                const selectedSnapshotName = window.currentSnapshotData ? window.currentSnapshotData.name : null;
+                console.log('Filter selected:', selectedFilter, 'Selected snapshot:', selectedSnapshotName);
 
-                // If filter is set to a specific snapshot, show only that snapshot
-                if (selectedFilter !== 'current' && window.currentSnapshotData && Array.isArray(window.currentSnapshotData.items)) {
-                    console.log('Loading specific snapshot');
-                    const items = window.currentSnapshotData.items;
-                    const total = items.reduce((s, it) => s + (Number(it.count) || 0), 0);
-                    rows.push({ 
-                        name: window.currentSnapshotData.name, 
-                        total,
-                        isCurrentSnapshot: true
-                    });
-                    console.log('Snapshot data:', rows);
-                } else {
-                    console.log('Loading live data and all snapshots');
-                    // Show current live data
-                    try {
-                        const liveRes = await fetch('/api/enrollment/live-count');
-                        const liveData = await liveRes.json();
-                        console.log('Live data response:', liveData);
-                        if (liveData.success) {
-                            rows.push({
-                                name: liveData.label || 'Current School Year (Live)',
-                                total: liveData.total,
-                                isLiveData: true
-                            });
-                            console.log('Added live data, rows now:', rows);
-                        }
-                    } catch (e) {
-                        console.error('Failed to load live enrollment count', e);
+                // ALWAYS load all data (live + all snapshots)
+                console.log('Loading live data and all snapshots');
+                
+                // Show current live data
+                try {
+                    const liveRes = await fetch('/api/enrollment/live-count');
+                    const liveData = await liveRes.json();
+                    console.log('Live data response:', liveData);
+                    if (liveData.success) {
+                        rows.push({
+                            name: liveData.label || 'Current School Year (Live)',
+                            total: liveData.total,
+                            isLiveData: true,
+                            isSelected: selectedFilter === 'current'
+                        });
+                        console.log('Added live data, rows now:', rows);
                     }
-                    
-                    // Also load snapshots for comparison - use full-data endpoint to get actual student counts
-                    try {
-                        const res = await fetch('/api/sections/snapshots');
-                        const meta = await res.json();
-                        console.log('Snapshots metadata:', meta);
-                        if (meta && meta.success && Array.isArray(meta.groups)) {
-                            const groups = meta.groups.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-                            console.log('Sorted groups:', groups);
-                            const fullDataResults = await Promise.all(groups.map(g => fetch(`/api/snapshots/${g.id}/full-data`).then(r => r.json()).catch((err) => {
-                                console.error('Error loading full snapshot data for group', g.id, err);
-                                return null;
-                            })));
-                            for (let i = 0; i < groups.length; i++) {
-                                const g = groups[i];
-                                const d = fullDataResults[i];
-                                console.log(`Snapshot ${g.snapshot_name}:`, d);
-                                if (!d || !d.success || !Array.isArray(d.sections)) {
-                                    console.warn('Invalid snapshot data:', d);
-                                    continue;
-                                }
-                                // Count total students from all sections
-                                let total = 0;
-                                d.sections.forEach(section => {
-                                    if (Array.isArray(section.students)) {
-                                        total += section.students.length;
-                                    }
-                                });
-                                rows.push({ name: g.snapshot_name, total });
-                                console.log(`Added snapshot ${g.snapshot_name} with total ${total} students`);
+                } catch (e) {
+                    console.error('Failed to load live enrollment count', e);
+                }
+                
+                // Also load snapshots for comparison - use full-data endpoint to get actual student counts
+                try {
+                    const res = await fetch('/api/sections/snapshots');
+                    const meta = await res.json();
+                    console.log('Snapshots metadata:', meta);
+                    if (meta && meta.success && Array.isArray(meta.groups)) {
+                        const groups = meta.groups.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                        console.log('Sorted groups:', groups);
+                        const fullDataResults = await Promise.all(groups.map(g => fetch(`/api/snapshots/${g.id}/full-data`).then(r => r.json()).catch((err) => {
+                            console.error('Error loading full snapshot data for group', g.id, err);
+                            return null;
+                        })));
+                        for (let i = 0; i < groups.length; i++) {
+                            const g = groups[i];
+                            const d = fullDataResults[i];
+                            console.log(`Snapshot ${g.snapshot_name}:`, d);
+                            if (!d || !d.success || !Array.isArray(d.sections)) {
+                                console.warn('Invalid snapshot data:', d);
+                                continue;
                             }
+                            // Count total students from all sections
+                            let total = 0;
+                            d.sections.forEach(section => {
+                                if (Array.isArray(section.students)) {
+                                    total += section.students.length;
+                                }
+                            });
+                            // Mark if this snapshot is currently selected
+                            const isSelected = selectedSnapshotName && g.snapshot_name === selectedSnapshotName;
+                            rows.push({ 
+                                name: g.snapshot_name, 
+                                total,
+                                isSelected: isSelected
+                            });
+                            console.log(`Added snapshot ${g.snapshot_name} with total ${total} students, selected: ${isSelected}`);
                         }
-                    } catch (e) {
-                        console.error('Failed to load snapshots', e);
                     }
+                } catch (e) {
+                    console.error('Failed to load snapshots', e);
                 }
 
                 console.log('Final rows:', rows);
@@ -5194,7 +5190,7 @@ q<!DOCTYPE html>
                     }
                     return; 
                 }
-                // Render the snapshots chart
+                // Render the snapshots chart with selection highlighting
                 console.log('Rendering chart with', rows.length, 'data points');
                 renderSnapshotsChart(rows);
                 try { renderInterpretationFromRows(rows); } catch (e) { console.warn('renderInterpretation error', e); }
@@ -5207,7 +5203,7 @@ q<!DOCTYPE html>
             }
         }
 
-        // Render a snapshots chart for provided rows = [{name, total}, ...]
+        // Render a snapshots chart for provided rows = [{name, total, isSelected}, ...]
         function renderSnapshotsChart(rows) {
             const ctx = document.getElementById('enrollmentTrendChart');
             if (!ctx) {
@@ -5235,8 +5231,14 @@ q<!DOCTYPE html>
             const labels = rows.map(r => r.name);
             const values = rows.map(r => r.total);
             
+            // Create point colors array: GREEN for selected, BLUE for others
+            const pointColors = rows.map(r => r.isSelected ? '#10B981' : '#1f78b4');
+            const pointBorderColors = rows.map(r => r.isSelected ? '#059669' : '#0d47a1');
+            const pointRadii = rows.map(r => r.isSelected ? 10 : 7);
+            
             console.log('Labels:', labels);
             console.log('Values:', values);
+            console.log('Point colors (selected=GREEN):', pointColors);
             
             if (enrollmentChart) {
                 console.log('Destroying existing chart');
@@ -5255,11 +5257,11 @@ q<!DOCTYPE html>
                             backgroundColor: 'rgba(31,120,180,0.1)',
                             fill: true,
                             tension: 0.3,
-                            pointBackgroundColor: '#1f78b4',
-                            pointBorderColor: '#0d47a1',
+                            pointBackgroundColor: pointColors,
+                            pointBorderColor: pointBorderColors,
                             pointBorderWidth: 2,
-                            pointRadius: 7,
-                            pointHoverRadius: 9,
+                            pointRadius: pointRadii,
+                            pointHoverRadius: rows.map(r => r.isSelected ? 12 : 9),
                             borderWidth: 3
                         }]
                     },
@@ -5296,7 +5298,7 @@ q<!DOCTYPE html>
                         }
                     }
                 });
-                console.log('Chart created successfully');
+                console.log('Chart created successfully with selection highlighting');
             } catch (err) {
                 console.error('Error creating chart:', err);
             }
