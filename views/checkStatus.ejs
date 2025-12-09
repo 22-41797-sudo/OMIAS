@@ -67,8 +67,9 @@
           <div class="col-md-8">
             <div class="text-muted small">Submitted On</div>
             <% 
-              const submittedDate = new Date(request.created_at);
-              const dateString = submittedDate.getFullYear() > 1970 
+              const dateValue = request.registration_date || request.created_at;
+              const submittedDate = new Date(dateValue);
+              const dateString = (dateValue && submittedDate.getFullYear() > 1970) 
                 ? submittedDate.toLocaleString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Manila' })
                 : 'Not yet submitted';
             %>
@@ -80,7 +81,7 @@
         </div>
 
         <!-- Store dateString for JavaScript access -->
-        <input type="hidden" id="submittedDateInput" value="<%= submittedDate.getFullYear() > 1970 ? submittedDate.toLocaleString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Manila' }) : 'Not yet submitted' %>" />
+        <input type="hidden" id="submittedDateInput" value="<%= dateString %>" />
 
         <% if (request.status === 'approved') { %>
           <div class="alert alert-success">

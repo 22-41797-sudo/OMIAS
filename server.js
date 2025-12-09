@@ -3304,7 +3304,7 @@ app.get('/check-status/:token', async (req, res) => {
         const result = await pool.query(`
             SELECT id, request_token, status, gmail_address,
                    COALESCE(last_name, '') || ', ' || COALESCE(first_name, '') || ' ' || COALESCE(middle_name, '') as learner_name,
-                   grade_level, created_at, reviewed_at, rejection_reason
+                   grade_level, created_at, registration_date, reviewed_at, rejection_reason
             FROM enrollment_requests 
             WHERE request_token = $1
         `, [token]);

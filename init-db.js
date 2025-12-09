@@ -518,6 +518,17 @@ async function initializeDatabase() {
         await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS contact_number VARCHAR(20)');
         await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS reviewed_by INTEGER');
         await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS school_year VARCHAR(20)');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS ip_community VARCHAR(50)');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS ip_community_specify VARCHAR(255)');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS pwd VARCHAR(50)');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS pwd_specify VARCHAR(255)');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS father_name VARCHAR(255)');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS mother_name VARCHAR(255)');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS guardian_name VARCHAR(255)');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS registration_date TIMESTAMP');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS printed_name VARCHAR(255)');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS signature_image_path VARCHAR(500)');
         await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS request_token VARCHAR(20) UNIQUE');
         await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS contact_number VARCHAR(50)');
         await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS additional_notes TEXT');
