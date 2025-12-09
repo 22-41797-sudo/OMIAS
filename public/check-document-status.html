@@ -597,101 +597,69 @@
                 rows.forEach(row => {
                     const label = row.querySelector('.detail-label')?.textContent.replace(':', '').trim();
                     const value = row.querySelector('.detail-value')?.textContent.trim();
-                    if (label && value) {
+                    if (label && value && !value.includes('strong')) {
                         details[label] = value;
                     }
                 });
                 
-                // Create simple text content
-                const textContent = `
-MAINAGA SAN FRANCISCO INTEGRATED SCHOOL
-DOCUMENT REQUEST RECEIPT
-====================================================
-
-Date Generated: ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}
-
-====================================================
-REQUEST INFORMATION
-====================================================
-
-Tracking Token: ${token}
-
-Student Name: ${details['Student Name'] || 'N/A'}
-
-Email: ${details['Email'] || 'N/A'}
-
-Contact Number: ${details['Contact Number'] || 'N/A'}
-
-Document Type: ${details['Document Type'] || 'N/A'}
-
-Purpose: ${details['Purpose'] || 'N/A'}
-
-Request Date: ${details['Request Date'] || 'N/A'}
-
-Status: ${details['Status'] || 'N/A'}
-
-====================================================
-IMPORTANT NOTICE
-====================================================
-
-Keep this tracking token safe. You will need it to 
-check your document request status at any time.
-
-Save this PDF for your records.
-
-====================================================
-© Mainaga San Francisco Integrated School
-All Rights Reserved
-====================================================
+                // Create simple HTML content for PDF
+                const htmlContent = `
+<div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.8;">
+    <h2 style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px;">DOCUMENT REQUEST RECEIPT</h2>
+    <p style="text-align: center; margin: 5px 0; font-weight: bold;">MAINAGA SAN FRANCISCO INTEGRATED SCHOOL</p>
+    
+    <div style="margin: 30px 0; padding: 20px; border: 1px solid #000;">
+        <p><strong>Generated:</strong> ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</p>
+        <p style="margin: 20px 0 10px 0;"><strong>TRACKING TOKEN:</strong></p>
+        <p style="text-align: center; font-size: 16px; letter-spacing: 2px; font-weight: bold; padding: 15px; border: 1px dashed #000;">${token}</p>
+        
+        <div style="margin-top: 30px; border-top: 1px solid #000; padding-top: 15px;">
+            <p><strong>Student Name:</strong> ${details['Student Name'] || 'N/A'}</p>
+            <p><strong>Email:</strong> ${details['Email'] || 'N/A'}</p>
+            <p><strong>Contact Number:</strong> ${details['Contact Number'] || 'N/A'}</p>
+            <p><strong>Document Type:</strong> ${details['Document Type'] || 'N/A'}</p>
+            <p><strong>Purpose:</strong> ${details['Purpose'] || 'N/A'}</p>
+            <p><strong>Request Date:</strong> ${details['Request Date'] || 'N/A'}</p>
+            <p><strong>Status:</strong> ${details['Status'] || 'N/A'}</p>
+        </div>
+        
+        <div style="margin-top: 30px; padding: 15px; border: 1px solid #000; background: #f5f5f5;">
+            <p><strong>IMPORTANT NOTICE:</strong></p>
+            <p>Keep this tracking token safe. You will need it to check your document request status at any time. Save this PDF for your records.</p>
+        </div>
+    </div>
+    
+    <p style="text-align: center; margin-top: 30px; font-size: 10px; border-top: 1px solid #000; padding-top: 10px;">
+        © Mainaga San Francisco Integrated School - All Rights Reserved
+    </p>
+</div>
                 `;
                 
-                // Create PDF using jsPDF
-                if (typeof jsPDF !== 'undefined') {
-                    const { jsPDF } = window;
-                    const doc = new jsPDF();
-                    const pageHeight = doc.internal.pageSize.getHeight();
-                    const pageWidth = doc.internal.pageSize.getWidth();
-                    const margin = 15;
-                    const lineHeight = 7;
-                    
-                    // Split text into lines and add to PDF
-                    const lines = textContent.split('\n');
-                    let yPosition = margin;
-                    
-                    doc.setFontSize(10);
-                    doc.setFont(undefined, 'normal');
-                    
-                    lines.forEach(line => {
-                        if (yPosition > pageHeight - margin) {
-                            doc.addPage();
-                            yPosition = margin;
-                        }
-                        doc.text(line, margin, yPosition);
-                        yPosition += lineHeight;
-                    });
-                    
-                    doc.save('document-request-' + token.substring(0, 8) + '.pdf');
-                } else if (typeof html2pdf !== 'undefined') {
-                    // Fallback: use html2pdf with simple text
-                    const element = document.createElement('div');
-                    element.style.padding = '20px';
-                    element.style.fontFamily = 'monospace';
-                    element.style.fontSize = '11px';
-                    element.style.whiteSpace = 'pre-wrap';
-                    element.style.lineHeight = '1.6';
-                    element.textContent = textContent;
-                    
-                    const opt = {
-                        margin: 10,
-                        filename: 'document-request-' + token.substring(0, 8) + '.pdf',
-                        image: { type: 'jpeg', quality: 0.98 },
-                        html2canvas: { scale: 2 },
-                        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-                    };
-                    
-                    html2pdf().set(opt).from(element).save();
+                // Create element and generate PDF
+                const element = document.createElement('div');
+                element.innerHTML = htmlContent;
+                
+                const opt = {
+                    margin: 10,
+                    filename: 'document-request-' + token.substring(0, 8) + '.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+                };
+                
+                console.log('PDF download started for token:', token);
+                
+                if (typeof html2pdf !== 'undefined') {
+                    try {
+                        html2pdf().set(opt).from(element).save();
+                        console.log('PDF generated successfully');
+                    } catch (err) {
+                        console.error('PDF error:', err);
+                        alert('Error generating PDF: ' + err.message);
+                    }
                 } else {
-                    alert('PDF library not available');
+                    alert('PDF library not loaded. Please refresh the page and try again.');
+                    console.error('html2pdf not found');
                 }
             }
         });
