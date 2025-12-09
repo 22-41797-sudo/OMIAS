@@ -2252,23 +2252,18 @@ app.post('/add-registration', upload.single('signatureImage'), async (req, res) 
     try {
         let signatureImagePath = null;
         
-        // Handle signature image upload
+        // Handle signature - store as base64 data URL for persistence
         if (req.file) {
-            signatureImagePath = `/uploads/signatures/${req.file.filename}`;
+            // Convert uploaded file to base64
+            const fileBuffer = fs.readFileSync(req.file.path);
+            const base64Data = fileBuffer.toString('base64');
+            const mimeType = req.file.mimetype || 'image/png';
+            signatureImagePath = `data:${mimeType};base64,${base64Data}`;
+            // Clean up temp file
+            fs.unlinkSync(req.file.path);
         } else if (signatureData) {
-            // Handle canvas signature data (base64)
-            const base64Data = signatureData.replace(/^data:image\/png;base64,/, "");
-            const fileName = `signature-${Date.now()}.png`;
-            const filePath = path.join(__dirname, 'uploads', 'signatures', fileName);
-            
-            // Ensure directory exists
-            const uploadDir = path.join(__dirname, 'uploads', 'signatures');
-            if (!fs.existsSync(uploadDir)) {
-                fs.mkdirSync(uploadDir, { recursive: true });
-            }
-            
-            fs.writeFileSync(filePath, base64Data, 'base64');
-            signatureImagePath = `/uploads/signatures/${fileName}`;
+            // Handle canvas signature data (already base64 data URL)
+            signatureImagePath = signatureData;
         }
 
         // Insert into database
@@ -2455,26 +2450,19 @@ app.post('/registration/:id/edit', upload.single('signatureImage'), async (req, 
         contactNumber, date, signatureData
     } = body;
     try {
-        // Determine if signature is being replaced
+        // Determine if signature is being replaced - store as base64
         let newSignaturePath = null;
         if (req.file) {
-            newSignaturePath = `/uploads/signatures/${req.file.filename}`;
+            // Convert uploaded file to base64
+            const fileBuffer = fs.readFileSync(req.file.path);
+            const base64Data = fileBuffer.toString('base64');
+            const mimeType = req.file.mimetype || 'image/png';
+            newSignaturePath = `data:${mimeType};base64,${base64Data}`;
+            // Clean up temp file
+            fs.unlinkSync(req.file.path);
         } else if (signatureData) {
-            // Save base64 PNG to file
-            const base64Data = signatureData.replace(/^data:image\/png;base64,/, "");
-            const fileName = `signature-${Date.now()}-${Math.round(Math.random()*1e9)}.png`;
-            const dir = path.join(__dirname, 'uploads', 'signatures');
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-            const fullPath = path.join(dir, fileName);
-            fs.writeFileSync(fullPath, base64Data, 'base64');
-            newSignaturePath = `/uploads/signatures/${fileName}`;
-        }
-
-        // If a new signature is provided, delete the old one after updating
-        let oldSignaturePath = null;
-        if (newSignaturePath) {
-            const prev = await pool.query('SELECT signature_image_path FROM early_registration WHERE id = $1', [regId]);
-            if (prev.rows.length > 0) oldSignaturePath = prev.rows[0].signature_image_path;
+            // Handle canvas signature data (already base64 data URL)
+            newSignaturePath = signatureData;
         }
 
         await pool.query(`
@@ -2513,23 +2501,6 @@ app.post('/registration/:id/edit', upload.single('signatureImage'), async (req, 
             contactNumber || null, date, newSignaturePath, regId
         ]);
 
-        // delete old signature file if replaced
-        if (newSignaturePath && oldSignaturePath) {
-            try {
-                // Try as absolute
-                if (fs.existsSync(oldSignaturePath)) fs.unlinkSync(oldSignaturePath);
-                else {
-                    const abs = path.join(__dirname, oldSignaturePath);
-                    if (fs.existsSync(abs)) fs.unlinkSync(abs);
-                    else {
-                        const alt = path.join(__dirname, 'uploads', 'signatures', path.basename(oldSignaturePath));
-                        if (fs.existsSync(alt)) fs.unlinkSync(alt);
-                    }
-                }
-            } catch (e) {
-                console.warn('Failed to delete old signature file:', e.message);
-            }
-        }
         res.redirect(`/registration/${regId}`);
     } catch (err) {
         console.error('Error updating registration:', err);
@@ -2923,18 +2894,18 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
     try {
         let signatureImagePath = null;
         
-        // Handle signature image upload
+        // Handle signature - store as base64 data URL for persistence
         if (req.file) {
-            signatureImagePath = `/uploads/signatures/${req.file.filename}`;
+            // Convert uploaded file to base64
+            const fileBuffer = fs.readFileSync(req.file.path);
+            const base64Data = fileBuffer.toString('base64');
+            const mimeType = req.file.mimetype || 'image/png';
+            signatureImagePath = `data:${mimeType};base64,${base64Data}`;
+            // Clean up temp file
+            fs.unlinkSync(req.file.path);
         } else if (signatureData) {
-            // Handle canvas signature data (base64)
-            const base64Data = signatureData.replace(/^data:image\/png;base64,/, "");
-            const fileName = `signature-${Date.now()}-${Math.round(Math.random()*1e9)}.png`;
-            const dir = path.join(__dirname, 'uploads', 'signatures');
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-            const fullPath = path.join(dir, fileName);
-            fs.writeFileSync(fullPath, base64Data, 'base64');
-            signatureImagePath = `/uploads/signatures/${fileName}`;
+            // Handle canvas signature data (already base64 data URL)
+            signatureImagePath = signatureData;
         }
 
         // Generate unique token
