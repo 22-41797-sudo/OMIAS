@@ -2930,7 +2930,7 @@ q<!DOCTYPE html>
                         try { loadSections(); } catch (e) {}
                         try { loadDashboard(); } catch (e) {}
                         // Open snapshots modal to show the newly saved snapshot
-                        try { openSnapshotsModal(); } catch (e) { try { loadSnapshots(); } catch (e2) {} }
+                        try { openSnapshotsModal(); } catch (e) { try { setTimeout(() => { loadSnapshots(); }, 100); } catch (e2) {} }
                     }, 1500);
                 } else {
                     throw new Error(data.message || 'Failed to save snapshot');
@@ -3598,8 +3598,9 @@ q<!DOCTYPE html>
 
         // --- Section Snapshot UI Handlers ---
         function openSnapshotsModal() {
+            // Delay to ensure modal renders
             openModal('sectionSnapshotsModal');
-            loadSnapshots();
+            setTimeout(() => { loadSnapshots(); }, 100);
         }
 
         function openDatasetImportModal() {
@@ -3843,7 +3844,7 @@ q<!DOCTYPE html>
                     document.getElementById('saveDatasetSnapshotBtn').style.display = 'none';
                     
                     // Refresh snapshots and dashboard
-                    try { loadSnapshots(); } catch (e) {}
+                    try { setTimeout(() => { loadSnapshots(); }, 100); } catch (e) {}
                     try { loadDashboard(); } catch (e) {}
                     try { initializeSchoolYearFilter(); } catch (e) {}
                 } else {
@@ -3882,7 +3883,7 @@ q<!DOCTYPE html>
                     if (data && data.success) {
                         try { showToast(data.message || 'Snapshot saved', 'success'); } catch (e) { alert(data.message || 'Snapshot saved'); }
                         input.value = '';
-                        loadSnapshots();
+                        setTimeout(() => { loadSnapshots(); }, 100);
                     } else {
                         alert('Error: ' + (data.message || 'Failed to save snapshot'));
                     }
@@ -3894,6 +3895,7 @@ q<!DOCTYPE html>
         }
 
         async function loadSnapshots() {
+            console.log(' loadSnapshots() called'); {
             const filter = document.getElementById('snapshotFilterSelect')?.value || 'all';
             // keep filter button label in sync
             const btn = document.getElementById('snapshotFilterBtn');
@@ -3958,7 +3960,7 @@ q<!DOCTYPE html>
             if (hidden) hidden.value = val;
             if (btn) btn.innerText = `Filter: ${label} ▾`;
             if (menu) menu.style.display = 'none';
-            try { loadSnapshots(); } catch (e) { console.warn('loadSnapshots error', e); }
+            try { setTimeout(() => { loadSnapshots(); }, 100); } catch (e) { console.warn('loadSnapshots error', e); }
         }
 
         // close filter menu when clicking outside
@@ -4268,7 +4270,7 @@ q<!DOCTYPE html>
                 try {
                     const res = await fetch(`/api/sections/snapshots/${groupId}/archive`, { method: 'PUT' });
                     const data = await res.json();
-                    if (data && data.success) { try { showToast(data.message || 'Archived', 'success'); } catch (e) { alert(data.message || 'Archived'); } loadSnapshots(); }
+                    if (data && data.success) { try { showToast(data.message || 'Archived', 'success'); } catch (e) { alert(data.message || 'Archived'); } setTimeout(() => { loadSnapshots(); }, 100); }
                     else alert('Error: ' + (data.message || 'Failed to archive'));
                 } catch (err) { console.error(err); alert('Error archiving snapshot'); }
             });
@@ -4279,7 +4281,7 @@ q<!DOCTYPE html>
                 try {
                     const res = await fetch(`/api/sections/snapshots/${groupId}/recover`, { method: 'PUT' });
                     const data = await res.json();
-                    if (data && data.success) { try { showToast(data.message || 'Recovered', 'success'); } catch (e) { alert(data.message || 'Recovered'); } loadSnapshots(); }
+                    if (data && data.success) { try { showToast(data.message || 'Recovered', 'success'); } catch (e) { alert(data.message || 'Recovered'); } setTimeout(() => { loadSnapshots(); }, 100); }
                     else alert('Error: ' + (data.message || 'Failed to recover'));
                 } catch (err) { console.error(err); alert('Error recovering snapshot'); }
             });
@@ -4290,7 +4292,7 @@ q<!DOCTYPE html>
                 try {
                     const res = await fetch(`/api/sections/snapshots/${groupId}`, { method: 'DELETE' });
                     const data = await res.json();
-                    if (data && data.success) { try { showToast(data.message || 'Deleted', 'success'); } catch (e) { alert(data.message || 'Deleted'); } loadSnapshots(); }
+                    if (data && data.success) { try { showToast(data.message || 'Deleted', 'success'); } catch (e) { alert(data.message || 'Deleted'); } setTimeout(() => { loadSnapshots(); }, 100); }
                     else alert('Error: ' + (data.message || 'Failed to delete'));
                 } catch (err) { console.error(err); alert('Error deleting snapshot'); }
             });
