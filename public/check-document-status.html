@@ -588,14 +588,27 @@
         }
 
         function generatePDF(request) {
-            const token = request.request_token;
-            const name = request.student_name;
-            const email = request.email;
-            const contact = request.contact_number;
-            const docType = request.document_type;
-            const purpose = request.purpose;
-            const date = formatDate(request.created_at);
-            const status = request.status.toUpperCase();
+            // DEBUG: Log everything to make sure data exists
+            console.log('===== PDF GENERATION DEBUG =====');
+            console.log('Full request object:', request);
+            console.log('Token:', request.request_token);
+            console.log('Name:', request.student_name);
+            console.log('Email:', request.email);
+            console.log('Contact:', request.contact_number);
+            console.log('Doc Type:', request.document_type);
+            console.log('Purpose:', request.purpose);
+            console.log('Created At:', request.created_at);
+            console.log('Status:', request.status);
+            console.log('================================');
+            
+            const token = request.request_token || 'NO TOKEN';
+            const name = request.student_name || 'NO NAME';
+            const email = request.email || 'NO EMAIL';
+            const contact = request.contact_number || 'NO CONTACT';
+            const docType = request.document_type || 'NO TYPE';
+            const purpose = request.purpose || 'NO PURPOSE';
+            const date = formatDate(request.created_at) || 'NO DATE';
+            const status = (request.status || 'unknown').toUpperCase();
 
             const element = document.createElement('div');
             element.style.padding = '20px';
@@ -646,8 +659,16 @@
                 jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
             };
 
+            console.log('PDF options:', opt);
+            console.log('HTML content length:', element.innerHTML.length);
+            
             if (typeof html2pdf !== 'undefined') {
+                console.log('html2pdf is available, generating...');
                 html2pdf().set(opt).from(element).save();
+                console.log('PDF save initiated');
+            } else {
+                console.error('html2pdf library NOT FOUND');
+                alert('PDF library not loaded. Please refresh page.');
             }
         }
 
