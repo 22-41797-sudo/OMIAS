@@ -303,6 +303,34 @@
             }
         });
     </script>
+    <script>
+        // Additional dropdown handler to ensure it works
+        document.addEventListener('click', function(e) {
+            const dropdownLink = e.target.closest('.dropdown > a');
+            if (dropdownLink) {
+                e.preventDefault();
+                const dropdown = dropdownLink.closest('.dropdown');
+                if (dropdown) {
+                    dropdown.classList.toggle('active');
+                    // Close other dropdowns
+                    document.querySelectorAll('.dropdown.active').forEach(other => {
+                        if (other !== dropdown) {
+                            other.classList.remove('active');
+                        }
+                    });
+                }
+            }
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown.active').forEach(dropdown => {
+                    dropdown.classList.remove('active');
+                });
+            }
+        });
+    </script>
 <body>
 
   <header class="navbar">

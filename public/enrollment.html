@@ -14,24 +14,26 @@
         /* Dropdown menu styles */
         .nav-links ul li {
             position: relative;
+            z-index: 999;
         }
         
         .dropdown {
             position: relative;
             display: inline-block;
+            z-index: 999;
         }
         
         .dropdown-content {
-            display: none;
+            display: none !important;
             position: absolute;
             background-color: white;
             min-width: 200px;
             box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-            z-index: 1000;
-            top: 100%;
+            z-index: 10000;
+            top: calc(100% + 5px);
             left: 0;
             border-radius: 4px;
-            margin-top: 5px;
+            pointer-events: auto;
         }
         
         .dropdown-content a {
@@ -50,7 +52,7 @@
         }
         
         .dropdown.active .dropdown-content {
-            display: block;
+            display: block !important;
             animation: slideDown 0.3s ease-out;
         }
         
@@ -415,6 +417,34 @@
                     submenu.addEventListener('click', function(e) {
                         e.stopPropagation();
                     });
+                });
+            }
+        });
+    </script>
+    <script>
+        // Additional dropdown handler to ensure it works
+        document.addEventListener('click', function(e) {
+            const dropdownLink = e.target.closest('.dropdown > a');
+            if (dropdownLink) {
+                e.preventDefault();
+                const dropdown = dropdownLink.closest('.dropdown');
+                if (dropdown) {
+                    dropdown.classList.toggle('active');
+                    // Close other dropdowns
+                    document.querySelectorAll('.dropdown.active').forEach(other => {
+                        if (other !== dropdown) {
+                            other.classList.remove('active');
+                        }
+                    });
+                }
+            }
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown.active').forEach(dropdown => {
+                    dropdown.classList.remove('active');
                 });
             }
         });
