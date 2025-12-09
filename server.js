@@ -1,4 +1,4 @@
-﻿const dotenv = require('dotenv');
+const dotenv = require('dotenv');
 dotenv.config(); // Load environment variables from .env file
 
 const express = require('express');
@@ -4160,7 +4160,7 @@ app.post('/api/snapshots/dataset', async (req, res) => {
                 const fullName = student.name || student.full_name || 'Unknown';
                 const sectionLevel = student.sectionLevel || student.section_name || 'Unassigned';
                 
-                valuesList.push(`($${paramIdx}, $${paramIdx + 1}, $${paramIdx + 2}, $${paramIdx + 3}, $${paramIdx + 4}, $${paramIdx + 5}, $${paramIdx + 6}, $${paramIdx + 7})`);
+                valuesList.push(`($1, $${paramIdx}, $${paramIdx + 1}, $${paramIdx + 2}, $${paramIdx + 3}, $${paramIdx + 4}, $${paramIdx + 5}, $${paramIdx + 6})`);
                 
                 params.push(
                     sectionLevel,
@@ -4172,7 +4172,7 @@ app.post('/api/snapshots/dataset', async (req, res) => {
                     student.sex || 'N/A'
                 );
                 
-                paramIdx += 8;
+                paramIdx += 7;
             }
             
             const batchQuery = `
