@@ -207,6 +207,63 @@
                 display: none;
             }
         }
+
+        /* Dropdown menu styles */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+            z-index: 999;
+        }
+        
+        .dropdown-content {
+            display: none !important;
+            position: absolute;
+            background-color: white;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 10000;
+            top: calc(100% + 5px);
+            left: 0;
+            border-radius: 4px;
+            pointer-events: auto;
+        }
+        
+        .dropdown-content a {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .dropdown-content a:hover,
+        .dropdown-content a:active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .dropdown.active .dropdown-content {
+            display: block !important;
+        }
+        
+        .dropdown > a {
+            cursor: pointer;
+            text-decoration: none;
+            color: #555;
+            font-weight: 600;
+        }
+        
+        .dropdown > a::after {
+            content: ' ▼';
+            font-size: 10px;
+            margin-left: 5px;
+            transition: transform 0.3s;
+        }
+        
+        .dropdown.active > a::after {
+            transform: rotate(180deg);
+        }
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -570,6 +627,10 @@
                     ` : ''}
                 </div>
 
+                <div style="margin: 25px 0; text-align: center;">
+                    <button id="downloadDocPdfBtn" class="btn btn-primary" type="button" title="Download PDF receipt" style="background-color: #0056b3; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">📥 Download PDF</button>
+                </div>
+
                 <div class="timeline">
                     <h3>Processing Timeline</h3>
                     <div class="timeline-item">
@@ -587,6 +648,127 @@
 
             statusResult.innerHTML = html;
             statusResult.classList.add('show');
+
+            // Add PDF download functionality
+            const downloadBtn = document.getElementById('downloadDocPdfBtn');
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', function() {
+                    const token = request.request_token;
+                    const studentName = request.student_name;
+                    const docType = request.document_type;
+                    const purpose = request.purpose;
+                    const email = request.email;
+                    const contactNumber = request.contact_number;
+                    const requestDate = formatDate(request.created_at);
+                    const status = request.status.toUpperCase();
+
+                    const htmlContent = `
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset="UTF-8">
+                            <style>
+                                body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f8f9fa; }
+                                .receipt { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+                                .header { background: linear-gradient(135deg, #0056b3 0%, #0066cc 100%); color: white; padding: 20px; border-radius: 5px; text-align: center; margin-bottom: 30px; }
+                                .header h1 { margin: 0; font-size: 24px; }
+                                .header p { margin: 5px 0 0 0; font-size: 12px; opacity: 0.9; }
+                                .section { margin-bottom: 20px; }
+                                .section-title { font-weight: bold; color: #333; margin-bottom: 10px; border-bottom: 2px solid #0056b3; padding-bottom: 5px; }
+                                .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0; }
+                                .info-label { color: #666; font-size: 13px; font-weight: 600; }
+                                .info-value { font-weight: 600; color: #333; text-align: right; }
+                                .token-box { background: #f0f4ff; border-left: 4px solid #0056b3; padding: 15px; border-radius: 4px; margin: 15px 0; }
+                                .token-box .label { font-size: 12px; color: #666; margin-bottom: 8px; }
+                                .token-box .value { font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; color: #0056b3; word-break: break-all; letter-spacing: 2px; }
+                                .status-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 12px; }
+                                .status-pending { background: #fff3cd; color: #856404; }
+                                .status-processing { background: #cce5ff; color: #004085; }
+                                .status-ready { background: #d1ecf1; color: #0c5460; }
+                                .status-completed { background: #d4edda; color: #155724; }
+                                .status-rejected { background: #f8d7da; color: #721c24; }
+                                .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 11px; color: #666; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="receipt">
+                                <div class="header">
+                                    <h1>Document Request Receipt</h1>
+                                    <p>Mainaga San Francisco Integrated School</p>
+                                </div>
+
+                                <div class="section">
+                                    <div class="section-title">Student Information</div>
+                                    <div class="info-row">
+                                        <span class="info-label">Name:</span>
+                                        <span class="info-value">${studentName}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Email:</span>
+                                        <span class="info-value">${email}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Contact:</span>
+                                        <span class="info-value">${contactNumber}</span>
+                                    </div>
+                                </div>
+
+                                <div class="section">
+                                    <div class="section-title">Request Details</div>
+                                    <div class="info-row">
+                                        <span class="info-label">Document Type:</span>
+                                        <span class="info-value">${docType}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Purpose:</span>
+                                        <span class="info-value">${purpose}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Request Date:</span>
+                                        <span class="info-value">${requestDate}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Status:</span>
+                                        <span class="status-badge status-${request.status.toLowerCase()}">${status}</span>
+                                    </div>
+                                </div>
+
+                                <div class="token-box">
+                                    <div class="label">Your Document Request Tracking Token</div>
+                                    <div class="value">${token}</div>
+                                </div>
+
+                                <div class="section" style="background: #fff3cd; padding: 15px; border-radius: 4px; border-left: 4px solid #ffc107;">
+                                    <strong>Important:</strong> Keep this token safe. You will need it to check your document request status at any time. Save this PDF for your records.
+                                </div>
+
+                                <div class="footer">
+                                    <p>Generated on ${new Date().toLocaleString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' })}</p>
+                                </div>
+                            </div>
+                        </body>
+                        </html>
+                    `;
+
+                    const element = document.createElement('div');
+                    element.innerHTML = htmlContent;
+
+                    const opt = {
+                        margin: 10,
+                        filename: \`document-request-\${token.substring(0, 8)}.pdf\`,
+                        image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: { scale: 2 },
+                        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+                    };
+
+                    // Check if html2pdf is loaded
+                    if (typeof html2pdf !== 'undefined') {
+                        html2pdf().set(opt).from(element).save();
+                    } else {
+                        alert('PDF library is not loaded. Please try again.');
+                    }
+                });
+            }
         }
 
         function getStatusText(status) {
@@ -622,6 +804,6 @@
             });
         }
     </script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </body>
 </html>
