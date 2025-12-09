@@ -6,6 +6,7 @@
   <title>Check Enrollment Status</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
   <style>
     body { font-family: 'Inter', sans-serif; background: #f8f9fa; }
     .status-card { background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 2rem; max-width: 720px; margin: 5vh auto; }
@@ -16,11 +17,110 @@
     .token-row { display:flex; align-items:center; gap:.5rem; }
     .token-box { font-weight:700; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background:#f8f9fa; border:1px solid #e9ecef; border-radius:.5rem; padding:.3rem .5rem; }
     .copy-btn { --bs-btn-padding-y: .25rem; --bs-btn-padding-x: .6rem; --bs-btn-font-size: .875rem; }
+    
+    /* Dropdown menu styles */
+    .dropdown {
+        position: relative;
+        display: inline-block;
+        z-index: 999;
+    }
+    
+    .dropdown-content {
+        display: none !important;
+        position: absolute;
+        background-color: white;
+        min-width: 200px;
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+        z-index: 10000;
+        top: calc(100% + 5px);
+        left: 0;
+        border-radius: 4px;
+        pointer-events: auto;
+    }
+    
+    .dropdown-content a {
+        color: #333;
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+    
+    .dropdown-content a:hover,
+    .dropdown-content a:active {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .dropdown.active .dropdown-content {
+        display: block !important;
+        animation: slideDown 0.3s ease-out;
+    }
+    
+    .dropdown > a {
+        cursor: pointer;
+        text-decoration: none;
+        color: #555;
+        font-weight: 600;
+    }
+    
+    .dropdown > a::after {
+        content: ' ▼';
+        font-size: 10px;
+        margin-left: 5px;
+        transition: transform 0.3s;
+    }
+    
+    .dropdown.active > a::after {
+        transform: rotate(180deg);
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
   </style>
   <!-- http://localhost:3000/check-status/:token -->
   <!-- http://localhost:3000/check-status -->
 </head>
 <body>
+  <!-- Navigation Header -->
+  <header class="navbar">
+    <div class="navbar-container">
+      <div class="school-logo">
+        <img src="/pictures/SchoolLogo-removebg-preview.png" alt="Mainaga San Francisco Integrated School Logo">
+        <span class="school-name-text">Mainaga San Francisco Integrated School</span>
+      </div>
+      <nav class="nav-links">
+        <ul>
+          <li><a href="/index.html" class="active">HOME</a></li>
+          <li><a href="/index.html#about">ABOUT US</a></li>
+          <li class="dropdown">
+            <a href="#">DOCUMENT REQUEST</a>
+            <div class="dropdown-content">
+              <a href="/document-request.html">Request Document</a>
+              <a href="/check-document-status.html">Check Status</a>
+            </div>
+          </li>
+          <li class="dropdown">
+            <a href="#">ENROLLMENT</a>
+            <div class="dropdown-content">
+              <a href="/enrollment.html">Enroll Now</a>
+              <a href="/check-status.html">Check Enrollment Status</a>
+            </div>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
   <div class="container">
     <div class="status-card">
       <% if (error) { %>
@@ -238,6 +338,35 @@
           html2pdf().set(opt).from(element).save();
         });
       }
+
+      // Dropdown menu functionality
+      const dropdowns = document.querySelectorAll('.dropdown');
+      dropdowns.forEach((dropdown, index) => {
+        const dropdownToggle = dropdown.querySelector('a');
+        
+        // Toggle dropdown on click
+        dropdownToggle.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          dropdown.classList.toggle('active');
+          
+          // Close other dropdowns
+          dropdowns.forEach(other => {
+            if (other !== dropdown) {
+              other.classList.remove('active');
+            }
+          });
+        });
+      });
+      
+      // Close dropdowns when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.dropdown')) {
+          dropdowns.forEach(dropdown => {
+            dropdown.classList.remove('active');
+          });
+        }
+      });
     });
   </script>
 </body>
