@@ -2872,22 +2872,22 @@ q<!DOCTYPE html>
                 }
                 
                 // Extract only assigned students (exclude unassigned)
-                const assignedStudents = studentsData.students.filter(s => s.assigned_section && s.assigned_section !== 'Unassigned');
+                const allStudents = studentsData.students.filter(s => s && s.full_name);
                 
-                console.log('Assigned students found:', assignedStudents.length);
+                console.log('Total students available:', allStudents.length);
                 
-                if (assignedStudents.length === 0) {
-                    throw new Error('No assigned students found to save in snapshot');
+                if (allStudents.length === 0) {
+                    throw new Error('No student data found to save in snapshot');
                 }
                 
                 // Extract the necessary student data in the format expected by the API
-                const studentsForSnapshot = assignedStudents.map(s => ({
-                    name: s.full_name,
-                    barangay: s.current_address,
-                    sectionLevel: s.assigned_section,
-                    adviser: s.adviser_name,
-                    sex: s.sex,
-                    current_address: s.current_address
+                const studentsForSnapshot = allStudents.map(s => ({
+                    name: s.full_name || 'Unknown',
+                    barangay: s.current_address || 'N/A',
+                    sectionLevel: s.assigned_section || 'Unassigned',
+                    adviser: s.adviser_name || 'N/A',
+                    sex: s.sex || 'N/A',
+                    current_address: s.current_address || 'N/A'
                 }));
                 
                 console.log('Saving snapshot with data:', {
