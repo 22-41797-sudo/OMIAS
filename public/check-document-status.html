@@ -579,6 +579,9 @@
             const downloadBtn = document.getElementById('downloadDocPdfBtn');
             if (downloadBtn) {
                 downloadBtn.addEventListener('click', function() {
+                    console.log('🔄 Starting PDF generation...');
+                    console.log('Request object:', request);
+                    
                     const token = request.request_token;
                     const studentName = request.student_name;
                     const docType = request.document_type;
@@ -587,6 +590,16 @@
                     const contactNumber = request.contact_number;
                     const requestDate = formatDate(request.created_at);
                     const status = request.status.toUpperCase();
+                    
+                    console.log('Extracted variables:');
+                    console.log('- token:', token);
+                    console.log('- studentName:', studentName);
+                    console.log('- docType:', docType);
+                    console.log('- purpose:', purpose);
+                    console.log('- email:', email);
+                    console.log('- contactNumber:', contactNumber);
+                    console.log('- requestDate:', requestDate);
+                    console.log('- status:', status);
 
                     const htmlContent = `
                         <!DOCTYPE html>
@@ -683,20 +696,44 @@
                         </html>
                     `;
 
-                    const element = document.createElement('div');
-                    element.innerHTML = htmlContent;
-
                     const opt = {
                         margin: 10,
                         filename: `document-request-${token.substring(0, 8)}.pdf`,
                         image: { type: 'jpeg', quality: 0.98 },
-                        html2canvas: { scale: 2 },
+                        html2canvas: { scale: 2, useCORS: true, allowTaint: true },
                         jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
                     };
 
                     // Check if html2pdf is loaded
                     if (typeof html2pdf !== 'undefined') {
-                        html2pdf().set(opt).from(element).save();
+                        try {
+                            console.log('📄 Generating PDF with html2pdf...');
+                            console.log('HTML content length:', htmlContent.length);
+                            
+                            // Create element for better rendering
+                            const element = document.createElement('div');
+                            element.innerHTML = htmlContent;
+                            element.style.display = 'none';
+                            document.body.appendChild(element);
+                            
+                            // Generate PDF
+                            html2pdf()
+                                .set(opt)
+                                .from(element)
+                                .save()
+                                .then(() => {
+                                    console.log('✅ PDF generated successfully');
+                                    document.body.removeChild(element);
+                                })
+                                .catch((err) => {
+                                    console.error('❌ PDF generation error:', err);
+                                    document.body.removeChild(element);
+                                    alert('Error generating PDF: ' + err.message);
+                                });
+                        } catch (err) {
+                            console.error('❌ PDF error:', err);
+                            alert('Error generating PDF: ' + err.message);
+                        }
                     } else {
                         alert('PDF library is not loaded. Please try again.');
                     }
