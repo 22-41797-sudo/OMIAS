@@ -3514,9 +3514,9 @@ app.post('/api/document-request/submit', documentRequestLimiter, async (req, res
             INSERT INTO document_requests (
                 request_token, student_name, student_id, contact_number, email,
                 document_type, purpose, additional_notes,
-                adviser_name, adviser_school_year, student_type, status
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'pending')
-            RETURNING id, request_token`;
+                adviser_name, adviser_school_year, student_type, status, created_at
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'pending', CURRENT_TIMESTAMP)
+            RETURNING id, request_token, created_at`;
         // ============= SECURITY: SANITIZE TEXT INPUTS =============
         const values = [
             requestToken, 
