@@ -553,10 +553,6 @@
                     ` : ''}
                 </div>
 
-                <div style="margin: 25px 0; text-align: center;">
-                    <button id="downloadPdfBtn" class="btn btn-primary" type="button" title="Download PDF receipt" style="background-color: #0056b3; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">📥 Download PDF</button>
-                </div>
-
                 <div class="timeline">
                     <h3>Processing Timeline</h3>
                     <div class="timeline-item">
@@ -574,102 +570,6 @@
 
             statusResult.innerHTML = html;
             statusResult.classList.add('show');
-            
-            // Attach PDF download handler to the button
-            setTimeout(() => {
-                const downloadBtn = document.getElementById('downloadPdfBtn');
-                if (downloadBtn && !downloadBtn.dataset.attached) {
-                    downloadBtn.dataset.attached = 'true';
-                    downloadBtn.addEventListener('click', function() {
-                        generatePDF(request);
-                    });
-                }
-            }, 0);
-        }
-
-        function generatePDF(request) {
-            // DEBUG: Log everything to make sure data exists
-            console.log('===== PDF GENERATION DEBUG =====');
-            console.log('Full request object:', request);
-            console.log('Token:', request.request_token);
-            console.log('Name:', request.student_name);
-            console.log('Email:', request.email);
-            console.log('Contact:', request.contact_number);
-            console.log('Doc Type:', request.document_type);
-            console.log('Purpose:', request.purpose);
-            console.log('Created At:', request.created_at);
-            console.log('Status:', request.status);
-            console.log('================================');
-            
-            const token = request.request_token || 'NO TOKEN';
-            const name = request.student_name || 'NO NAME';
-            const email = request.email || 'NO EMAIL';
-            const contact = request.contact_number || 'NO CONTACT';
-            const docType = request.document_type || 'NO TYPE';
-            const purpose = request.purpose || 'NO PURPOSE';
-            const date = formatDate(request.created_at) || 'NO DATE';
-            const status = (request.status || 'unknown').toUpperCase();
-
-            const element = document.createElement('div');
-            element.style.padding = '20px';
-            element.style.fontFamily = 'Arial, sans-serif';
-            
-            element.innerHTML = `
-                <div style="max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #000;">
-                    <h2 style="text-align: center; margin: 0 0 10px 0;">DOCUMENT REQUEST RECEIPT</h2>
-                    <p style="text-align: center; margin: 0 0 30px 0; font-size: 12px; border-bottom: 2px solid #000; padding-bottom: 10px;">
-                        Mainaga San Francisco Integrated School
-                    </p>
-                    
-                    <div style="margin-bottom: 20px;">
-                        <p><strong>Generated:</strong> ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</p>
-                    </div>
-                    
-                    <div style="margin: 20px 0; padding: 15px; border: 2px dashed #0056b3; text-align: center;">
-                        <p style="margin: 0 0 10px 0; font-size: 12px; color: #666;"><strong>TRACKING TOKEN</strong></p>
-                        <p style="margin: 0; font-size: 18px; letter-spacing: 2px; font-weight: bold; color: #0056b3;">${token}</p>
-                    </div>
-                    
-                    <div style="margin: 30px 0; border-top: 1px solid #000; padding-top: 15px;">
-                        <p style="margin: 8px 0;"><strong>Student Name:</strong> ${name}</p>
-                        <p style="margin: 8px 0;"><strong>Email:</strong> ${email}</p>
-                        <p style="margin: 8px 0;"><strong>Contact Number:</strong> ${contact}</p>
-                        <p style="margin: 8px 0;"><strong>Document Type:</strong> ${docType}</p>
-                        <p style="margin: 8px 0;"><strong>Purpose:</strong> ${purpose}</p>
-                        <p style="margin: 8px 0;"><strong>Request Date:</strong> ${date}</p>
-                        <p style="margin: 8px 0;"><strong>Status:</strong> ${status}</p>
-                    </div>
-                    
-                    <div style="margin-top: 20px; padding: 15px; background: #f5f5f5; border: 1px solid #ddd;">
-                        <p style="margin: 0 0 10px 0; font-weight: bold;">IMPORTANT:</p>
-                        <p style="margin: 0; font-size: 12px;">Keep this token safe. You will need it to check your document request status. Save this PDF for your records.</p>
-                    </div>
-                    
-                    <p style="text-align: center; margin-top: 20px; font-size: 10px; border-top: 1px solid #000; padding-top: 10px;">
-                        © Mainaga San Francisco Integrated School - All Rights Reserved
-                    </p>
-                </div>
-            `;
-
-            const opt = {
-                margin: 5,
-                filename: 'document-request-' + token.substring(0, 8) + '.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-            };
-
-            console.log('PDF options:', opt);
-            console.log('HTML content length:', element.innerHTML.length);
-            
-            if (typeof html2pdf !== 'undefined') {
-                console.log('html2pdf is available, generating...');
-                html2pdf().set(opt).from(element).save();
-                console.log('PDF save initiated');
-            } else {
-                console.error('html2pdf library NOT FOUND');
-                alert('PDF library not loaded. Please refresh page.');
-            }
         }
 
         function getStatusText(status) {
