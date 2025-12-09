@@ -273,17 +273,20 @@
             dropdowns.forEach(dropdown => {
                 const toggle = dropdown.querySelector('a');
                 
-                toggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    dropdown.classList.toggle('active');
-                    
-                    // Close other dropdowns
-                    dropdowns.forEach(other => {
-                        if (other !== dropdown) {
-                            other.classList.remove('active');
-                        }
+                if (toggle) {
+                    toggle.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropdown.classList.toggle('active');
+                        
+                        // Close other dropdowns
+                        dropdowns.forEach(other => {
+                            if (other !== dropdown) {
+                                other.classList.remove('active');
+                            }
+                        });
                     });
-                });
+                }
             });
             
             // Close dropdowns when clicking outside
