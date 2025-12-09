@@ -6089,7 +6089,7 @@ app.delete('/api/teachers/:id', async (req, res) => {
 
         // First check if teacher is in active teachers table
         let t = await client.query(
-            'SELECT id, first_name, middle_name, last_name FROM teachers WHERE id = $1',
+            'SELECT id, first_name, middle_name, last_name, ext_name FROM teachers WHERE id = $1',
             [teacherId]
         );
         
@@ -6107,7 +6107,7 @@ app.delete('/api/teachers/:id', async (req, res) => {
             
             if (archCheck.rows[0]?.has_table) {
                 const archRes = await client.query(
-                    'SELECT original_id, first_name, last_name FROM teachers_archive WHERE original_id = $1',
+                    'SELECT original_id, first_name, middle_name, last_name, ext_name FROM teachers_archive WHERE original_id = $1',
                     [teacherId]
                 );
                 if (archRes.rows.length > 0) {
@@ -6124,7 +6124,11 @@ app.delete('/api/teachers/:id', async (req, res) => {
             teacher = t.rows[0];
         }
 
-        const adviserName = `${teacher.first_name} ${teacher.middle_name || ''} ${teacher.last_name}`.replace(/\s+/g, ' ').trim();
+        const adviserName = [teacher.first_name, teacher.middle_name, teacher.last_name, teacher.ext_name]
+            .filter(Boolean)
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .trim();
 
         // Clear all section adviser references (both by ID and name) without aborting the transaction
         // 1) Check if sections.adviser_teacher_id exists before updating
@@ -6240,7 +6244,7 @@ app.put('/api/teachers/:teacherId/assign-section', async (req, res) => {
     try {
         // Get teacher details
         const teacherResult = await pool.query(
-            'SELECT id, first_name, middle_name, last_name FROM teachers WHERE id = $1',
+            'SELECT id, first_name, middle_name, last_name, ext_name FROM teachers WHERE id = $1',
             [teacherId]
         );
 
@@ -6249,7 +6253,11 @@ app.put('/api/teachers/:teacherId/assign-section', async (req, res) => {
         }
 
         const teacher = teacherResult.rows[0];
-        const adviserName = `${teacher.first_name} ${teacher.middle_name || ''} ${teacher.last_name}`.replace(/\s+/g, ' ').trim();
+        const adviserName = [teacher.first_name, teacher.middle_name, teacher.last_name, teacher.ext_name]
+            .filter(Boolean)
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .trim();
 
         // Exclusively assign: clear teacher as adviser from any other sections first
         // Prefer clearing by adviser_teacher_id if column exists; otherwise by adviser_name
@@ -6865,7 +6873,11 @@ app.put('/api/teachers/:id/archive', async (req, res) => {
         ]);
 
         // Clear adviser references in sections (both by id and by name)
-        const adviserName = `${teacher.first_name} ${teacher.middle_name || ''} ${teacher.last_name}`.replace(/\s+/g, ' ').trim();
+        const adviserName = [teacher.first_name, teacher.middle_name, teacher.last_name, teacher.ext_name]
+            .filter(Boolean)
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .trim();
         try {
             await client.query('UPDATE sections SET adviser_teacher_id = NULL WHERE adviser_teacher_id = $1', [teacherId]);
         } catch (e) {
