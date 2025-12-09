@@ -44,8 +44,8 @@
           </div>
         </div>
 
-        <div class="alert alert-info py-2" role="alert">
-          <strong>Reminder:</strong> Save your token. You’ll need it to check your enrollment status later.
+        <div class="alert alert-info" role="alert">
+          <strong>Reminder:</strong> Save your token. You'll need it to check your enrollment status later. You can also download your request information as a PDF for backup.
         </div>
 
         <div class="row g-3 mb-3">
@@ -70,7 +70,7 @@
               const dateValue = request.registration_date || request.created_at;
               const submittedDate = new Date(dateValue);
               const dateString = (dateValue && submittedDate.getFullYear() > 1970) 
-                ? submittedDate.toLocaleString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Manila' })
+                ? submittedDate.toLocaleString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Manila' })
                 : 'Not yet submitted';
             %>
             <div class="fw-semibold"><%= dateString %></div>
