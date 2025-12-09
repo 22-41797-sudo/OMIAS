@@ -7149,6 +7149,33 @@ app.get('/api/teachers/archive/:archiveId', async (req, res) => {
     }
 });
 
+// Helper function for barangay extraction (server-side) - matches frontend logic
+function extractBarangayServer(address) {
+    if (!address || typeof address !== 'string') return 'OTHERS';
+    
+    const trimmed = address.trim().toUpperCase();
+    if (!trimmed) return 'OTHERS';
+    
+    // Get the first word
+    const firstWord = trimmed.split(/\s+/)[0];
+    
+    // Check if it's a known barangay
+    if (firstWord === 'MAINAGA' || firstWord === 'CALAMIAS') {
+        return firstWord;
+    }
+    
+    // Special handling for "SAN FRANCISCO"
+    if (firstWord === 'SAN') {
+        const secondWord = trimmed.split(/\s+/)[1];
+        if (secondWord === 'FRANCISCO') {
+            return 'SAN FRANCISCO';
+        }
+    }
+    
+    // For any other first word, use it directly
+    return firstWord;
+}
+
 // Barangay distribution stats (counts for specific barangays)
 app.get('/api/stats/barangay-distribution', async (req, res) => {
     // Allow ictcoor/registrar/admin roles to view basic distribution
@@ -7163,21 +7190,12 @@ app.get('/api/stats/barangay-distribution', async (req, res) => {
             WHERE enrollment_status = 'active' AND section_id IS NOT NULL
         `);
         
-        // Use flexible barangay extraction to count
-        const distribution = {
-            'San Francisco': 0,
-            'Mainaga': 0,
-            'Mabini': 0,
-            'Others': 0
-        };
+        // Use barangay extraction to count
+        const distribution = {};
         
         studentsRes.rows.forEach(row => {
-            const barangay = extractBarangayFlexibleServer(row.current_address);
-            if (distribution.hasOwnProperty(barangay)) {
-                distribution[barangay]++;
-            } else {
-                distribution['Others']++;
-            }
+            const barangay = extractBarangayServer(row.current_address);
+            distribution[barangay] = (distribution[barangay] || 0) + 1;
         });
 
         res.json({ success: true, counts: distribution });
@@ -7186,27 +7204,6 @@ app.get('/api/stats/barangay-distribution', async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 });
-
-// Helper function for flexible barangay extraction (server-side)
-function extractBarangayFlexibleServer(address) {
-    if (!address) return 'Others';
-    const addressStr = String(address).trim();
-    
-    // Common barangay patterns
-    const barangayPatterns = [
-        'San Francisco', 'Mabini', 'Mainaga', 'Brgy', 'Barangay',
-        'Talahib', 'Marilog', 'Suisui', 'Layaw', 'Maharlika'
-    ];
-    
-    for (const pattern of barangayPatterns) {
-        if (addressStr.toLowerCase().includes(pattern.toLowerCase())) {
-            return pattern;
-        }
-    }
-    
-    const parts = addressStr.split(/[\s,]+/).filter(p => p.length > 0);
-    return parts.length > 0 ? parts[0] : 'Others';
-}
 
 // Get current live enrollment data (students currently enrolled and assigned to sections)
 app.get('/api/enrollment/live-count', async (req, res) => {
