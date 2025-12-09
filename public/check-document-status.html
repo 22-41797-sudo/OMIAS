@@ -579,146 +579,99 @@
             const downloadBtn = document.getElementById('downloadDocPdfBtn');
             if (downloadBtn) {
                 downloadBtn.addEventListener('click', function() {
-                    console.log('🔄 Starting PDF generation...');
-                    console.log('Request object:', request);
+                    console.log('PDF button clicked');
+                    console.log('Request:', request);
                     
-                    const token = request.request_token;
-                    const studentName = request.student_name;
-                    const docType = request.document_type;
-                    const purpose = request.purpose;
-                    const email = request.email;
-                    const contactNumber = request.contact_number;
-                    const requestDate = formatDate(request.created_at);
-                    const status = request.status.toUpperCase();
+                    const token = request.request_token || 'N/A';
+                    const studentName = request.student_name || 'N/A';
+                    const docType = request.document_type || 'N/A';
+                    const purpose = request.purpose || 'N/A';
+                    const email = request.email || 'N/A';
+                    const contactNumber = request.contact_number || 'N/A';
+                    const requestDate = formatDate(request.created_at) || 'N/A';
+                    const status = (request.status || 'pending').toUpperCase();
                     
-                    console.log('Extracted variables:');
-                    console.log('- token:', token);
-                    console.log('- studentName:', studentName);
-                    console.log('- docType:', docType);
-                    console.log('- purpose:', purpose);
-                    console.log('- email:', email);
-                    console.log('- contactNumber:', contactNumber);
-                    console.log('- requestDate:', requestDate);
-                    console.log('- status:', status);
+                    // Create HTML element with all data
+                    const pdfElement = document.createElement('div');
+                    pdfElement.id = 'pdf-content-temp';
+                    pdfElement.innerHTML = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background: white;">
+  <div style="background: linear-gradient(135deg, #0056b3 0%, #0066cc 100%); color: white; padding: 20px; border-radius: 5px; text-align: center; margin-bottom: 30px;">
+    <h1 style="margin: 0; font-size: 24px;">Document Request Receipt</h1>
+    <p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.9;">Mainaga San Francisco Integrated School</p>
+  </div>
 
-                    // Build HTML string with all data
-                    let htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f8f9fa; }
-.receipt { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-.header { background: linear-gradient(135deg, #0056b3 0%, #0066cc 100%); color: white; padding: 20px; border-radius: 5px; text-align: center; margin-bottom: 30px; }
-.header h1 { margin: 0; font-size: 24px; }
-.header p { margin: 5px 0 0 0; font-size: 12px; opacity: 0.9; }
-.section { margin-bottom: 20px; }
-.section-title { font-weight: bold; color: #333; margin-bottom: 10px; border-bottom: 2px solid #0056b3; padding-bottom: 5px; }
-.info-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0; }
-.info-label { color: #666; font-size: 13px; font-weight: 600; }
-.info-value { font-weight: 600; color: #333; text-align: right; }
-.token-box { background: #f0f4ff; border-left: 4px solid #0056b3; padding: 20px; border-radius: 4px; margin: 15px 0; text-align: center; }
-.token-box .label { font-size: 12px; color: #666; margin-bottom: 10px; font-weight: 600; }
-.token-box .value { font-family: 'Courier New', monospace; font-size: 20px; font-weight: bold; color: #0056b3; word-break: break-all; letter-spacing: 3px; padding: 15px; background: white; border-radius: 4px; border: 1px solid #e0e7ff; }
-.status-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 12px; }
-.status-pending { background: #fff3cd; color: #856404; }
-.status-processing { background: #cce5ff; color: #004085; }
-.status-ready { background: #d1ecf1; color: #0c5460; }
-.status-completed { background: #d4edda; color: #155724; }
-.status-rejected { background: #f8d7da; color: #721c24; }
-.footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 11px; color: #666; }
-.important-section { background: #fff3cd; padding: 15px; border-radius: 4px; border-left: 4px solid #ffc107; }
-</style>
-</head>
-<body>
-<div class="receipt">
-<div class="header">
-<h1>Document Request Receipt</h1>
-<p>Mainaga San Francisco Integrated School</p>
-</div>
+  <div style="margin-bottom: 20px;">
+    <div style="font-weight: bold; color: #333; margin-bottom: 10px; border-bottom: 2px solid #0056b3; padding-bottom: 5px;">Student Information</div>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0;">
+      <span style="color: #666; font-size: 13px; font-weight: 600;">Name:</span>
+      <span style="font-weight: 600; color: #333; text-align: right;">${studentName}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0;">
+      <span style="color: #666; font-size: 13px; font-weight: 600;">Email:</span>
+      <span style="font-weight: 600; color: #333; text-align: right;">${email}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0;">
+      <span style="color: #666; font-size: 13px; font-weight: 600;">Contact:</span>
+      <span style="font-weight: 600; color: #333; text-align: right;">${contactNumber}</span>
+    </div>
+  </div>
 
-<div class="section">
-<div class="section-title">Student Information</div>
-<div class="info-row">
-<span class="info-label">Name:</span>
-<span class="info-value">${studentName || 'N/A'}</span>
-</div>
-<div class="info-row">
-<span class="info-label">Email:</span>
-<span class="info-value">${email || 'N/A'}</span>
-</div>
-<div class="info-row">
-<span class="info-label">Contact:</span>
-<span class="info-value">${contactNumber || 'N/A'}</span>
-</div>
-</div>
+  <div style="margin-bottom: 20px;">
+    <div style="font-weight: bold; color: #333; margin-bottom: 10px; border-bottom: 2px solid #0056b3; padding-bottom: 5px;">Request Information</div>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0;">
+      <span style="color: #666; font-size: 13px; font-weight: 600;">Document Type:</span>
+      <span style="font-weight: 600; color: #333; text-align: right;">${docType}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0;">
+      <span style="color: #666; font-size: 13px; font-weight: 600;">Purpose:</span>
+      <span style="font-weight: 600; color: #333; text-align: right;">${purpose}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0;">
+      <span style="color: #666; font-size: 13px; font-weight: 600;">Submitted Date:</span>
+      <span style="font-weight: 600; color: #333; text-align: right;">${requestDate}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0;">
+      <span style="color: #666; font-size: 13px; font-weight: 600;">Status:</span>
+      <span style="display: inline-block; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 12px; background: #fff3cd; color: #856404;">${status}</span>
+    </div>
+  </div>
 
-<div class="section">
-<div class="section-title">Request Information</div>
-<div class="info-row">
-<span class="info-label">Document Type:</span>
-<span class="info-value">${docType || 'N/A'}</span>
-</div>
-<div class="info-row">
-<span class="info-label">Purpose:</span>
-<span class="info-value">${purpose || 'N/A'}</span>
-</div>
-<div class="info-row">
-<span class="info-label">Submitted Date:</span>
-<span class="info-value">${requestDate}</span>
-</div>
-<div class="info-row">
-<span class="info-label">Status:</span>
-<span class="status-badge status-${status.toLowerCase()}">${status}</span>
-</div>
-</div>
+  <div style="background: #f0f4ff; border-left: 4px solid #0056b3; padding: 20px; border-radius: 4px; margin: 15px 0; text-align: center;">
+    <div style="font-size: 12px; color: #666; margin-bottom: 10px; font-weight: 600;">Your Document Request Tracking Token</div>
+    <div style="font-family: 'Courier New', monospace; font-size: 20px; font-weight: bold; color: #0056b3; word-break: break-all; letter-spacing: 3px; padding: 15px; background: white; border-radius: 4px; border: 1px solid #e0e7ff;">${token}</div>
+  </div>
 
-<div class="section">
-<div class="section-title">Request Token (Important - Keep Safe)</div>
-<div class="token-box" style="margin: 15px 0;">
-<div class="label">Your Document Request Tracking Token</div>
-<div class="value">${token || 'N/A'}</div>
-</div>
-</div>
+  <div style="background: #fff3cd; padding: 15px; border-radius: 4px; border-left: 4px solid #ffc107; margin: 20px 0;">
+    <strong style="color: #856404;">Important:</strong> Keep this token safe. You will need it to check your document request status at any time. Save this PDF for your records.
+  </div>
 
-<div class="important-section">
-<strong>Important:</strong> Keep this token safe. You will need it to check your document request status at any time. Save this PDF for your records.
+  <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 11px; color: #666;">
+    <p>Generated on ${new Date().toLocaleString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' })}</p>
+  </div>
 </div>
-
-<div class="footer">
-<p>Generated on ${new Date().toLocaleString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' })}</p>
-</div>
-</div>
-</body>
-</html>
                     `;
-
-                    console.log('HTML content created, length:', htmlContent.length);
                     
-                    const element = document.createElement('div');
-                    element.innerHTML = htmlContent;
+                    // Append temporarily to DOM
+                    document.body.appendChild(pdfElement);
                     
+                    // Generate PDF
                     const opt = {
                         margin: 10,
-                        filename: `document-request-${token.substring(0, 8)}.pdf`,
+                        filename: 'document-request-' + token.substring(0, 8) + '.pdf',
                         image: { type: 'jpeg', quality: 0.98 },
                         html2canvas: { scale: 2 },
                         jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
                     };
-
-                    // Check if html2pdf is loaded
+                    
                     if (typeof html2pdf !== 'undefined') {
-                        try {
-                            console.log('📄 Generating PDF with html2pdf...');
-                            html2pdf().set(opt).from(element).save();
-                            console.log('✅ PDF generation initiated');
-                        } catch (err) {
-                            console.error('❌ PDF error:', err);
-                            alert('Error generating PDF: ' + err.message);
-                        }
+                        html2pdf().set(opt).from(pdfElement).save().finally(() => {
+                            // Remove temporary element
+                            document.body.removeChild(pdfElement);
+                        });
                     } else {
-                        alert('PDF library is not loaded. Please try again.');
+                        alert('PDF library not loaded');
+                        document.body.removeChild(pdfElement);
                     }
                 });
             }
