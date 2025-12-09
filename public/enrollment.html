@@ -326,9 +326,41 @@
             background-color: #fff7f7 !important;
             box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
         }
+
+        /* Barangay Other input - hidden by default */
+        #barangayOther {
+            display: none;
+            margin-top: 10px;
+        }
+
+        #barangayOther.show {
+            display: block;
+        }
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Barangay "Others" handler - show/hide input for custom barangay
+            const barangaySelect = document.getElementById('barangay');
+            const barangayOtherInput = document.getElementById('barangayOther');
+            
+            if (barangaySelect && barangayOtherInput) {
+                // Show/hide on change
+                barangaySelect.addEventListener('change', function() {
+                    if (this.value === 'Others') {
+                        barangayOtherInput.classList.add('show');
+                        barangayOtherInput.focus();
+                    } else {
+                        barangayOtherInput.classList.remove('show');
+                        barangayOtherInput.value = ''; // Clear the input when not "Others"
+                    }
+                });
+                
+                // Initialize on page load
+                if (barangaySelect.value === 'Others') {
+                    barangayOtherInput.classList.add('show');
+                }
+            }
+
             // Desktop dropdown logic
             const dropdowns = document.querySelectorAll('.dropdown');
             
