@@ -211,6 +211,31 @@
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Desktop dropdown logic - using event delegation for better reliability
+            document.addEventListener('click', function(e) {
+                const dropdownToggle = e.target.closest('.dropdown > a');
+                if (dropdownToggle) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const dropdown = dropdownToggle.closest('.dropdown');
+                    
+                    // Close other dropdowns
+                    document.querySelectorAll('.dropdown.active').forEach(other => {
+                        if (other !== dropdown) {
+                            other.classList.remove('active');
+                        }
+                    });
+                    
+                    // Toggle current dropdown
+                    dropdown.classList.toggle('active');
+                } else if (!e.target.closest('.dropdown-content')) {
+                    // Close all dropdowns when clicking outside
+                    document.querySelectorAll('.dropdown.active').forEach(dropdown => {
+                        dropdown.classList.remove('active');
+                    });
+                }
+            });
+
             // Mobile hamburger menu logic
             const hamburgerBtn = document.getElementById('hamburgerBtn');
             const mobileNavDrawer = document.getElementById('mobileNavDrawer');
@@ -271,6 +296,44 @@
                     submenu.addEventListener('click', function(e) {
                         e.stopPropagation();
                     });
+                });
+            }
+
+            // Auto-format token input
+            const tokenInput = document.getElementById('token');
+            if (tokenInput) {
+                tokenInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/[^A-Za-z0-9]/g, '');
+                    let formatted = '';
+                    for (let i = 0; i < value.length && i < 12; i++) {
+                        if (i > 0 && i % 4 === 0) {
+                            formatted += '-';
+                        }
+                        formatted += value[i];
+                    }
+                    e.target.value = formatted.toUpperCase();
+                });
+
+                // Handle Enter key
+                tokenInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        document.getElementById('status-form').dispatchEvent(new Event('submit'));
+                    }
+                });
+            }
+
+            // Handle form submit
+            const statusForm = document.getElementById('status-form');
+            if (statusForm) {
+                statusForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const t = document.getElementById('token').value.trim();
+                    if (t) {
+                        window.location.href = '/check-status/' + encodeURIComponent(t);
+                    } else {
+                        alert('Please enter your request token');
+                    }
                 });
             }
         });
@@ -374,77 +437,6 @@
   </footer>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Auto-format token input
-        const tokenInput = document.getElementById('token');
-        if (tokenInput) {
-            tokenInput.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/[^A-Za-z0-9]/g, '');
-                let formatted = '';
-                for (let i = 0; i < value.length && i < 12; i++) {
-                    if (i > 0 && i % 4 === 0) {
-                        formatted += '-';
-                    }
-                    formatted += value[i];
-                }
-                e.target.value = formatted.toUpperCase();
-            });
-
-            // Handle Enter key
-            tokenInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    document.getElementById('status-form').dispatchEvent(new Event('submit'));
-                }
-            });
-        }
-
-        // Handle form submit
-        const statusForm = document.getElementById('status-form');
-        if (statusForm) {
-            statusForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const t = document.getElementById('token').value.trim();
-                if (t) {
-                    window.location.href = '/check-status/' + encodeURIComponent(t);
-                } else {
-                    alert('Please enter your request token');
-                }
-            });
-        }
-
-        // Dropdown functionality
-        const dropdowns = document.querySelectorAll('.dropdown');
-        
-        dropdowns.forEach(dropdown => {
-            const toggle = dropdown.querySelector('a');
-            
-            if (toggle) {
-                toggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dropdown.classList.toggle('active');
-                    
-                    // Close other dropdowns
-                    dropdowns.forEach(other => {
-                        if (other !== dropdown) {
-                            other.classList.remove('active');
-                        }
-                    });
-                });
-            }
-        });
-        
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.dropdown')) {
-                dropdowns.forEach(dropdown => {
-                    dropdown.classList.remove('active');
-                });
-            }
-        });
-    });
-  </script>
         <script src="/js/toast.js"></script>
 </body>
 </html>

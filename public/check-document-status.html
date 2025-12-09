@@ -266,37 +266,32 @@
         }
     </style>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Desktop dropdown logic
-            const dropdowns = document.querySelectorAll('.dropdown');
-            
-            dropdowns.forEach(dropdown => {
-                const toggle = dropdown.querySelector('a');
+        // Desktop dropdown logic - using event delegation for better reliability
+        document.addEventListener('click', function(e) {
+            const dropdownToggle = e.target.closest('.dropdown > a');
+            if (dropdownToggle) {
+                e.preventDefault();
+                e.stopPropagation();
+                const dropdown = dropdownToggle.closest('.dropdown');
                 
-                if (toggle) {
-                    toggle.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        dropdown.classList.toggle('active');
-                        
-                        // Close other dropdowns
-                        dropdowns.forEach(other => {
-                            if (other !== dropdown) {
-                                other.classList.remove('active');
-                            }
-                        });
-                    });
-                }
-            });
-            
-            // Close dropdowns when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.dropdown')) {
-                    dropdowns.forEach(dropdown => {
-                        dropdown.classList.remove('active');
-                    });
-                }
-            });
+                // Close other dropdowns
+                document.querySelectorAll('.dropdown.active').forEach(other => {
+                    if (other !== dropdown) {
+                        other.classList.remove('active');
+                    }
+                });
+                
+                // Toggle current dropdown
+                dropdown.classList.toggle('active');
+            } else if (!e.target.closest('.dropdown-content')) {
+                // Close all dropdowns when clicking outside
+                document.querySelectorAll('.dropdown.active').forEach(dropdown => {
+                    dropdown.classList.remove('active');
+                });
+            }
+        });
+        
+        document.addEventListener('DOMContentLoaded', function() {
 
             // Mobile hamburger menu logic
             const hamburgerBtn = document.getElementById('hamburgerBtn');
