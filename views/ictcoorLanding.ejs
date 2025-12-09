@@ -2860,35 +2860,53 @@ q<!DOCTYPE html>
                     statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving snapshot...';
                 }
                 
-                // Fetch current students with their assignments using correct endpoint
-                console.log('Fetching student data...');
-                const studentsRes = await fetch('/api/students/all');
-                const studentsData = await studentsRes.json();
+                // Fetch ALL sections first
+                console.log('Fetching sections...');
+                const sectionsRes = await fetch('/api/sections/all');
+                const sectionsData = await sectionsRes.json();
                 
-                console.log('Student data response:', studentsData);
+                console.log('Sections response:', sectionsData);
                 
-                if (!studentsData.success || !studentsData.students) {
-                    throw new Error('Failed to fetch student data for snapshot');
+                if (!sectionsData.success || !sectionsData.sections) {
+                    throw new Error('Failed to fetch sections data');
                 }
                 
-                // Extract only assigned students (exclude unassigned)
-                const allStudents = studentsData.students.filter(s => s && s.full_name);
+                // Now fetch students for EACH section (same way the section view does it)
+                console.log('Fetching students for each section...');
+                const allStudentsForSnapshot = [];
                 
-                console.log('Total students available:', allStudents.length);
-                
-                if (allStudents.length === 0) {
-                    throw new Error('No student data found to save in snapshot');
+                for (const section of sectionsData.sections) {
+                    try {
+                        const sectionStudentsRes = await fetch(`/api/sections/${section.id}/students`);
+                        const sectionStudentsData = await sectionStudentsRes.json();
+                        
+                        if (sectionStudentsData.success && Array.isArray(sectionStudentsData.students)) {
+                            console.log(`Section ${section.grade_level} - ${section.section_name}: ${sectionStudentsData.students.length} students`);
+                            
+                            // Add each student with their section info
+                            sectionStudentsData.students.forEach(student => {
+                                allStudentsForSnapshot.push({
+                                    name: student.full_name || 'Unknown',
+                                    barangay: student.current_address || 'N/A',
+                                    sectionLevel: `${section.grade_level} - ${section.section_name}`,
+                                    adviser: section.adviser_name || 'N/A',
+                                    sex: student.sex || 'N/A',
+                                    current_address: student.current_address || 'N/A'
+                                });
+                            });
+                        }
+                    } catch (err) {
+                        console.warn(`Failed to fetch students for section ${section.id}:`, err);
+                    }
                 }
                 
-                // Extract the necessary student data in the format expected by the API
-                const studentsForSnapshot = allStudents.map(s => ({
-                    name: s.full_name || 'Unknown',
-                    barangay: s.current_address || 'N/A',
-                    sectionLevel: s.assigned_section || 'Unassigned',
-                    adviser: s.adviser_name || 'N/A',
-                    sex: s.sex || 'N/A',
-                    current_address: s.current_address || 'N/A'
-                }));
+                console.log('Total students across all sections:', allStudentsForSnapshot.length);
+                
+                if (allStudentsForSnapshot.length === 0) {
+                    throw new Error('No students found in any sections. Please assign students to sections first.');
+                }
+                
+                const studentsForSnapshot = allStudentsForSnapshot;
                 
                 console.log('Saving snapshot with data:', {
                     snapshotName: name,
