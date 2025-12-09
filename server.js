@@ -7149,22 +7149,6 @@ app.get('/api/teachers/archive/:archiveId', async (req, res) => {
     }
 });
 
-// Helper function for barangay extraction (server-side) - matches frontend logic
-function extractBarangayServer(address) {
-    if (!address || typeof address !== 'string') return 'Others';
-    
-    const addressStr = String(address).trim();
-    const addressLower = addressStr.toLowerCase();
-    
-    // Check for known barangays
-    if (addressLower.includes('mainaga')) return 'Mainaga';
-    if (addressLower.includes('san francisco')) return 'San Francisco';
-    // Map Mabini to Calamias OR if address contains Calamias
-    if (addressLower.includes('mabini') || addressLower.includes('calamias')) return 'Calamias';
-    
-    return 'Others';
-}
-
 // Barangay distribution stats (counts for specific barangays)
 app.get('/api/stats/barangay-distribution', async (req, res) => {
     // Allow ictcoor/registrar/admin roles to view basic distribution
@@ -7179,12 +7163,21 @@ app.get('/api/stats/barangay-distribution', async (req, res) => {
             WHERE enrollment_status = 'active' AND section_id IS NOT NULL
         `);
         
-        // Use barangay extraction to count
-        const distribution = {};
+        // Use flexible barangay extraction to count
+        const distribution = {
+            'San Francisco': 0,
+            'Mainaga': 0,
+            'Calamias': 0,
+            'Others': 0
+        };
         
         studentsRes.rows.forEach(row => {
-            const barangay = extractBarangayServer(row.current_address);
-            distribution[barangay] = (distribution[barangay] || 0) + 1;
+            const barangay = extractBarangayFlexibleServer(row.current_address);
+            if (distribution.hasOwnProperty(barangay)) {
+                distribution[barangay]++;
+            } else {
+                distribution['Others']++;
+            }
         });
 
         res.json({ success: true, counts: distribution });
@@ -7193,6 +7186,20 @@ app.get('/api/stats/barangay-distribution', async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 });
+
+// Helper function for flexible barangay extraction (server-side)
+function extractBarangayFlexibleServer(address) {
+    if (!address) return 'Others';
+    const addressStr = String(address).trim().toLowerCase();
+    
+    // Only recognize the 3 main barangays - everything else goes to Others
+    if (addressStr.includes('san francisco')) return 'San Francisco';
+    if (addressStr.includes('mainaga')) return 'Mainaga';
+    if (addressStr.includes('calamias')) return 'Calamias';
+    
+    // Everything else is Others
+    return 'Others';
+}
 
 // Get current live enrollment data (students currently enrolled and assigned to sections)
 app.get('/api/enrollment/live-count', async (req, res) => {

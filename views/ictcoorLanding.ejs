@@ -2871,24 +2871,17 @@ q<!DOCTYPE html>
                     throw new Error('Failed to fetch student data for snapshot');
                 }
                 
-                // Extract only students in SECTIONS MANAGEMENT (have section_id assigned)
-                const studentsInSections = studentsData.students.filter(s => 
-                    s && 
-                    s.full_name && 
-                    s.assigned_section && 
-                    s.assigned_section.trim() !== '' &&
-                    s.assigned_section.trim() !== 'Unassigned'
-                );
+                // Extract only assigned students (exclude unassigned)
+                const allStudents = studentsData.students.filter(s => s && s.full_name);
                 
-                console.log('Total students available:', studentsData.students.length);
-                console.log('Students in sections (for snapshot):', studentsInSections.length);
+                console.log('Total students available:', allStudents.length);
                 
-                if (studentsInSections.length === 0) {
-                    throw new Error('No students found in sections. Please assign students to sections first.');
+                if (allStudents.length === 0) {
+                    throw new Error('No student data found to save in snapshot');
                 }
                 
                 // Extract the necessary student data in the format expected by the API
-                const studentsForSnapshot = studentsInSections.map(s => ({
+                const studentsForSnapshot = allStudents.map(s => ({
                     name: s.full_name || 'Unknown',
                     barangay: s.current_address || 'N/A',
                     sectionLevel: s.assigned_section || 'Unassigned',
@@ -2923,7 +2916,7 @@ q<!DOCTYPE html>
                         statusDiv.style.background = '#c8e6c9';
                         statusDiv.style.border = '1px solid #4caf50';
                         statusDiv.style.color = '#2e7d32';
-                        statusDiv.innerHTML = `<i class="fas fa-check-circle"></i> Snapshot saved successfully with ${studentsForSnapshot.length} assigned students!`;
+                        statusDiv.innerHTML = `<i class="fas fa-check-circle"></i> Snapshot saved successfully!`;
                     }
                     
                     try { showToast(`✓ Snapshot "${data.snapshotName || name}" saved with ${studentsForSnapshot.length} students!`, 'success'); } catch (e) { alert('Snapshot saved successfully!'); }
@@ -4129,47 +4122,21 @@ q<!DOCTYPE html>
             }
         }
 
-        // Helper function to extract barangay from address - matches known barangays only
-        function extractBarangay(address) {
-            if (!address || typeof address !== 'string') return 'Others';
-            
-            const addressStr = String(address).trim();
-            const addressLower = addressStr.toLowerCase();
-            
-            // Check for known barangays
-            if (addressLower.includes('mainaga')) return 'Mainaga';
-            if (addressLower.includes('san francisco')) return 'San Francisco';
-            // Map Mabini to Calamias OR if address contains Calamias
-            if (addressLower.includes('mabini') || addressLower.includes('calamias')) return 'Calamias';
-            
-            return 'Others';
-        }
-
         function renderSnapshotStudentsByBarangay(students) {
             const barangayContainer = document.getElementById('snapshot-barangay-view');
             
-            // Group students by barangay using extractBarangay helper
+            // Group students by barangay
             const groupedByBarangay = {};
             students.forEach(student => {
-                const barangay = extractBarangay(student.barangay);
+                const barangay = student.barangay || 'Unknown';
                 if (!groupedByBarangay[barangay]) {
                     groupedByBarangay[barangay] = [];
                 }
                 groupedByBarangay[barangay].push(student);
             });
             
-            // Sort barangays with special ordering: Mainaga, San Francisco, Calamias first, then Others
-            const sortedBarangays = Object.keys(groupedByBarangay).sort((a, b) => {
-                const order = ['Mainaga', 'San Francisco', 'Calamias', 'Others'];
-                const aIndex = order.indexOf(a);
-                const bIndex = order.indexOf(b);
-                
-                if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
-                if (aIndex !== -1) return -1;
-                if (bIndex !== -1) return 1;
-                
-                return a.localeCompare(b);
-            });
+            // Sort barangays alphabetically
+            const sortedBarangays = Object.keys(groupedByBarangay).sort();
             
             // Build HTML for barangay view
             let html = `<div style="display:grid; gap:16px;">`;
@@ -4815,9 +4782,17 @@ q<!DOCTYPE html>
                                     } else if (student.sex && student.sex.toLowerCase() === 'female') {
                                         femaleCount++;
                                     }
-                                    // Count barangay - use helper for consistent mapping
-                                    const barangay = extractBarangay(student.barangay);
-                                    barangayDistribution[barangay] = (barangayDistribution[barangay] || 0) + 1;
+                                    // Count barangay - map to only 3 main barangays or Others
+                                    let barangay = (student.barangay || '').toLowerCase();
+                                    if (barangay.includes('san francisco')) {
+                                        barangayDistribution['San Francisco'] = (barangayDistribution['San Francisco'] || 0) + 1;
+                                    } else if (barangay.includes('mainaga')) {
+                                        barangayDistribution['Mainaga'] = (barangayDistribution['Mainaga'] || 0) + 1;
+                                    } else if (barangay.includes('calamias')) {
+                                        barangayDistribution['Calamias'] = (barangayDistribution['Calamias'] || 0) + 1;
+                                    } else {
+                                        barangayDistribution['Others'] = (barangayDistribution['Others'] || 0) + 1;
+                                    }
                                 });
                             }
                         });
