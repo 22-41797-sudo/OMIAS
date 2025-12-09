@@ -574,108 +574,45 @@
 
             statusResult.innerHTML = html;
             statusResult.classList.add('show');
-
-            // Add PDF download functionality
-            const downloadBtn = document.getElementById('downloadDocPdfBtn');
-            if (downloadBtn) {
-                downloadBtn.addEventListener('click', function() {
-                    console.log('PDF button clicked');
-                    console.log('Request:', request);
-                    
-                    const token = request.request_token || 'N/A';
-                    const studentName = request.student_name || 'N/A';
-                    const docType = request.document_type || 'N/A';
-                    const purpose = request.purpose || 'N/A';
-                    const email = request.email || 'N/A';
-                    const contactNumber = request.contact_number || 'N/A';
-                    const requestDate = formatDate(request.created_at) || 'N/A';
-                    const status = (request.status || 'pending').toUpperCase();
-                    
-                    // Create HTML element with all data
-                    const pdfElement = document.createElement('div');
-                    pdfElement.id = 'pdf-content-temp';
-                    pdfElement.innerHTML = `
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background: white;">
-  <div style="background: linear-gradient(135deg, #0056b3 0%, #0066cc 100%); color: white; padding: 20px; border-radius: 5px; text-align: center; margin-bottom: 30px;">
-    <h1 style="margin: 0; font-size: 24px;">Document Request Receipt</h1>
-    <p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.9;">Mainaga San Francisco Integrated School</p>
-  </div>
-
-  <div style="margin-bottom: 20px;">
-    <div style="font-weight: bold; color: #333; margin-bottom: 10px; border-bottom: 2px solid #0056b3; padding-bottom: 5px;">Student Information</div>
-    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0;">
-      <span style="color: #666; font-size: 13px; font-weight: 600;">Name:</span>
-      <span style="font-weight: 600; color: #333; text-align: right;">${studentName}</span>
-    </div>
-    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0;">
-      <span style="color: #666; font-size: 13px; font-weight: 600;">Email:</span>
-      <span style="font-weight: 600; color: #333; text-align: right;">${email}</span>
-    </div>
-    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0;">
-      <span style="color: #666; font-size: 13px; font-weight: 600;">Contact:</span>
-      <span style="font-weight: 600; color: #333; text-align: right;">${contactNumber}</span>
-    </div>
-  </div>
-
-  <div style="margin-bottom: 20px;">
-    <div style="font-weight: bold; color: #333; margin-bottom: 10px; border-bottom: 2px solid #0056b3; padding-bottom: 5px;">Request Information</div>
-    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0;">
-      <span style="color: #666; font-size: 13px; font-weight: 600;">Document Type:</span>
-      <span style="font-weight: 600; color: #333; text-align: right;">${docType}</span>
-    </div>
-    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0;">
-      <span style="color: #666; font-size: 13px; font-weight: 600;">Purpose:</span>
-      <span style="font-weight: 600; color: #333; text-align: right;">${purpose}</span>
-    </div>
-    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0;">
-      <span style="color: #666; font-size: 13px; font-weight: 600;">Submitted Date:</span>
-      <span style="font-weight: 600; color: #333; text-align: right;">${requestDate}</span>
-    </div>
-    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0;">
-      <span style="color: #666; font-size: 13px; font-weight: 600;">Status:</span>
-      <span style="display: inline-block; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 12px; background: #fff3cd; color: #856404;">${status}</span>
-    </div>
-  </div>
-
-  <div style="background: #f0f4ff; border-left: 4px solid #0056b3; padding: 20px; border-radius: 4px; margin: 15px 0; text-align: center;">
-    <div style="font-size: 12px; color: #666; margin-bottom: 10px; font-weight: 600;">Your Document Request Tracking Token</div>
-    <div style="font-family: 'Courier New', monospace; font-size: 20px; font-weight: bold; color: #0056b3; word-break: break-all; letter-spacing: 3px; padding: 15px; background: white; border-radius: 4px; border: 1px solid #e0e7ff;">${token}</div>
-  </div>
-
-  <div style="background: #fff3cd; padding: 15px; border-radius: 4px; border-left: 4px solid #ffc107; margin: 20px 0;">
-    <strong style="color: #856404;">Important:</strong> Keep this token safe. You will need it to check your document request status at any time. Save this PDF for your records.
-  </div>
-
-  <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 11px; color: #666;">
-    <p>Generated on ${new Date().toLocaleString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' })}</p>
-  </div>
-</div>
-                    `;
-                    
-                    // Append temporarily to DOM
-                    document.body.appendChild(pdfElement);
-                    
-                    // Generate PDF
-                    const opt = {
-                        margin: 10,
-                        filename: 'document-request-' + token.substring(0, 8) + '.pdf',
-                        image: { type: 'jpeg', quality: 0.98 },
-                        html2canvas: { scale: 2 },
-                        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-                    };
-                    
-                    if (typeof html2pdf !== 'undefined') {
-                        html2pdf().set(opt).from(pdfElement).save().finally(() => {
-                            // Remove temporary element
-                            document.body.removeChild(pdfElement);
-                        });
-                    } else {
-                        alert('PDF library not loaded');
-                        document.body.removeChild(pdfElement);
-                    }
-                });
-            }
         }
+
+        // Global event delegation for PDF download
+        let lastTokenUsed = null;
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'downloadDocPdfBtn') {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Get the entire status result div
+                const statusDiv = document.getElementById('statusResult');
+                if (!statusDiv || !statusDiv.querySelector('.request-details')) {
+                    alert('Please check status first');
+                    return;
+                }
+                
+                // Get token from displayed content
+                const tokenEl = statusDiv.querySelector('.detail-value strong');
+                const token = tokenEl ? tokenEl.textContent.trim() : 'unknown';
+                
+                // Create a clean copy for PDF
+                const pdfContent = statusDiv.cloneNode(true);
+                // Remove the button from PDF
+                const btn = pdfContent.querySelector('#downloadDocPdfBtn');
+                if (btn) btn.remove();
+                
+                const opt = {
+                    margin: 10,
+                    filename: 'document-request-' + token.substring(0, 8) + '.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+                };
+                
+                if (typeof html2pdf !== 'undefined') {
+                    html2pdf().set(opt).from(pdfContent).save();
+                }
+            }
+        });
 
         function getStatusText(status) {
             const statusMap = {
