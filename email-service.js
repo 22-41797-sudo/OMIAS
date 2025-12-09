@@ -14,12 +14,19 @@ if (USE_GMAIL) {
                 user: process.env.GMAIL_USER,
                 pass: process.env.GMAIL_PASSWORD
             },
-            connectionTimeout: 30000,
-            socketTimeout: 30000
+            connectionTimeout: 60000,
+            socketTimeout: 60000,
+            greetingTimeout: 60000,
+            pool: {
+                maxConnections: 5,
+                maxMessages: 100,
+                rateDelta: 1000,
+                rateLimit: 5
+            }
         });
-        console.log(" Gmail SMTP transporter initialized");
+        console.log("✓ Gmail SMTP transporter initialized");
     } catch (err) {
-        console.error(" Gmail transporter error:", err.message);
+        console.error("✗ Gmail transporter error:", err.message);
         gmailTransporter = null;
     }
 }
@@ -30,13 +37,16 @@ async function sendMailWithRetry(mailOptions, maxRetries = 3) {
         try {
             if (USE_GMAIL && gmailTransporter) {
                 const result = await gmailTransporter.sendMail(mailOptions);
-                console.log(` Email sent via Gmail: ${mailOptions.to}`);
+                console.log(`✓ Email sent via Gmail: ${mailOptions.to}`);
                 return result;
             }
         } catch (err) {
             lastError = err;
+            console.error(`✗ Email send attempt ${i + 1} failed: ${err.message}`);
             if (i < maxRetries - 1) {
-                await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+                const delayMs = 2000 * Math.pow(2, i);
+                console.log(`  Retrying in ${delayMs}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delayMs));
             }
         }
     }

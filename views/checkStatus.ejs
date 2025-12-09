@@ -59,13 +59,24 @@
           </div>
           <div class="col-md-3">
             <div class="text-muted small">Email</div>
-            <div class="fw-semibold"><%= request.gmail_address %></div>
+            <div class="fw-semibold text-break" style="word-wrap: break-word; overflow-wrap: break-word;"><%= request.gmail_address %></div>
           </div>
         </div>
 
-        <div class="mb-3">
-          <div class="text-muted small">Submitted On</div>
-          <div class="fw-semibold"><%= new Date(request.created_at).toLocaleString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' }) %></div>
+        <div class="row g-3 mb-3">
+          <div class="col-md-8">
+            <div class="text-muted small">Submitted On</div>
+            <% 
+              const submittedDate = new Date(request.created_at);
+              const dateString = submittedDate.getFullYear() > 1970 
+                ? submittedDate.toLocaleString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Manila' })
+                : 'Not yet submitted';
+            %>
+            <div class="fw-semibold"><%= dateString %></div>
+          </div>
+          <div class="col-md-4">
+            <button id="downloadPdfBtn" class="btn btn-outline-primary btn-sm" type="button" title="Download PDF receipt">📥 Download PDF</button>
+          </div>
         </div>
 
         <% if (request.status === 'approved') { %>
@@ -97,6 +108,7 @@
       <% } %>
     </div>
   </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const btn = document.getElementById('copyTokenBtn');
@@ -110,7 +122,6 @@
             btn.classList.add('btn-success');
             setTimeout(() => { btn.textContent = old; btn.classList.add('btn-outline-secondary'); btn.classList.remove('btn-success'); }, 1200);
           } catch (e) {
-            // Fallback for older browsers
             const range = document.createRange();
             range.selectNode(el);
             const sel = window.getSelection();
@@ -118,6 +129,109 @@
             document.execCommand('copy');
             sel.removeAllRanges();
           }
+        });
+      }
+
+      const pdfBtn = document.getElementById('downloadPdfBtn');
+      if (pdfBtn) {
+        pdfBtn.addEventListener('click', function() {
+          const token = document.getElementById('statusToken').textContent.trim();
+          const learnerName = '<%= request.learner_name %>';
+          const gradeLevel = '<%= request.grade_level %>';
+          const email = '<%= request.gmail_address %>';
+          const status = '<%= (request.status || "pending").toUpperCase() %>';
+          const submittedOn = '<%= dateString %>';
+
+          const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="UTF-8">
+              <style>
+                body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f8f9fa; }
+                .receipt { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+                .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 5px; text-align: center; margin-bottom: 30px; }
+                .header h1 { margin: 0; font-size: 24px; }
+                .header p { margin: 5px 0 0 0; font-size: 12px; opacity: 0.9; }
+                .section { margin-bottom: 20px; }
+                .section-title { font-weight: bold; color: #333; margin-bottom: 10px; border-bottom: 2px solid #667eea; padding-bottom: 5px; }
+                .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0; }
+                .info-label { color: #666; font-size: 13px; }
+                .info-value { font-weight: 600; color: #333; }
+                .token-box { background: #f0f4ff; border-left: 4px solid #667eea; padding: 15px; border-radius: 4px; margin: 15px 0; }
+                .token-box .label { font-size: 12px; color: #666; margin-bottom: 8px; }
+                .token-box .value { font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; color: #667eea; word-break: break-all; letter-spacing: 2px; }
+                .status-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 12px; }
+                .status-pending { background: #fff3cd; color: #856404; }
+                .status-approved { background: #d4edda; color: #155724; }
+                .status-rejected { background: #f8d7da; color: #721c24; }
+                .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 11px; color: #666; }
+              </style>
+            </head>
+            <body>
+              <div class="receipt">
+                <div class="header">
+                  <h1>Enrollment Request Receipt</h1>
+                  <p>ICT Coordinator - Student Enrollment System</p>
+                </div>
+
+                <div class="section">
+                  <div class="section-title">Student Information</div>
+                  <div class="info-row">
+                    <span class="info-label">Name:</span>
+                    <span class="info-value">${learnerName}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Grade Level:</span>
+                    <span class="info-value">${gradeLevel}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">${email}</span>
+                  </div>
+                </div>
+
+                <div class="section">
+                  <div class="section-title">Enrollment Details</div>
+                  <div class="info-row">
+                    <span class="info-label">Submitted Date:</span>
+                    <span class="info-value">${submittedOn}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Status:</span>
+                    <span class="status-badge status-${status.toLowerCase()}">${status}</span>
+                  </div>
+                </div>
+
+                <div class="token-box">
+                  <div class="label">Your Enrollment Request Token</div>
+                  <div class="value">${token}</div>
+                </div>
+
+                <div class="section" style="background: #fff3cd; padding: 15px; border-radius: 4px; border-left: 4px solid #ffc107;">
+                  <strong>Important:</strong> Keep this token safe. You will need it to check your enrollment status at any time. Save this PDF for your records.
+                </div>
+
+                <div class="footer">
+                  <p>Generated on ${new Date().toLocaleString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' })}</p>
+                </div>
+              </div>
+            </body>
+            </html>
+          `;
+
+          const element = document.createElement('div');
+          element.innerHTML = htmlContent;
+          
+          const opt = {
+            margin: 10,
+            filename: `enrollment-token-${token.substring(0, 8)}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+          };
+
+          html2pdf().set(opt).from(element).save();
         });
       }
     });
