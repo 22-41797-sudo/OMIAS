@@ -537,6 +537,9 @@ async function initializeDatabase() {
         await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS processed_by INTEGER');
         await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS processed_at TIMESTAMP');
         await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS completion_notes TEXT');
+        await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS rejection_reason TEXT');
+        await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+        await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
         
         await pool.query('ALTER TABLE blocked_ips ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true');
         await pool.query('ALTER TABLE blocked_ips ADD COLUMN IF NOT EXISTS blocked_by INTEGER');
@@ -546,7 +549,6 @@ async function initializeDatabase() {
 
         await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1');
         await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMP');
-        await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS processed_at TIMESTAMP');
 
         console.log('   ✅ All missing columns added');
 
