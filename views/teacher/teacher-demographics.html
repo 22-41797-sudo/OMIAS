@@ -368,6 +368,16 @@
     console.log('✅ Teacher Demographics Page JavaScript Loading...');
     let currentSectionId = null;
     let currentStudent = null;
+
+    // Helper function to format date correctly (avoids timezone issues)
+    function formatDate(dateString) {
+      if (!dateString) return '—';
+      const date = new Date(dateString);
+      // Add timezone offset to get correct local date
+      const offset = date.getTimezoneOffset();
+      const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+      return localDate.toISOString().split('T')[0].split('-').reverse().join('/');
+    }
     // Cached data for client-side filtering
     let allStudents = [];
     let allReports = [];
@@ -458,7 +468,7 @@
       filtered.forEach(r => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${new Date(r.report_date).toLocaleDateString()}</td>
+          <td>${formatDate(r.report_date)}</td>
           <td>${r.student_name || ''}</td>
           <td>${r.category}</td>
           <td>${r.severity}</td>
@@ -501,7 +511,7 @@
         const tr = document.createElement('tr');
         tr.style.background = msg.is_read ? '#fff' : '#fff3cd';
         tr.innerHTML = `
-          <td>${new Date(msg.created_at).toLocaleDateString()}</td>
+          <td>${formatDate(msg.created_at)}</td>
           <td>${msg.guidance_name || 'Guidance'}</td>
           <td>${msg.student_name || '—'}</td>
           <td>${msg.message}</td>
@@ -678,7 +688,7 @@
         document.getElementById('modalStudentName').textContent = s.full_name || name;
         document.getElementById('detailFullName').textContent = s.full_name || name;
         document.getElementById('detailLRN').textContent = s.lrn || '—';
-        document.getElementById('detailBirthday').textContent = s.birthday ? new Date(s.birthday).toLocaleDateString() : '—';
+        document.getElementById('detailBirthday').textContent = s.birthday ? formatDate(s.birthday) : '—';
         document.getElementById('detailAge').textContent = s.age || '—';
         document.getElementById('detailSex').textContent = s.sex || '—';
         document.getElementById('detailReligion').textContent = s.religion || '—';
@@ -726,7 +736,7 @@
       }
       data.reports.forEach(r => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${new Date(r.report_date).toLocaleDateString()}</td><td>${r.category}</td><td>${r.severity}</td><td>${r.notes || ''}</td>`;
+        tr.innerHTML = `<td>${formatDate(r.report_date)}</td><td>${r.category}</td><td>${r.severity}</td><td>${r.notes || ''}</td>`;
         tbody.appendChild(tr);
       });
     }
