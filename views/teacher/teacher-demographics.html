@@ -376,7 +376,8 @@
       // Add timezone offset to get correct local date
       const offset = date.getTimezoneOffset();
       const localDate = new Date(date.getTime() - (offset * 60 * 1000));
-      return localDate.toISOString().split('T')[0].split('-').reverse().join('/');
+      const [year, month, day] = localDate.toISOString().split('T')[0].split('-');
+      return `${month}/${day}/${year}`; // MM/DD/YYYY format
     }
     // Cached data for client-side filtering
     let allStudents = [];
