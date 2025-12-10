@@ -416,17 +416,28 @@ function openStatusModal(requestId) {
 
 async function handleStatusUpdate(e) {
     e.preventDefault();
+    console.log('Form submitted - handleStatusUpdate called');
     
     const requestId = document.getElementById('requestId').value;
     const newStatus = document.getElementById('newStatus').value;
     const completionNotes = document.getElementById('completionNotes').value;
     const rejectionReason = document.getElementById('rejectionReason').value;
     
+    console.log('Request ID:', requestId);
+    console.log('New Status:', newStatus);
+    
+    if (!requestId || !newStatus) {
+        showToast('Please select a status', 'error');
+        return;
+    }
+    
     const data = {
         status: newStatus,
         completion_notes: newStatus === 'rejected' ? null : completionNotes,
         rejection_reason: newStatus === 'rejected' ? rejectionReason : null
     };
+    
+    console.log('Sending data:', data);
     
     try {
         const response = await fetch(`/api/guidance/document-requests/${requestId}/status`, {
@@ -437,7 +448,9 @@ async function handleStatusUpdate(e) {
             body: JSON.stringify(data)
         });
         
+        console.log('Response status:', response.status);
         const result = await response.json();
+        console.log('Response data:', result);
         
         if (result.success) {
             // Update local data immediately
@@ -468,6 +481,7 @@ async function handleStatusUpdate(e) {
                 successMessage.textContent = `Request ${statusText[newStatus] || 'updated'}.`;
             }
             showSuccessModal();
+            showToast('Status updated successfully!', 'success');
         } else {
             showToast('Error: ' + (result.message || 'Failed to update status'), 'error');
         }
