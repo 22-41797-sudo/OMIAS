@@ -1149,7 +1149,6 @@
                     <td>${report.notes || '—'}</td>
                                         <td>
                                             <button class="action-button" onclick="sendToRecommendations(${report.id}, ${report.teacher_id || 'null'}, ${report.student_id || 'null'})">Send to Recommendations</button>
-                                            ${report.is_done ? `<span style="display:inline-block; padding:6px 10px; border-radius:8px; background:#e6f4ea; color:#047857; font-weight:700; margin-left:8px;">Done</span>` : `<button class="action-button" onclick="markReportDone(${report.id})" title="Mark this report as done">Mark as Done</button>`}
                                             <button class="action-button secondary archive-btn" onclick="showArchiveConfirm(${report.id})">Archive</button>
                                         </td>
                 `;
