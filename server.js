@@ -571,9 +571,14 @@ app.get('/api/teacher/students/:id', requireTeacher, async (req, res) => {
                 COALESCE(s.guardian_name, er.guardian_name) as guardian_name,
                 COALESCE(s.contact_number, er.contact_number) as contact_number
             FROM students s
-            LEFT JOIN early_registration er ON s.enrollment_id = er.id::text
+            LEFT JOIN early_registration er ON CAST(er.id AS TEXT) = s.enrollment_id
             WHERE s.id = $1
         `, [studentId]);
+        
+        if (detail.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Student not found' });
+        }
+        
         res.json({ success: true, student: detail.rows[0] });
     } catch (err) {
         console.error('teacher student detail error:', err);
