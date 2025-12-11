@@ -548,37 +548,13 @@ app.get('/api/teacher/students/:id', requireTeacher, async (req, res) => {
         }
         if (sec.rows.length === 0) return res.status(403).json({ success: false, error: 'Access denied' });
         const detail = await pool.query(`
-            SELECT 
-                s.id, 
-                s.enrollment_id, 
-                COALESCE(s.gmail_address, er.gmail_address) as gmail_address,
-                COALESCE(s.school_year, er.school_year) as school_year,
-                COALESCE(s.lrn, er.lrn) as lrn,
-                COALESCE(s.grade_level, er.grade_level) as grade_level,
-                COALESCE(s.last_name, er.last_name) as last_name,
-                COALESCE(s.first_name, er.first_name) as first_name,
-                COALESCE(s.middle_name, er.middle_name) as middle_name,
-                COALESCE(s.ext_name, er.ext_name) as ext_name,
-                COALESCE(s.last_name, er.last_name, '') || ', ' || COALESCE(s.first_name, er.first_name, '') || ' ' || 
-                COALESCE(COALESCE(s.middle_name, er.middle_name) || ' ', '') || COALESCE(COALESCE(s.ext_name, er.ext_name), '') AS full_name,
-                COALESCE(s.birthday, er.birthday) as birthday,
-                COALESCE(s.age, er.age) as age,
-                COALESCE(s.sex, er.sex) as sex,
-                COALESCE(s.religion, er.religion) as religion,
-                COALESCE(s.current_address, er.current_address) as current_address,
-                COALESCE(s.father_name, er.father_name) as father_name,
-                COALESCE(s.mother_name, er.mother_name) as mother_name,
-                COALESCE(s.guardian_name, er.guardian_name) as guardian_name,
-                COALESCE(s.contact_number, er.contact_number) as contact_number
-            FROM students s
-            LEFT JOIN early_registration er ON CAST(er.id AS TEXT) = s.enrollment_id
-            WHERE s.id = $1
+            SELECT id, enrollment_id, gmail_address, school_year, lrn, grade_level,
+                   last_name, first_name, middle_name, ext_name,
+                   COALESCE(last_name, '') || ', ' || COALESCE(first_name, '') || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') AS full_name,
+                   birthday, age, sex, religion, current_address,
+                   father_name, mother_name, guardian_name, contact_number
+            FROM students WHERE id = $1
         `, [studentId]);
-        
-        if (detail.rows.length === 0) {
-            return res.status(404).json({ success: false, error: 'Student not found' });
-        }
-        
         res.json({ success: true, student: detail.rows[0] });
     } catch (err) {
         console.error('teacher student detail error:', err);
