@@ -13,6 +13,16 @@
     .filters-row { display: flex; gap: 8px; align-items: center; margin: 8px 0; flex-wrap:wrap; }
     .filter-label { color: #666; font-size: 0.95rem; }
     .input-field { padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; }
+    
+    /* Logout Modal Styles */
+    #logoutModal .modal-content { max-width: 420px; }
+    #logoutModal .modal-header h2 { color: #dc2626; display: flex; align-items: center; gap: 8px; }
+    #logoutModal .modal-header h2 span { font-size: 24px; }
+    #logoutModal .modal-body { padding: 24px; }
+    #logoutModal .modal-body p { margin: 0; font-size: 15px; color: #374151; line-height: 1.6; }
+    #logoutModal .modal-footer { display: flex; gap: 12px; justify-content: flex-end; }
+    #logoutModal .modal-footer .cta-button:first-of-type { background: #6b7280; border-color: #6b7280; }
+    #logoutModal .modal-footer .cta-button.secondary { background: #dc2626; border-color: #dc2626; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -200,24 +210,24 @@
 
   <!-- Logout Confirmation Modal -->
   <div id="logoutModal" class="modal hidden">
-    <div class="modal-content" style="max-width: 420px;">
+    <div class="modal-content">
       <div class="modal-header">
-        <h2 style="color: #dc2626; display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 24px;">⚠️</span>
+        <h2>
+          <span>⚠️</span>
           Confirm Logout
         </h2>
         <button class="modal-close" onclick="closeLogoutModal()">&times;</button>
       </div>
-      <div class="modal-body" style="padding: 24px;">
-        <p style="margin: 0; font-size: 15px; color: #374151; line-height: 1.6;">
+      <div class="modal-body">
+        <p>
           Are you sure you want to log out? Any unsaved changes will be lost.
         </p>
       </div>
-      <div class="modal-footer" style="display: flex; gap: 12px; justify-content: flex-end;">
-        <button type="button" class="cta-button" onclick="closeLogoutModal()" style="background: #6b7280; border-color: #6b7280;">
+      <div class="modal-footer">
+        <button type="button" class="cta-button" onclick="closeLogoutModal()">
           Cancel
         </button>
-        <button type="button" class="cta-button secondary" onclick="confirmLogout()" style="background: #dc2626; border-color: #dc2626;">
+        <button type="button" class="cta-button secondary" onclick="confirmLogout()">
           Yes, Logout
         </button>
       </div>
