@@ -14,6 +14,10 @@ if (USE_GMAIL) {
                 user: process.env.GMAIL_USER,
                 pass: process.env.GMAIL_PASSWORD
             },
+            tls: {
+                rejectUnauthorized: false,
+                minVersion: 'TLSv1.2'
+            },
             connectionTimeout: 60000,
             socketTimeout: 60000,
             greetingTimeout: 60000,
