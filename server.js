@@ -2861,7 +2861,7 @@ function generateToken() {
 }
 
 // Public enrollment submission
-app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'), async (req, res) => {
+app.post('/submit-enrollment', enrollmentLimiter, upload.any(), async (req, res) => {
     const {
         gmail, schoolYear, lrn, gradeLevel, lastName, givenName, middleName, extName,
         birthday, age, sex, religion, address, ipCommunity, ipCommunitySpecify,
@@ -2919,18 +2919,35 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
         : null;
 
     let signatureImagePath = null;
+    let documentPaths = {};
     
-    // Handle signature - store as base64 data URL for persistence (OUTSIDE try to avoid scope issues)
-    if (req.file) {
-        // Convert uploaded file to base64
-        const fileBuffer = fs.readFileSync(req.file.path);
-        const base64Data = fileBuffer.toString('base64');
-        const mimeType = req.file.mimetype || 'image/png';
-        signatureImagePath = `data:${mimeType};base64,${base64Data}`;
-        // Clean up temp file
-        fs.unlinkSync(req.file.path);
-    } else if (signatureData) {
-        // Handle canvas signature data (already base64 data URL)
+    // Handle all uploaded files (signature + documents)
+    if (req.files && req.files.length > 0) {
+        req.files.forEach(file => {
+            try {
+                const fileBuffer = fs.readFileSync(file.path);
+                const base64Data = fileBuffer.toString('base64');
+                const mimeType = file.mimetype || 'application/octet-stream';
+                const fileDataUrl = `data:${mimeType};base64,${base64Data}`;
+                
+                // Map files to their destination fields
+                if (file.fieldname === 'signatureImage') {
+                    signatureImagePath = fileDataUrl;
+                } else {
+                    // Store document paths by field name
+                    documentPaths[file.fieldname] = fileDataUrl;
+                }
+                
+                // Clean up temp file
+                fs.unlinkSync(file.path);
+            } catch (err) {
+                console.error(`Error processing file ${file.fieldname}:`, err.message);
+            }
+        });
+    }
+    
+    // Handle canvas signature data (already base64 data URL)
+    if (!signatureImagePath && signatureData) {
         signatureImagePath = signatureData;
     }
 
@@ -2986,11 +3003,11 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
             sanitizeText(printedName), 
             signatureImagePath,
             enrolleeType || null,
-            req.body.birthCertificatePSA_NewKinder || req.body.birthCertificatePSA_Transferee || req.body.birthCertificatePSA_Returnee || null,
-            req.body.eccdChecklist || null,
-            req.body.reportCardPrevious_Transferee || req.body.reportCardPrevious_Returnee || null,
-            req.body.sf10Original_Transferee || null,
-            req.body.sf10Optional_Returnee || null,
+            documentPaths['birthCertificatePSA_NewKinder'] || documentPaths['birthCertificatePSA_Transferee'] || documentPaths['birthCertificatePSA_Returnee'] || null,
+            documentPaths['eccdChecklist'] || null,
+            documentPaths['reportCardPrevious_Transferee'] || documentPaths['reportCardPrevious_Returnee'] || null,
+            documentPaths['sf10Original_Transferee'] || null,
+            documentPaths['sf10Optional_Returnee'] || null,
             'pending'  // Default status for new enrollment requests
         ];
 
@@ -3078,11 +3095,11 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
                     sanitizeText(printedName), 
                     signatureImagePath,
                     enrolleeType || null,
-                    req.body.birthCertificatePSA_NewKinder || req.body.birthCertificatePSA_Transferee || req.body.birthCertificatePSA_Returnee || null,
-                    req.body.eccdChecklist || null,
-                    req.body.reportCardPrevious_Transferee || req.body.reportCardPrevious_Returnee || null,
-                    req.body.sf10Original_Transferee || null,
-                    req.body.sf10Optional_Returnee || null,
+                    documentPaths['birthCertificatePSA_NewKinder'] || documentPaths['birthCertificatePSA_Transferee'] || documentPaths['birthCertificatePSA_Returnee'] || null,
+                    documentPaths['eccdChecklist'] || null,
+                    documentPaths['reportCardPrevious_Transferee'] || documentPaths['reportCardPrevious_Returnee'] || null,
+                    documentPaths['sf10Original_Transferee'] || null,
+                    documentPaths['sf10Optional_Returnee'] || null,
                     'pending'  // Default status for new enrollment requests
                 ];
 
