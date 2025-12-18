@@ -98,6 +98,15 @@
             }
         }
 
+        /* Date field styles */
+        .date-field-min-width {
+            min-width: 150px;
+        }
+
+        .date-input-min-width {
+            min-width: 100px;
+        }
+
         /* Hamburger Menu Styles */
         .hamburger-btn {
             display: none;
@@ -747,8 +756,8 @@
         <input type="text" id="signaturePrintedName" name="signaturePrintedName" placeholder="Type Printed Name Here" title="Type Printed Name Here" class="signature-line-input signature-name-input">
         <div class="signature-text">Printed Name</div>
       </div>
-      <div class="date-field-flex-1" style="min-width: 150px;">
-        <input type="date" id="dateSigned" name="dateSigned" required title="Please select the date" placeholder="Select date" class="signature-line-input signature-date-input" style="min-width: 100px;">
+      <div class="date-field-flex-1 date-field-min-width">
+        <input type="date" id="dateSigned" name="dateSigned" required title="Please select the date" placeholder="Select date" class="signature-line-input signature-date-input date-input-min-width">
         <div class="signature-text">Date</div>
       </div>
     </div>
