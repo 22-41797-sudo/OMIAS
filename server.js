@@ -1490,6 +1490,13 @@ async function ensureEnrollmentRequestsSchema() {
         printed_name VARCHAR(200) NOT NULL,
         signature_image_path TEXT,
         
+        enrollee_type VARCHAR(50),
+        birth_cert_psa TEXT,
+        eccd_checklist TEXT,
+        report_card_previous TEXT,
+        sf10_original TEXT,
+        sf10_optional TEXT,
+        
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         reviewed_by INTEGER REFERENCES registrar_accounts(id),
@@ -2839,7 +2846,7 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
         gmail, schoolYear, lrn, gradeLevel, lastName, givenName, middleName, extName,
         birthday, age, sex, religion, address, ipCommunity, ipCommunitySpecify,
         pwd, pwdSpecify, fatherName, motherName, guardianName, contactNumber, date,
-        signatureData, printedName, honeypot
+        signatureData, printedName, honeypot, enrolleeType
     } = req.body;
 
     // Note: Rate limiting is handled by enrollmentLimiter middleware (3 requests per hour per IP)
@@ -2924,8 +2931,10 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
                 birthday, age, sex, religion, current_address,
                 ip_community, ip_community_specify, pwd, pwd_specify,
                 father_name, mother_name, guardian_name, contact_number,
-                registration_date, printed_name, signature_image_path, status
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
+                registration_date, printed_name, signature_image_path, 
+                enrollee_type, birth_cert_psa, eccd_checklist, report_card_previous, sf10_original, sf10_optional,
+                status
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32)
             RETURNING id, request_token
         `;
 
@@ -2956,6 +2965,12 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
             registrationDate, 
             sanitizeText(printedName), 
             signatureImagePath,
+            enrolleeType || null,
+            req.body.birthCertificatePSA_NewKinder || req.body.birthCertificatePSA_Transferee || req.body.birthCertificatePSA_Returnee || null,
+            req.body.eccdChecklist || null,
+            req.body.reportCardPrevious_Transferee || req.body.reportCardPrevious_Returnee || null,
+            req.body.sf10Original_Transferee || null,
+            req.body.sf10Optional_Returnee || null,
             'pending'  // Default status for new enrollment requests
         ];
 
@@ -3009,8 +3024,10 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
                         birthday, age, sex, religion, current_address,
                         ip_community, ip_community_specify, pwd, pwd_specify,
                         father_name, mother_name, guardian_name, contact_number,
-                        registration_date, printed_name, signature_image_path, status
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
+                        registration_date, printed_name, signature_image_path, 
+                        enrollee_type, birth_cert_psa, eccd_checklist, report_card_previous, sf10_original, sf10_optional,
+                        status
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32)
                     RETURNING id, request_token
                 `;
 
@@ -3040,6 +3057,12 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
                     registrationDate, 
                     sanitizeText(printedName), 
                     signatureImagePath,
+                    enrolleeType || null,
+                    req.body.birthCertificatePSA_NewKinder || req.body.birthCertificatePSA_Transferee || req.body.birthCertificatePSA_Returnee || null,
+                    req.body.eccdChecklist || null,
+                    req.body.reportCardPrevious_Transferee || req.body.reportCardPrevious_Returnee || null,
+                    req.body.sf10Original_Transferee || null,
+                    req.body.sf10Optional_Returnee || null,
                     'pending'  // Default status for new enrollment requests
                 ];
 

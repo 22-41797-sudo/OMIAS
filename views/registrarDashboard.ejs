@@ -437,6 +437,7 @@
                         <tr>
                             <th>SY</th>
                             <th>Grade</th>
+                            <th>Enrollee Type</th>
                             <th>Learner Name</th>
                             <th>LRN</th>
                             <th>Contact No.</th>
@@ -450,6 +451,7 @@
                                 <tr data-school-year="<%= reg.school_year %>" data-grade="<%= reg.grade_level %>" data-learner="<%= (reg.learner_name||'').toLowerCase() %>" data-lrn="<%= (reg.lrn||'').toString().toLowerCase() %>">
                                     <td><%= reg.school_year %></td>
                                     <td><%= reg.grade_level %></td>
+                                    <td><span class="badge bg-info"><%= reg.enrollee_type ? reg.enrollee_type.replace('-', ' ').replace('new entrant kinder', 'New Entrant - Kinder') : 'N/A' %></span></td>
                                     <td><%= reg.learner_name %></td>
                                     <td><%= reg.lrn || 'N/A' %></td>
                                     <td><%= reg.contact_number || 'N/A' %></td>
@@ -714,7 +716,11 @@
                 <label class="form-label text-muted small">Grade Level</label>
                 <div class="fw-semibold" id="view_grade_level">-</div>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-3">
+                <label class="form-label text-muted small">Enrollee Type</label>
+                <div class="fw-semibold badge" id="view_enrollee_type" style="background-color: #0056b3; padding: 5px 10px;">-</div>
+              </div>
+              <div class="col-md-3">
                 <label class="form-label text-muted small">LRN</label>
                 <div class="fw-semibold" id="view_lrn">-</div>
               </div>
@@ -815,6 +821,41 @@
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Legal Guardian's Name</label>
                 <input type="text" class="form-control" id="guardian_name" placeholder="Last, First Middle Suffix">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enrollee Type & Documents -->
+        <div class="card mb-3 shadow-sm">
+          <div class="card-header bg-danger text-white fw-bold">
+            <i class="bi bi-file-earmark-text me-2"></i>Enrollee Type & Documents
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Enrollee Type</label>
+                <div id="view_enrollee_type_detail" class="fw-semibold p-2 bg-light rounded">-</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label text-muted small">Birth Certificate - PSA</label>
+                <div id="view_birth_cert_psa" class="text-muted">-</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label text-muted small">ECCD Checklist</label>
+                <div id="view_eccd_checklist" class="text-muted">-</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label text-muted small">Report Card (Previous)</label>
+                <div id="view_report_card_previous" class="text-muted">-</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label text-muted small">SF 10 Original</label>
+                <div id="view_sf10_original" class="text-muted">-</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label text-muted small">SF 10 Optional</label>
+                <div id="view_sf10_optional" class="text-muted">-</div>
               </div>
             </div>
           </div>
@@ -1736,6 +1777,8 @@
                 // Read-only Learner Info
                 document.getElementById('view_school_year').textContent = req.school_year || '-';
                 document.getElementById('view_grade_level').textContent = req.grade_level || '-';
+                const enrolleeTypeDisplay = req.enrollee_type ? req.enrollee_type.replace(/-/g, ' ').toUpperCase() : 'N/A';
+                document.getElementById('view_enrollee_type').textContent = enrolleeTypeDisplay;
                 document.getElementById('view_lrn').textContent = req.lrn || 'N/A';
                 document.getElementById('view_last_name').textContent = req.last_name || '-';
                 document.getElementById('view_first_name').textContent = req.first_name || '-';
@@ -1751,6 +1794,14 @@
                 document.getElementById('view_age').textContent = req.age || '-';
                 document.getElementById('view_sex').textContent = req.sex || '-';
                 document.getElementById('view_printed_name').textContent = req.printed_name || '-';
+
+                // Enrollee Type Detail (in documents section)
+                document.getElementById('view_enrollee_type_detail').textContent = enrolleeTypeDisplay;
+                document.getElementById('view_birth_cert_psa').textContent = req.birth_cert_psa ? '✓ Submitted' : '✗ Not Submitted';
+                document.getElementById('view_eccd_checklist').textContent = req.eccd_checklist ? '✓ Submitted' : '✗ Not Submitted';
+                document.getElementById('view_report_card_previous').textContent = req.report_card_previous ? '✓ Submitted' : '✗ Not Submitted';
+                document.getElementById('view_sf10_original').textContent = req.sf10_original ? '✓ Submitted' : '✗ Not Submitted';
+                document.getElementById('view_sf10_optional').textContent = req.sf10_optional ? '✓ Submitted' : '✗ Not Submitted';
 
                 // Editable fields
                 document.getElementById('father_name').value = req.father_name || '';
