@@ -2869,6 +2869,12 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.any(), async (req, res)
         signatureData, printedName, honeypot, enrolleeType
     } = req.body;
 
+    // Debug logging for enrollee type
+    console.log('📝 Enrollment submission received:');
+    console.log('  - Enrollee Type:', enrolleeType);
+    console.log('  - Files uploaded:', req.files ? req.files.length : 0, req.files?.map(f => f.fieldname).join(', ') || 'none');
+    console.log('  - Student:', `${givenName} ${lastName}`);
+
     // Note: Rate limiting is handled by enrollmentLimiter middleware (3 requests per hour per IP)
 
     // Build current_address from provided parts if 'address' is not present
@@ -2944,6 +2950,9 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.any(), async (req, res)
                 console.error(`Error processing file ${file.fieldname}:`, err.message);
             }
         });
+        
+        // Debug log the documents saved
+        console.log('📄 Documents processed:', Object.keys(documentPaths));
     }
     
     // Handle canvas signature data (already base64 data URL)

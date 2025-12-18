@@ -1103,7 +1103,8 @@
             { id: 'givenName', name: "Learner's given name" },
             { id: 'birthday', name: 'Birthdate' },
             { id: 'age', name: 'Age' },
-            { id: 'gradeLevel', name: 'Grade level' }
+            { id: 'gradeLevel', name: 'Grade level' },
+            { id: 'enrolleeType', name: 'Type of enrollee' }
         ];
 
         for (const r of required) {
@@ -1216,6 +1217,12 @@
         // Enrollee type and documents
         const enrolleeType = val('enrolleeType');
         formData.append('enrolleeType', enrolleeType);
+        
+        // Validate that enrollee type is selected
+        if (!enrolleeType) {
+            showErr('Please select type of enrollee.', 'enrolleeType');
+            return;
+        }
         
         // Add document files based on enrollee type
         if (enrolleeType === 'new-entrant-kinder') {
