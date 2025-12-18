@@ -716,11 +716,7 @@
                 <label class="form-label text-muted small">Grade Level</label>
                 <div class="fw-semibold" id="view_grade_level">-</div>
               </div>
-              <div class="col-md-3">
-                <label class="form-label text-muted small">Enrollee Type</label>
-                <div class="fw-semibold badge" id="view_enrollee_type" style="background-color: #0056b3; padding: 5px 10px;">-</div>
-              </div>
-              <div class="col-md-3">
+              <div class="col-md-6">
                 <label class="form-label text-muted small">LRN</label>
                 <div class="fw-semibold" id="view_lrn">-</div>
               </div>
@@ -1777,8 +1773,6 @@
                 // Read-only Learner Info
                 document.getElementById('view_school_year').textContent = req.school_year || '-';
                 document.getElementById('view_grade_level').textContent = req.grade_level || '-';
-                const enrolleeTypeDisplay = req.enrollee_type ? req.enrollee_type.replace(/-/g, ' ').toUpperCase() : 'N/A';
-                document.getElementById('view_enrollee_type').textContent = enrolleeTypeDisplay;
                 document.getElementById('view_lrn').textContent = req.lrn || 'N/A';
                 document.getElementById('view_last_name').textContent = req.last_name || '-';
                 document.getElementById('view_first_name').textContent = req.first_name || '-';
@@ -1795,13 +1789,22 @@
                 document.getElementById('view_sex').textContent = req.sex || '-';
                 document.getElementById('view_printed_name').textContent = req.printed_name || '-';
 
-                // Enrollee Type Detail (in documents section)
+                // Enrollee Type Detail (in documents section - only show if has enrollee type)
+                const enrolleeTypeDisplay = req.enrollee_type ? req.enrollee_type.replace(/-/g, ' ').toUpperCase() : 'NOT PROVIDED';
                 document.getElementById('view_enrollee_type_detail').textContent = enrolleeTypeDisplay;
-                document.getElementById('view_birth_cert_psa').textContent = req.birth_cert_psa ? '✓ Submitted' : '✗ Not Submitted';
-                document.getElementById('view_eccd_checklist').textContent = req.eccd_checklist ? '✓ Submitted' : '✗ Not Submitted';
-                document.getElementById('view_report_card_previous').textContent = req.report_card_previous ? '✓ Submitted' : '✗ Not Submitted';
-                document.getElementById('view_sf10_original').textContent = req.sf10_original ? '✓ Submitted' : '✗ Not Submitted';
-                document.getElementById('view_sf10_optional').textContent = req.sf10_optional ? '✓ Submitted' : '✗ Not Submitted';
+                
+                // Show/hide documents section based on enrollee type
+                const docsSection = document.querySelector('[id*="enrollee"]').closest('.card');
+                if (req.enrollee_type) {
+                    docsSection.style.display = 'block';
+                    document.getElementById('view_birth_cert_psa').textContent = req.birth_cert_psa ? '✓ Submitted' : '✗ Not Submitted';
+                    document.getElementById('view_eccd_checklist').textContent = req.eccd_checklist ? '✓ Submitted' : '✗ Not Submitted';
+                    document.getElementById('view_report_card_previous').textContent = req.report_card_previous ? '✓ Submitted' : '✗ Not Submitted';
+                    document.getElementById('view_sf10_original').textContent = req.sf10_original ? '✓ Submitted' : '✗ Not Submitted';
+                    document.getElementById('view_sf10_optional').textContent = req.sf10_optional ? '✓ Submitted' : '✗ Not Submitted';
+                } else {
+                    docsSection.style.display = 'none';
+                }
 
                 // Editable fields
                 document.getElementById('father_name').value = req.father_name || '';
