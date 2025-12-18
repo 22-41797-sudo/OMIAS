@@ -732,6 +732,82 @@
               </div>
           </div>
 
+          <!-- Enrollee Type Selection -->
+          <div class="form-group">
+              <div class="form-field">
+                  <label for="enrolleeType" class="font-weight-600">Type of Enrollee:</label>
+                  <select id="enrolleeType" name="enrolleeType" required title="Select type of enrollee" class="enrollee-type-select">
+                      <option value="">-- Select Enrollee Type --</option>
+                      <option value="new-entrant-kinder">New Entrant - Kinder</option>
+                      <option value="transferee">Transferee</option>
+                      <option value="returnee">Returnee</option>
+                  </select>
+              </div>
+          </div>
+
+          <!-- New Entrant - Kinder Documents -->
+          <div id="newEntrantKinderDocs" class="enrollee-docs-section hidden">
+              <h3 class="form-section-title">New Entrant - Kinder Required Documents</h3>
+              <div class="form-group">
+                  <div class="form-field">
+                      <label for="birthCertificatePSA_NewKinder" class="font-weight-600">Upload/Picture Birth Certificate - PSA:</label>
+                      <input type="file" id="birthCertificatePSA_NewKinder" name="birthCertificatePSA_NewKinder" accept="image/*,.pdf" title="Upload Birth Certificate - PSA">
+                  </div>
+              </div>
+              <div class="form-group">
+                  <div class="form-field">
+                      <label for="eccdChecklist" class="font-weight-600">ECCD Checklist - Day Care Center:</label>
+                      <input type="file" id="eccdChecklist" name="eccdChecklist" accept="image/*,.pdf" title="Upload ECCD Checklist">
+                  </div>
+              </div>
+          </div>
+
+          <!-- Transferee Documents -->
+          <div id="transfereeDocs" class="enrollee-docs-section hidden">
+              <h3 class="form-section-title">Transferee Required Documents</h3>
+              <div class="form-group">
+                  <div class="form-field">
+                      <label for="birthCertificatePSA_Transferee" class="font-weight-600">Upload/Picture Birth Certificate - PSA:</label>
+                      <input type="file" id="birthCertificatePSA_Transferee" name="birthCertificatePSA_Transferee" accept="image/*,.pdf" title="Upload Birth Certificate - PSA">
+                  </div>
+              </div>
+              <div class="form-group">
+                  <div class="form-field">
+                      <label for="reportCardPrevious_Transferee" class="font-weight-600">Report Card From the Previous Grade:</label>
+                      <input type="file" id="reportCardPrevious_Transferee" name="reportCardPrevious_Transferee" accept="image/*,.pdf" title="Upload Report Card From Previous Grade">
+                  </div>
+              </div>
+              <div class="form-group">
+                  <div class="form-field">
+                      <label for="sf10Original_Transferee" class="font-weight-600">SF 10 Original:</label>
+                      <input type="file" id="sf10Original_Transferee" name="sf10Original_Transferee" accept="image/*,.pdf" title="Upload SF 10 Original">
+                  </div>
+              </div>
+          </div>
+
+          <!-- Returnee Documents -->
+          <div id="returneeDocs" class="enrollee-docs-section hidden">
+              <h3 class="form-section-title">Returnee Required Documents</h3>
+              <div class="form-group">
+                  <div class="form-field">
+                      <label for="birthCertificatePSA_Returnee" class="font-weight-600">Upload/Picture Birth Certificate - PSA:</label>
+                      <input type="file" id="birthCertificatePSA_Returnee" name="birthCertificatePSA_Returnee" accept="image/*,.pdf" title="Upload Birth Certificate - PSA">
+                  </div>
+              </div>
+              <div class="form-group">
+                  <div class="form-field">
+                      <label for="reportCardPrevious_Returnee" class="font-weight-600">Previous Report Card:</label>
+                      <input type="file" id="reportCardPrevious_Returnee" name="reportCardPrevious_Returnee" accept="image/*,.pdf" title="Upload Previous Report Card">
+                  </div>
+              </div>
+              <div class="form-group">
+                  <div class="form-field">
+                      <label for="sf10Optional_Returnee" class="font-weight-600">SF 10 Original (Optional):</label>
+                      <input type="file" id="sf10Optional_Returnee" name="sf10Optional_Returnee" accept="image/*,.pdf" title="Upload SF 10 Original (Optional)">
+                  </div>
+              </div>
+          </div>
+
           <hr>
 
           <div class="disclaimer">
@@ -871,6 +947,25 @@
     // Modal logic
     const maximizeBtn = document.getElementById('maximizeSignaturePad');
     const modal = document.getElementById('signaturePadModal');
+    // ============= ENROLLEE TYPE SELECTION HANDLER =============
+    document.getElementById('enrolleeType').addEventListener('change', function(e) {
+        const selectedType = e.target.value;
+        
+        // Hide all document sections
+        document.getElementById('newEntrantKinderDocs').classList.add('hidden');
+        document.getElementById('transfereeDocs').classList.add('hidden');
+        document.getElementById('returneeDocs').classList.add('hidden');
+        
+        // Show relevant section based on selection
+        if (selectedType === 'new-entrant-kinder') {
+            document.getElementById('newEntrantKinderDocs').classList.remove('hidden');
+        } else if (selectedType === 'transferee') {
+            document.getElementById('transfereeDocs').classList.remove('hidden');
+        } else if (selectedType === 'returnee') {
+            document.getElementById('returneeDocs').classList.remove('hidden');
+        }
+    });
+
     const modalCanvas = document.getElementById('signaturePadModalCanvas');
     const modalCtx = modalCanvas.getContext('2d');
     let modalDrawing = false;
