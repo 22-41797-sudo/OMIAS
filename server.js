@@ -2898,23 +2898,23 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.single('signatureImage'
         ? (pwdSpecify || req.body.pwdSpecify || null)
         : null;
 
-    try {
-        let signatureImagePath = null;
-        
-        // Handle signature - store as base64 data URL for persistence
-        if (req.file) {
-            // Convert uploaded file to base64
-            const fileBuffer = fs.readFileSync(req.file.path);
-            const base64Data = fileBuffer.toString('base64');
-            const mimeType = req.file.mimetype || 'image/png';
-            signatureImagePath = `data:${mimeType};base64,${base64Data}`;
-            // Clean up temp file
-            fs.unlinkSync(req.file.path);
-        } else if (signatureData) {
-            // Handle canvas signature data (already base64 data URL)
-            signatureImagePath = signatureData;
-        }
+    let signatureImagePath = null;
+    
+    // Handle signature - store as base64 data URL for persistence (OUTSIDE try to avoid scope issues)
+    if (req.file) {
+        // Convert uploaded file to base64
+        const fileBuffer = fs.readFileSync(req.file.path);
+        const base64Data = fileBuffer.toString('base64');
+        const mimeType = req.file.mimetype || 'image/png';
+        signatureImagePath = `data:${mimeType};base64,${base64Data}`;
+        // Clean up temp file
+        fs.unlinkSync(req.file.path);
+    } else if (signatureData) {
+        // Handle canvas signature data (already base64 data URL)
+        signatureImagePath = signatureData;
+    }
 
+    try {
         // Generate unique token
         let requestToken;
         let tokenExists = true;
