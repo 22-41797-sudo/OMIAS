@@ -164,8 +164,8 @@
             %>
 
             <!-- Server-provided JSON (safe injection) -->
-            <script id="server_requests" type="application/json"><%= JSON.stringify(_requests || []) %></script>
-            <script id="server_history" type="application/json"><%= JSON.stringify(_history || []) %></script>
+            <script id="server_requests" type="application/json"><%- JSON.stringify(_requests || []) %></script>
+            <script id="server_history" type="application/json"><%- JSON.stringify(_history || []) %></script>
 
             <!-- Statistics Grid -->
             <div class="row g-4 mb-5">
