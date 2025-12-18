@@ -1505,6 +1505,26 @@ async function ensureEnrollmentRequestsSchema() {
     );
     CREATE INDEX IF NOT EXISTS idx_request_token ON enrollment_requests(request_token);
     CREATE INDEX IF NOT EXISTS idx_status ON enrollment_requests(status);
+    
+    -- Add missing columns if they don't exist
+    ALTER TABLE enrollment_requests 
+    ADD COLUMN IF NOT EXISTS enrollee_type VARCHAR(50);
+    
+    ALTER TABLE enrollment_requests 
+    ADD COLUMN IF NOT EXISTS birth_cert_psa TEXT;
+    
+    ALTER TABLE enrollment_requests 
+    ADD COLUMN IF NOT EXISTS eccd_checklist TEXT;
+    
+    ALTER TABLE enrollment_requests 
+    ADD COLUMN IF NOT EXISTS report_card_previous TEXT;
+    
+    ALTER TABLE enrollment_requests 
+    ADD COLUMN IF NOT EXISTS sf10_original TEXT;
+    
+    ALTER TABLE enrollment_requests 
+    ADD COLUMN IF NOT EXISTS sf10_optional TEXT;
+    
     CREATE OR REPLACE FUNCTION update_enrollment_requests_updated_at()
     RETURNS TRIGGER AS $$
     BEGIN
