@@ -1203,16 +1203,41 @@
     formData.append('pwdSpecify', val('pwdSpecify'));
 
         formData.append('contactNumber', val('contactNumber'));
-        formData.append('enrolleeType', val('enrolleeType'));
         formData.append('lastGradeLevel', val('lastGradeLevel'));
         formData.append('lastSchoolYear', val('lastSchoolYear'));
         formData.append('lastSchoolAttended', val('lastSchoolAttended'));
         formData.append('schoolId', val('schoolId'));
         // printed name input id is signaturePrintedName
         formData.append('printedName', val('signaturePrintedName'));
-    // Date signed (server also accepts 'date')
-    formData.append('dateSigned', val('dateSigned'));
+        // Date signed (server also accepts 'date')
+        formData.append('dateSigned', val('dateSigned'));
         formData.append('signatureData', signatureData);
+        
+        // Enrollee type and documents
+        const enrolleeType = val('enrolleeType');
+        formData.append('enrolleeType', enrolleeType);
+        
+        // Add document files based on enrollee type
+        if (enrolleeType === 'new-entrant-kinder') {
+            const birthCertFile = document.getElementById('birthCertificatePSA_NewKinder');
+            const eccdFile = document.getElementById('eccdChecklist');
+            if (birthCertFile?.files?.length) formData.append('birthCertificatePSA_NewKinder', birthCertFile.files[0]);
+            if (eccdFile?.files?.length) formData.append('eccdChecklist', eccdFile.files[0]);
+        } else if (enrolleeType === 'transferee') {
+            const birthCertFile = document.getElementById('birthCertificatePSA_Transferee');
+            const reportCardFile = document.getElementById('reportCardPrevious_Transferee');
+            const sf10File = document.getElementById('sf10Original_Transferee');
+            if (birthCertFile?.files?.length) formData.append('birthCertificatePSA_Transferee', birthCertFile.files[0]);
+            if (reportCardFile?.files?.length) formData.append('reportCardPrevious_Transferee', reportCardFile.files[0]);
+            if (sf10File?.files?.length) formData.append('sf10Original_Transferee', sf10File.files[0]);
+        } else if (enrolleeType === 'returnee') {
+            const birthCertFile = document.getElementById('birthCertificatePSA_Returnee');
+            const reportCardFile = document.getElementById('reportCardPrevious_Returnee');
+            const sf10OptFile = document.getElementById('sf10Optional_Returnee');
+            if (birthCertFile?.files?.length) formData.append('birthCertificatePSA_Returnee', birthCertFile.files[0]);
+            if (reportCardFile?.files?.length) formData.append('reportCardPrevious_Returnee', reportCardFile.files[0]);
+            if (sf10OptFile?.files?.length) formData.append('sf10Optional_Returnee', sf10OptFile.files[0]);
+        }
         
         try {
             const submitBtn = document.querySelector('button[type="submit"]');

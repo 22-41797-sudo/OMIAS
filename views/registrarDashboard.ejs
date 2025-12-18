@@ -1789,22 +1789,21 @@
                 document.getElementById('view_sex').textContent = req.sex || '-';
                 document.getElementById('view_printed_name').textContent = req.printed_name || '-';
 
-                // Enrollee Type Detail (in documents section - only show if has enrollee type)
-                const enrolleeTypeDisplay = req.enrollee_type ? req.enrollee_type.replace(/-/g, ' ').toUpperCase() : 'NOT PROVIDED';
-                document.getElementById('view_enrollee_type_detail').textContent = enrolleeTypeDisplay;
+                // Format enrollee type for display
+                const enrolleeTypeDisplay = req.enrollee_type 
+                    ? req.enrollee_type
+                        .split('-')
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(' ')
+                    : 'N/A';
                 
-                // Show/hide documents section based on enrollee type
-                const docsSection = document.querySelector('[id*="enrollee"]').closest('.card');
-                if (req.enrollee_type) {
-                    docsSection.style.display = 'block';
-                    document.getElementById('view_birth_cert_psa').textContent = req.birth_cert_psa ? '✓ Submitted' : '✗ Not Submitted';
-                    document.getElementById('view_eccd_checklist').textContent = req.eccd_checklist ? '✓ Submitted' : '✗ Not Submitted';
-                    document.getElementById('view_report_card_previous').textContent = req.report_card_previous ? '✓ Submitted' : '✗ Not Submitted';
-                    document.getElementById('view_sf10_original').textContent = req.sf10_original ? '✓ Submitted' : '✗ Not Submitted';
-                    document.getElementById('view_sf10_optional').textContent = req.sf10_optional ? '✓ Submitted' : '✗ Not Submitted';
-                } else {
-                    docsSection.style.display = 'none';
-                }
+                // Enrollee Type Detail (in documents section)
+                document.getElementById('view_enrollee_type_detail').textContent = enrolleeTypeDisplay;
+                document.getElementById('view_birth_cert_psa').textContent = req.birth_cert_psa ? '✓ Submitted' : '✗ Not Submitted';
+                document.getElementById('view_eccd_checklist').textContent = req.eccd_checklist ? '✓ Submitted' : '✗ Not Submitted';
+                document.getElementById('view_report_card_previous').textContent = req.report_card_previous ? '✓ Submitted' : '✗ Not Submitted';
+                document.getElementById('view_sf10_original').textContent = req.sf10_original ? '✓ Submitted' : '✗ Not Submitted';
+                document.getElementById('view_sf10_optional').textContent = req.sf10_optional ? '✓ Submitted' : '✗ Not Submitted';
 
                 // Editable fields
                 document.getElementById('father_name').value = req.father_name || '';
