@@ -2910,8 +2910,9 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.any(), async (req, res)
         req.body.guardianExtName
     ].filter(Boolean).join(' ');
 
-    // Registration date from client or default now
-    const registrationDate = date || req.body.dateSigned || new Date();
+    // Registration date - ALWAYS use server's current timestamp for accuracy
+    // This ensures the exact time of successful submission is recorded
+    const registrationDate = new Date();
 
     // Ensure NOT NULL friendly values for ip_community and pwd
     const ipCommunityFinal = (ipCommunity || req.body.ipCommunity || 'No');

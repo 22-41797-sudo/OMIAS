@@ -947,6 +947,19 @@
     // Modal logic
     const maximizeBtn = document.getElementById('maximizeSignaturePad');
     const modal = document.getElementById('signaturePadModal');
+    // ============= AUTO-FILL TODAY'S DATE FOR ENROLLMENT =============
+    // Set the dateSigned field to today's date on page load
+    window.addEventListener('DOMContentLoaded', function() {
+        const dateSignedInput = document.getElementById('dateSigned');
+        if (dateSignedInput && !dateSignedInput.value) {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            dateSignedInput.value = `${year}-${month}-${day}`;
+        }
+    });
+
     // ============= ENROLLEE TYPE SELECTION HANDLER =============
     document.getElementById('enrolleeType').addEventListener('change', function(e) {
         const selectedType = e.target.value;
