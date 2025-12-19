@@ -879,9 +879,84 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- Document Viewer Modal -->
+<div class="modal fade" id="documentViewerModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-file-earmark me-2"></i>
+          <span id="document_title">Document Viewer</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center p-4">
+        <div id="document_viewer_content" style="max-height: 600px; overflow: auto;">
+          <!-- Document will be displayed here -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a id="document_download_btn" href="#" download class="btn btn-primary">
+          <i class="bi bi-download me-2"></i>Download
+        </a>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
+// ===== Document Viewer Function =====
+function viewDocument(docName, btn) {
+    const docData = window.currentEnrollmentDocuments?.[docName];
+    if (!docData) {
+        alert('Document data not available');
+        return;
+    }
+    
+    // Format document name for display
+    const docTitles = {
+        'birth_cert_psa': 'Birth Certificate - PSA',
+        'eccd_checklist': 'ECCD Checklist',
+        'report_card_previous': 'Report Card (Previous)',
+        'sf10_original': 'SF 10 Original',
+        'sf10_optional': 'SF 10 Optional'
+    };
+    
+    const title = docTitles[docName] || docName;
+    
+    // Set document viewer modal
+    document.getElementById('document_title').textContent = title;
+    
+    // Determine if it's an image or document
+    if (docData.includes('image/')) {
+        // Display as image
+        document.getElementById('document_viewer_content').innerHTML = 
+            `<img src="${docData}" alt="${title}" style="max-width: 100%; max-height: 500px; border: 1px solid #ddd; border-radius: 8px;">`;
+    } else if (docData.includes('pdf')) {
+        // Display PDF
+        document.getElementById('document_viewer_content').innerHTML = 
+            `<embed src="${docData}" type="application/pdf" width="100%" height="500px">`;
+    } else {
+        // Display as generic document
+        document.getElementById('document_viewer_content').innerHTML = 
+            `<div class="alert alert-info">Document type: ${docData.substring(5, 30)}</div>
+             <img src="${docData}" alt="${title}" style="max-width: 100%; max-height: 500px; border: 1px solid #ddd; border-radius: 8px;">`;
+    }
+    
+    // Set download link
+    const downloadBtn = document.getElementById('document_download_btn');
+    downloadBtn.href = docData;
+    downloadBtn.download = title.replace(/\s+/g, '_') + '.pdf';
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('documentViewerModal'));
+    modal.show();
+}
+
 // ===== Barangay Distribution Chart =====
 (function initBarangayDistribution() {
     let barangayChart = null;
@@ -1799,11 +1874,31 @@
                 
                 // Enrollee Type Detail (in documents section)
                 document.getElementById('view_enrollee_type_detail').textContent = enrolleeTypeDisplay;
-                document.getElementById('view_birth_cert_psa').textContent = req.birth_cert_psa ? '✓ Submitted' : '✗ Not Submitted';
-                document.getElementById('view_eccd_checklist').textContent = req.eccd_checklist ? '✓ Submitted' : '✗ Not Submitted';
-                document.getElementById('view_report_card_previous').textContent = req.report_card_previous ? '✓ Submitted' : '✗ Not Submitted';
-                document.getElementById('view_sf10_original').textContent = req.sf10_original ? '✓ Submitted' : '✗ Not Submitted';
-                document.getElementById('view_sf10_optional').textContent = req.sf10_optional ? '✓ Submitted' : '✗ Not Submitted';
+                
+                // Helper function to create document display with view button
+                function createDocumentDisplay(docData, docName) {
+                    if (docData) {
+                        const btnId = `view_doc_${docName}`;
+                        return `✓ Submitted <button class="btn btn-sm btn-primary ms-2" id="${btnId}" onclick="viewDocument('${docName}', this)"><i class="bi bi-eye me-1"></i>View</button>`;
+                    } else {
+                        return '✗ Not Submitted';
+                    }
+                }
+                
+                document.getElementById('view_birth_cert_psa').innerHTML = createDocumentDisplay(req.birth_cert_psa, 'birth_cert_psa');
+                document.getElementById('view_eccd_checklist').innerHTML = createDocumentDisplay(req.eccd_checklist, 'eccd_checklist');
+                document.getElementById('view_report_card_previous').innerHTML = createDocumentDisplay(req.report_card_previous, 'report_card_previous');
+                document.getElementById('view_sf10_original').innerHTML = createDocumentDisplay(req.sf10_original, 'sf10_original');
+                document.getElementById('view_sf10_optional').innerHTML = createDocumentDisplay(req.sf10_optional, 'sf10_optional');
+                
+                // Store document data globally for viewing
+                window.currentEnrollmentDocuments = {
+                    birth_cert_psa: req.birth_cert_psa,
+                    eccd_checklist: req.eccd_checklist,
+                    report_card_previous: req.report_card_previous,
+                    sf10_original: req.sf10_original,
+                    sf10_optional: req.sf10_optional
+                };
 
                 // Editable fields
                 document.getElementById('father_name').value = req.father_name || '';
