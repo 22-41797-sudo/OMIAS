@@ -2188,7 +2188,8 @@ app.get('/registrar', async (req, res) => {
         const requestsResult = await pool.query(`
             SELECT id, request_token, 
                    COALESCE(last_name, '') || ', ' || COALESCE(first_name, '') || ' ' || COALESCE(middle_name || '', '') as learner_name,
-                   grade_level, gmail_address, contact_number, created_at, status
+                   grade_level, gmail_address, contact_number, created_at, status,
+                   enrollee_type, birth_cert_psa, eccd_checklist, report_card_previous, sf10_original, sf10_optional
             FROM enrollment_requests 
             WHERE status = 'pending'
             ORDER BY created_at DESC
@@ -2198,7 +2199,8 @@ app.get('/registrar', async (req, res) => {
         const historyResult = await pool.query(`
             SELECT id, request_token, 
                    COALESCE(last_name, '') || ', ' || COALESCE(first_name, '') || ' ' || COALESCE(middle_name || '', '') as learner_name,
-                   grade_level, gmail_address, status, reviewed_at, rejection_reason
+                   grade_level, gmail_address, status, reviewed_at, rejection_reason,
+                   enrollee_type, birth_cert_psa, eccd_checklist, report_card_previous, sf10_original, sf10_optional
             FROM enrollment_requests 
             WHERE status IN ('approved', 'rejected')
             ORDER BY reviewed_at DESC
@@ -2630,6 +2632,7 @@ app.get('/api/enrollment-request/:id', async (req, res) => {
                    ip_community, ip_community_specify, pwd, pwd_specify,
                    father_name, mother_name, guardian_name, contact_number,
                    registration_date, printed_name, signature_image_path,
+                   enrollee_type, birth_cert_psa, eccd_checklist, report_card_previous, sf10_original, sf10_optional,
                    created_at
             FROM enrollment_requests
             WHERE id = $1
@@ -3020,6 +3023,15 @@ app.post('/submit-enrollment', enrollmentLimiter, upload.any(), async (req, res)
             documentPaths['sf10Optional_Returnee'] || null,
             'pending'  // Default status for new enrollment requests
         ];
+
+        // Debug log all values before INSERT
+        console.log('📊 Enrollment data being saved:');
+        console.log('  - Enrollee Type ($25):', values[24]);
+        console.log('  - Birth Cert ($26):', values[25] ? 'Saved' : 'NULL');
+        console.log('  - ECCD Checklist ($27):', values[26] ? 'Saved' : 'NULL');
+        console.log('  - Report Card ($28):', values[27] ? 'Saved' : 'NULL');
+        console.log('  - SF10 Original ($29):', values[28] ? 'Saved' : 'NULL');
+        console.log('  - SF10 Optional ($30):', values[29] ? 'Saved' : 'NULL');
 
         const result = await pool.query(insertQuery, values);
         const token = result.rows[0].request_token;
