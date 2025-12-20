@@ -2188,11 +2188,11 @@ app.get('/registrar', async (req, res) => {
         const requestsResult = await pool.query(`
             SELECT id, request_token, 
                    COALESCE(last_name, '') || ', ' || COALESCE(first_name, '') || ' ' || COALESCE(middle_name || '', '') as learner_name,
-                   grade_level, gmail_address, contact_number, created_at, status,
+                   grade_level, gmail_address, contact_number, registration_date, status,
                    enrollee_type, birth_cert_psa, eccd_checklist, report_card_previous, sf10_original, sf10_optional
             FROM enrollment_requests 
             WHERE status = 'pending'
-            ORDER BY created_at DESC
+            ORDER BY registration_date DESC
         `);
         
         // Fetch history of reviewed requests
@@ -2200,7 +2200,7 @@ app.get('/registrar', async (req, res) => {
             SELECT id, request_token, 
                    COALESCE(last_name, '') || ', ' || COALESCE(first_name, '') || ' ' || COALESCE(middle_name || '', '') as learner_name,
                    grade_level, gmail_address, status, reviewed_at, rejection_reason,
-                   enrollee_type, birth_cert_psa, eccd_checklist, report_card_previous, sf10_original, sf10_optional
+                   enrollee_type, birth_cert_psa, eccd_checklist, report_card_previous, sf10_original, sf10_optional, registration_date
             FROM enrollment_requests 
             WHERE status IN ('approved', 'rejected')
             ORDER BY reviewed_at DESC
