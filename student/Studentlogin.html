@@ -249,7 +249,7 @@
         <img src="/pictures/SchoolLogo-removebg-preview.png" alt="School Logo" onerror="this.style.display='none';">
       </div>
       <h1>Student Portal</h1>
-      <p>Welcome! Please login to check your enrollment status</p>
+      <p>Welcome! Please login to your account</p>
     </div>
 
     <form class="login-form" id="loginForm">
@@ -270,19 +270,38 @@
 
       <!-- Email/Token Input -->
       <div class="input-group">
-        <label for="email">Email Address or Token</label>
+        <label for="username">Username</label>
         <div class="input-container">
           <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
           </svg>
           <input 
             type="text" 
-            id="email" 
-            name="email"
+            id="username" 
+            name="username"
             class="form-input" 
-            placeholder="Enter your email or enrollment token"
+            placeholder="Enter your username"
             required
-            autocomplete="email"
+            autocomplete="username"
+          >
+        </div>
+      </div>
+
+      <!-- Password Input -->
+      <div class="input-group">
+        <label for="password">Password</label>
+        <div class="input-container">
+          <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+          <input 
+            type="password" 
+            id="password" 
+            name="password"
+            class="form-input" 
+            placeholder="Enter your password"
+            required
+            autocomplete="current-password"
           >
         </div>
       </div>
@@ -296,7 +315,7 @@
       <!-- Submit Button -->
       <button type="submit" class="submit-btn" id="submitBtn">
         <span class="btn-content" id="btnContent">
-          Check Status
+          Sign In
         </span>
       </button>
     </form>
@@ -318,7 +337,8 @@
     const alertSuccess = document.getElementById('alertSuccess');
     const errorText = document.getElementById('errorText');
     const successText = document.getElementById('successText');
-    const emailInput = document.getElementById('email');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
     const rememberMeCheckbox = document.getElementById('rememberMe');
 
     // Hide alerts
@@ -345,35 +365,35 @@
     function setLoading(isLoading) {
       submitBtn.disabled = isLoading;
       if (isLoading) {
-        btnContent.innerHTML = '<span class="spinner"></span> Checking...';
+        btnContent.innerHTML = '<span class="spinner"></span> Signing in...';
       } else {
-        btnContent.textContent = 'Check Status';
+        btnContent.textContent = 'Sign In';
       }
     }
 
-    // Load saved email
-    function loadSavedEmail() {
+    // Load saved username
+    function loadSavedUsername() {
       try {
-        const savedEmail = localStorage.getItem('student_email');
-        if (savedEmail) {
-          emailInput.value = savedEmail;
+        const savedUsername = localStorage.getItem('student_username');
+        if (savedUsername) {
+          usernameInput.value = savedUsername;
           rememberMeCheckbox.checked = true;
         }
       } catch (error) {
-        console.log('Could not load saved email');
+        console.log('Could not load saved username');
       }
     }
 
-    // Save or remove email
-    function handleRememberMe(email) {
+    // Save or remove username
+    function handleRememberMe(username) {
       try {
         if (rememberMeCheckbox.checked) {
-          localStorage.setItem('student_email', email);
+          localStorage.setItem('student_username', username);
         } else {
-          localStorage.removeItem('student_email');
+          localStorage.removeItem('student_username');
         }
       } catch (error) {
-        console.log('Could not save email preference');
+        console.log('Could not save username preference');
       }
     }
 
@@ -382,60 +402,56 @@
       event.preventDefault();
       hideAlerts();
 
-      const email = emailInput.value.trim();
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
       const rememberMe = rememberMeCheckbox.checked;
 
-      if (!email) {
-        showError('Please enter your email address or enrollment token');
+      if (!username || !password) {
+        showError('Please enter both username and password');
         return;
       }
 
       setLoading(true);
 
       try {
-        const response = await fetch('/api/check-enrollment', {
+        const response = await fetch('/api/student/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ username, password, rememberMe }),
           credentials: 'include' // Important for session cookies
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || 'Unable to check enrollment. Please try again.');
+          throw new Error(data.error || 'Login failed. Please try again.');
         }
 
         // Handle remember me
-        handleRememberMe(email);
+        handleRememberMe(username);
 
         // Show success message
-        showSuccess('Enrollment found! Redirecting...');
+        showSuccess('Login successful! Redirecting...');
 
-        // Store the token and redirect
-        if (data.token) {
-          localStorage.setItem('student_token', data.token);
-          setTimeout(() => {
-            window.location.href = `/check-status/${data.token}`;
-          }, 500);
-        } else {
-          throw new Error('No enrollment token received');
-        }
+        // Wait a bit before redirecting
+        setTimeout(() => {
+          window.location.href = '/student-dashboard';
+        }, 500);
 
       } catch (error) {
-        console.error('Enrollment check error:', error);
+        console.error('Login error:', error);
         showError(error.message || 'An error occurred. Please try again.');
         setLoading(false);
       }
     });
 
-    // Load saved email on page load
-    loadSavedEmail();
+    // Load saved username on page load
+    loadSavedUsername();
 
-    // Focus on email field
-    emailInput.focus();
+    // Focus on username field
+    usernameInput.focus();
   </script>
 </body>
 </html>
