@@ -2391,6 +2391,11 @@ app.get('/teacher-login', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'teacher', 'teacher-login.html'));
 });
 
+// Student login page route
+app.get('/student-login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'student', 'Studentlogin.html'));
+});
+
 // Teacher dashboard page (HTML)
 app.get('/teacher', (req, res) => {
     console.log('=== /teacher route accessed ===');
