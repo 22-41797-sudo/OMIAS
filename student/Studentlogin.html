@@ -239,9 +239,45 @@
       color: var(--student-accent);
       text-decoration: underline;
     }
+
+    /* Back button styling */
+    .back-button {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(30, 64, 175, 0.1);
+      border: 2px solid var(--student-primary);
+      color: var(--student-primary);
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+
+    .back-button:hover {
+      background: var(--student-primary);
+      color: white;
+    }
+
+    .back-button svg {
+      width: 18px;
+      height: 18px;
+    }
   </style>
 </head>
 <body>
+  <a href="/" class="back-button">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    Back
+  </a>
   
   <div class="login-wrapper">
     <div class="login-header">
@@ -325,7 +361,7 @@
     </div>
 
     <div class="signup-link">
-      Don't have an account? <a href="/enrollment">Enroll Now</a>
+      Don't have an account? <a href="/enrollment.html">Enroll Now</a>
     </div>
   </div>
 
