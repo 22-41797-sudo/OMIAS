@@ -316,10 +316,22 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    display: inline-block;
+    margin: 0 10px;
+    text-decoration: none;
 }
 
 .cta-button:hover {
     background-color: #0056b3;
+}
+
+.cta-button-secondary {
+    background-color: #6c757d;
+    color: #fff;
+}
+
+.cta-button-secondary:hover {
+    background-color: #5a6268;
 }
 
 /* Footer */
