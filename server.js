@@ -1486,7 +1486,7 @@ async function ensureEnrollmentRequestsSchema() {
         guardian_name VARCHAR(200),
         contact_number VARCHAR(50),
         
-        registration_date DATE NOT NULL,
+        registration_date TIMESTAMP NOT NULL,
         printed_name VARCHAR(200) NOT NULL,
         signature_image_path TEXT,
         
@@ -1524,6 +1524,10 @@ async function ensureEnrollmentRequestsSchema() {
     
     ALTER TABLE enrollment_requests 
     ADD COLUMN IF NOT EXISTS sf10_optional TEXT;
+    
+    -- Convert registration_date from DATE to TIMESTAMP to preserve time information
+    ALTER TABLE enrollment_requests
+    ALTER COLUMN registration_date TYPE TIMESTAMP USING registration_date::timestamp;
     
     CREATE OR REPLACE FUNCTION update_enrollment_requests_updated_at()
     RETURNS TRIGGER AS $$
