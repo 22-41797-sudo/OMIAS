@@ -204,6 +204,26 @@ async function initializeDatabase() {
             )
         `);
 
+        // ============= STUDENT LOGIN ACCOUNTS TABLE =============
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS student_accounts (
+                id SERIAL PRIMARY KEY,
+                student_id VARCHAR(50) UNIQUE NOT NULL,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
+                email VARCHAR(100),
+                enrollment_request_id INTEGER REFERENCES enrollment_requests(id) ON DELETE SET NULL,
+                account_status VARCHAR(50) DEFAULT 'active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Create sequence for student ID generation if not exists
+        await pool.query(`
+            CREATE SEQUENCE IF NOT EXISTS student_id_seq START 1 INCREMENT 1
+        `);
+
         // Document Requests table
         await pool.query(`
             CREATE TABLE IF NOT EXISTS document_requests (
@@ -331,26 +351,6 @@ async function initializeDatabase() {
                 grade_level VARCHAR(50),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        `);
-
-        // ============= STUDENT LOGIN ACCOUNTS TABLE =============
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS student_accounts (
-                id SERIAL PRIMARY KEY,
-                student_id VARCHAR(50) UNIQUE NOT NULL,
-                username VARCHAR(50) UNIQUE NOT NULL,
-                password_hash VARCHAR(255) NOT NULL,
-                email VARCHAR(100),
-                enrollment_request_id INTEGER REFERENCES enrollment_requests(id),
-                account_status VARCHAR(50) DEFAULT 'active',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-        // Create sequence for student ID generation if not exists
-        await pool.query(`
-            CREATE SEQUENCE IF NOT EXISTS student_id_seq START 1 INCREMENT 1
         `);
 
         // ============= TEACHERS ROLE SPECIFIC TABLES =============
