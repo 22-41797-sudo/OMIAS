@@ -2044,7 +2044,7 @@ function viewDocument(docName, btn) {
                 return;
             }
             
-            const enrollment = data.enrollment;
+            const enrollment = data.request; // Fix: data.request not data.enrollment
             
             // Store the request ID for later confirmation
             window.currentEnrollmentRequestId = requestId;
