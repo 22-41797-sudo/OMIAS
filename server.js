@@ -2358,8 +2358,13 @@ app.get('/api/next-student-id', async (req, res) => {
 
     try {
         // Get the next sequence value without incrementing
-        const result = await pool.query("SELECT nextval('student_id_seq'::regclass) as next_id");
-        const nextId = result.rows[0].next_id;
+        // Just peek at the current sequence value
+        const currentResult = await pool.query("SELECT last_value FROM student_id_seq");
+        let nextId = 1;
+        
+        if (currentResult.rows.length > 0) {
+            nextId = currentResult.rows[0].last_value + 1;
+        }
         
         // Format: 2025-00001 (year - padded sequence number)
         const currentYear = new Date().getFullYear();
