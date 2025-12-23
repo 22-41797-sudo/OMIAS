@@ -2201,13 +2201,15 @@ app.get('/registrar', async (req, res) => {
         
         // Fetch history of reviewed requests
         const historyResult = await pool.query(`
-            SELECT id, request_token, 
-                   COALESCE(last_name, '') || ', ' || COALESCE(first_name, '') || ' ' || COALESCE(middle_name || '', '') as learner_name,
-                   grade_level, gmail_address, status, reviewed_at, rejection_reason,
-                   enrollee_type, birth_cert_psa, eccd_checklist, report_card_previous, sf10_original, sf10_optional, registration_date
-            FROM enrollment_requests 
-            WHERE status IN ('approved', 'rejected')
-            ORDER BY reviewed_at DESC
+            SELECT er.id, er.request_token, 
+                   COALESCE(er.last_name, '') || ', ' || COALESCE(er.first_name, '') || ' ' || COALESCE(er.middle_name || '', '') as learner_name,
+                   er.grade_level, er.gmail_address, er.status, er.reviewed_at, er.rejection_reason,
+                   er.enrollee_type, er.birth_cert_psa, er.eccd_checklist, er.report_card_previous, er.sf10_original, er.sf10_optional, er.registration_date,
+                   sa.student_id, sa.username, sa.account_status
+            FROM enrollment_requests er
+            LEFT JOIN student_accounts sa ON sa.enrollment_request_id = er.id
+            WHERE er.status IN ('approved', 'rejected')
+            ORDER BY er.reviewed_at DESC
         `);
         
         // Calculate metrics for insights
@@ -2346,6 +2348,41 @@ app.post('/add-registration', upload.single('signatureImage'), async (req, res) 
             error: err.message,
             code: err.code
         });
+    }
+});
+
+// ============= GET ALL STUDENT ACCOUNTS (for Registrar) =============
+app.get('/api/student-accounts', async (req, res) => {
+    // Verify registrar is authenticated
+    if (!req.session.user || req.session.user.role !== 'registrar') {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    try {
+        const result = await pool.query(`
+            SELECT 
+                sa.id,
+                sa.student_id,
+                sa.username,
+                sa.password_hash,
+                sa.email,
+                sa.account_status,
+                sa.created_at,
+                er.first_name,
+                er.last_name,
+                er.gmail_address
+            FROM student_accounts sa
+            LEFT JOIN enrollment_requests er ON sa.enrollment_request_id = er.id
+            ORDER BY sa.created_at DESC
+        `);
+
+        res.json({
+            success: true,
+            accounts: result.rows
+        });
+    } catch (err) {
+        console.error('Error fetching student accounts:', err);
+        res.status(500).json({ success: false, error: 'Failed to fetch student accounts' });
     }
 });
 

@@ -126,6 +126,7 @@
             <a href="#currentRegistrations">🧾 Current Registrations</a>
             <a href="#requestList">✅ List of Requests</a>
             <a href="#historyArchive">📚 History of Requests</a>
+            <a href="#studentAccounts">👤 Student Accounts</a>
             <a href="/registrar/analytics">🔒 Security</a>
         </nav>
         <div class="spacer"></div>
@@ -572,6 +573,7 @@
                             <th>Grade Level</th>
                             <th>Email</th>
                             <th>Status</th>
+                            <th>Student Account</th>
                             <th>Reviewed At</th>
                             <th>Reason</th>
                         </tr>
@@ -591,6 +593,21 @@
                                             <span class="badge bg-danger">Rejected</span>
                                         <% } %>
                                     </td>
+                                    <td>
+                                        <% if (h.student_id) { %>
+                                            <div class="small">
+                                                <strong><%= h.student_id %></strong><br>
+                                                <code class="text-muted"><%= h.username %></code><br>
+                                                <% if (h.account_status === 'active') { %>
+                                                    <span class="badge bg-success">Active</span>
+                                                <% } else { %>
+                                                    <span class="badge bg-secondary">Inactive</span>
+                                                <% } %>
+                                            </div>
+                                        <% } else { %>
+                                            <span class="text-muted">-</span>
+                                        <% } %>
+                                    </td>
                                     <td><%= h.reviewed_at ? new Date(h.reviewed_at).toLocaleString('en-PH', {
                                         year: 'numeric', month: '2-digit', day: '2-digit',
                                         hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila'
@@ -600,7 +617,7 @@
                             <% }) %>
                         <% } else { %>
                             <tr>
-                                <td colspan="7" class="text-center">No history records</td>
+                                <td colspan="8" class="text-center">No history records</td>
                             </tr>
                         <% } %>
                     </tbody>
@@ -903,6 +920,37 @@
         </a>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Student Accounts Section -->
+<div id="studentAccounts" class="tab-content-section" style="display: none;">
+  <h2 class="dashboard-title mb-4">Student Accounts</h2>
+  <p class="text-muted mb-4">View all created student accounts and their login credentials</p>
+  
+  <div class="table-section">
+    <div class="table-responsive">
+      <table class="table table-hover" id="studentAccountsTable">
+        <thead class="table-light">
+          <tr>
+            <th>Student ID</th>
+            <th>Student Name</th>
+            <th>Username</th>
+            <th>Initial Password</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody id="studentAccountsTableBody">
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">
+              <i class="bi bi-inbox"></i> No student accounts created yet
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -1477,22 +1525,92 @@ function viewDocument(docName, btn) {
             if (location.hash !== `#${tabId}`) history.replaceState(null, '', `#${tabId}`);
         }
 
+        // Load student accounts when tab is clicked
+        async function loadStudentAccounts() {
+            try {
+                const response = await fetch('/api/student-accounts');
+                const data = await response.json();
+                
+                if (!data.success) {
+                    return;
+                }
+                
+                const tableBody = document.getElementById('studentAccountsTableBody');
+                
+                if (!data.accounts || data.accounts.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox"></i> No student accounts created yet
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                data.accounts.forEach(account => {
+                    const studentName = `${account.first_name || ''} ${account.last_name || ''}`.trim() || 'N/A';
+                    const statusBadge = account.account_status === 'active' 
+                        ? '<span class="badge bg-success">Active</span>' 
+                        : '<span class="badge bg-secondary">Inactive</span>';
+                    const createdDate = new Date(account.created_at).toLocaleDateString('en-PH');
+                    
+                    html += `
+                        <tr>
+                            <td><strong>${account.student_id}</strong></td>
+                            <td>${studentName}</td>
+                            <td><code>${account.username}</code></td>
+                            <td>
+                                <code style="user-select: all; cursor: pointer; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">
+                                    ${account.username}
+                                </code>
+                            </td>
+                            <td>${account.email || account.gmail_address || '-'}</td>
+                            <td>${statusBadge}</td>
+                            <td>${createdDate}</td>
+                        </tr>
+                    `;
+                });
+                
+                tableBody.innerHTML = html;
+            } catch (err) {
+                console.error('Error loading student accounts:', err);
+            }
+        }
+
         // Initialize from hash or default to dashboard
         (function initTabs(){
             const hash = location.hash?.replace('#','') || 'dashboardHome';
             showTab(hash);
+            
+            // Load student accounts when that tab is clicked
+            if (hash === 'studentAccounts') {
+                loadStudentAccounts();
+            }
+            
             // Bind clicks for in-page links in sidebar
             document.querySelectorAll('#drawerTabs a[href^="#"]').forEach(a => {
                 a.addEventListener('click', (e) => {
                     e.preventDefault();
                     const id = a.getAttribute('href').slice(1);
                     showTab(id);
+                    
+                    // Load student accounts when clicking that tab
+                    if (id === 'studentAccounts') {
+                        loadStudentAccounts();
+                    }
                 });
             });
             // Respond to back/forward
             window.addEventListener('hashchange', () => {
                 const h = location.hash.replace('#','');
-                if (h) showTab(h);
+                if (h) {
+                    showTab(h);
+                    if (h === 'studentAccounts') {
+                        loadStudentAccounts();
+                    }
+                }
             });
         })();
 
@@ -2100,8 +2218,13 @@ function viewDocument(docName, btn) {
             setTimeout(() => {
                 modal.hide();
                 window.showAlert(`Student account created!\n\nUsername: ${account.username}\nPassword: ${account.initialPassword}\n\nThese credentials have been sent to ${account.email}`).then(() => {
-                    // Reload to refresh data
-                    location.reload();
+                    // Reload student accounts table if it's loaded
+                    if (document.getElementById('studentAccountsTable')) {
+                        loadStudentAccounts();
+                    } else {
+                        // Reload page if student accounts page not loaded
+                        location.reload();
+                    }
                 });
             }, 2000);
             
