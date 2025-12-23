@@ -468,6 +468,10 @@
         // Handle remember me
         handleRememberMe(username);
 
+        // Store student info for dashboard
+        localStorage.setItem('studentId', data.studentId || username);
+        localStorage.setItem('enrollmentRequestId', data.enrollmentRequestId || '');
+
         // Show success message
         showSuccess('Login successful! Redirecting...');
 

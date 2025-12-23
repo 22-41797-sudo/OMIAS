@@ -2349,6 +2349,139 @@ app.post('/add-registration', upload.single('signatureImage'), async (req, res) 
     }
 });
 
+// ============= STUDENT ACCOUNT CREATION ENDPOINT (for Registrar) =============
+app.post('/api/create-student-account', async (req, res) => {
+    // Verify registrar is authenticated
+    if (!req.session.user || req.session.user.role !== 'registrar') {
+        return res.status(401).json({ success: false, error: 'Unauthorized. Only registrars can create student accounts.' });
+    }
+
+    const { enrollmentRequestId } = req.body;
+
+    if (!enrollmentRequestId) {
+        return res.status(400).json({ success: false, error: 'Enrollment request ID is required.' });
+    }
+
+    try {
+        // Get enrollment request details
+        const enrollmentResult = await pool.query(
+            'SELECT id, first_name, last_name, gmail_address FROM enrollment_requests WHERE id = $1',
+            [enrollmentRequestId]
+        );
+
+        if (enrollmentResult.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Enrollment request not found.' });
+        }
+
+        const enrollment = enrollmentResult.rows[0];
+
+        // Get the next student ID from sequence
+        const sequenceResult = await pool.query('SELECT nextval(\'student_id_seq\') as next_id');
+        const nextSequenceNumber = sequenceResult.rows[0].next_id;
+
+        // Format: 2025-00001 (year - padded sequence number)
+        const currentYear = new Date().getFullYear();
+        const studentId = `${currentYear}-${String(nextSequenceNumber).padStart(5, '0')}`;
+        const username = studentId; // username is the same as student_id
+        const initialPassword = studentId; // initial password is the same as student_id
+
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(initialPassword, 10);
+
+        // Create student account
+        const insertResult = await pool.query(
+            `INSERT INTO student_accounts (student_id, username, password_hash, email, enrollment_request_id, account_status)
+             VALUES ($1, $2, $3, $4, $5, 'active')
+             RETURNING id, student_id, username, email`,
+            [studentId, username, hashedPassword, enrollment.gmail_address, enrollmentRequestId]
+        );
+
+        const studentAccount = insertResult.rows[0];
+
+        console.log('✅ Student account created:');
+        console.log(`   - Student ID: ${studentAccount.student_id}`);
+        console.log(`   - Username: ${studentAccount.username}`);
+        console.log(`   - Email: ${studentAccount.email}`);
+        console.log(`   - Enrollment Request ID: ${enrollmentRequestId}`);
+
+        // Send success response with generated credentials
+        res.json({
+            success: true,
+            message: 'Student account created successfully!',
+            account: {
+                studentId: studentAccount.student_id,
+                username: studentAccount.username,
+                initialPassword: initialPassword, // Return the initial password for the registrar to share
+                email: studentAccount.email,
+                studentName: `${enrollment.first_name} ${enrollment.last_name}`
+            }
+        });
+
+    } catch (err) {
+        console.error('Error creating student account:', err);
+        res.status(500).json({ success: false, error: 'Failed to create student account. ' + err.message });
+    }
+});
+
+// ============= STUDENT LOGIN ENDPOINT =============
+app.post('/api/student/login', async (req, res) => {
+    const { username, password, rememberMe } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).json({ success: false, error: 'Username and password are required.' });
+    }
+
+    try {
+        // Query student_accounts table instead of enrollment_requests
+        const result = await pool.query(
+            'SELECT id, student_id, username, password_hash, email, enrollment_request_id, account_status FROM student_accounts WHERE username = $1 AND account_status = $2',
+            [username, 'active']
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(401).json({ success: false, error: 'Invalid username or password.' });
+        }
+
+        const student = result.rows[0];
+
+        // Compare password with hash
+        const isPasswordValid = await bcrypt.compare(password, student.password_hash);
+
+        if (!isPasswordValid) {
+            return res.status(401).json({ success: false, error: 'Invalid username or password.' });
+        }
+
+        // Set session for logged-in student
+        req.session.user = {
+            id: student.id,
+            studentId: student.student_id,
+            username: student.username,
+            email: student.email,
+            role: 'student',
+            enrollmentRequestId: student.enrollment_request_id
+        };
+
+        // Handle remember me checkbox
+        if (rememberMe) {
+            req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+        }
+
+        console.log(`✅ Student logged in: ${student.username}`);
+
+        res.json({
+            success: true,
+            message: 'Login successful!',
+            studentId: student.student_id,
+            enrollmentRequestId: student.enrollment_request_id,
+            redirect: '/student-dashboard'
+        });
+
+    } catch (err) {
+        console.error('Error during student login:', err);
+        res.status(500).json({ success: false, error: 'Login failed. Please try again.' });
+    }
+});
+
 // Public landing for status check without token
 app.get('/check-status', (req, res) => {
     res.redirect('/check-status.html');
@@ -2394,6 +2527,14 @@ app.get('/teacher-login', (req, res) => {
 // Student login page route
 app.get('/student-login', (req, res) => {
     res.sendFile(path.join(__dirname, 'student', 'Studentlogin.html'));
+});
+
+// Student dashboard page route (protected)
+app.get('/student-dashboard', (req, res) => {
+    if (!req.session.user || req.session.user.role !== 'student') {
+        return res.redirect('/student-login');
+    }
+    res.sendFile(path.join(__dirname, 'student', 'StudentDashboard.html'));
 });
 
 // Teacher dashboard page (HTML)
