@@ -2357,18 +2357,15 @@ app.get('/api/next-student-id', async (req, res) => {
     }
 
     try {
-        // Get the next sequence value without incrementing
-        // Just peek at the current sequence value
-        const currentResult = await pool.query("SELECT last_value FROM student_id_seq");
-        let nextId = 1;
-        
-        if (currentResult.rows.length > 0) {
-            nextId = currentResult.rows[0].last_value + 1;
-        }
+        // Count existing student accounts to determine next ID
+        const countResult = await pool.query("SELECT COUNT(*) as count FROM student_accounts");
+        const nextId = (countResult.rows[0].count || 0) + 1;
         
         // Format: 2025-00001 (year - padded sequence number)
         const currentYear = new Date().getFullYear();
         const studentId = `${currentYear}-${String(nextId).padStart(5, '0')}`;
+        
+        console.log(`📊 Next Student ID: ${studentId} (sequence: ${nextId})`);
         
         res.json({ 
             success: true, 
@@ -2377,7 +2374,7 @@ app.get('/api/next-student-id', async (req, res) => {
         });
     } catch (err) {
         console.error('Error getting next student ID:', err);
-        res.status(500).json({ success: false, error: 'Failed to get next student ID' });
+        res.status(500).json({ success: false, error: 'Failed to get next student ID: ' + err.message });
     }
 });
 
