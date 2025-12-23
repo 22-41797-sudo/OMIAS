@@ -2203,30 +2203,14 @@ function viewDocument(docName, btn) {
             
             const account = result.account;
             
-            // Update modal with actual generated credentials
-            document.getElementById('accountModalUsername').value = account.username;
-            document.getElementById('accountModalPassword').value = account.initialPassword;
-            
-            // Show success message
+            // Hide the current modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('createAccountModal'));
-            confirmBtn.disabled = false;
-            confirmBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Account Created Successfully!';
-            confirmBtn.classList.remove('btn-success');
-            confirmBtn.classList.add('btn-success', 'disabled');
+            modal.hide();
             
-            // Auto-close modal after 3 seconds and reload
+            // Show success modal after a brief delay
             setTimeout(() => {
-                modal.hide();
-                window.showAlert(`Student account created!\n\nUsername: ${account.username}\nPassword: ${account.initialPassword}\n\nThese credentials have been sent to ${account.email}`).then(() => {
-                    // Reload student accounts table if it's loaded
-                    if (document.getElementById('studentAccountsTable')) {
-                        loadStudentAccounts();
-                    } else {
-                        // Reload page if student accounts page not loaded
-                        location.reload();
-                    }
-                });
-            }, 2000);
+                showAccountCreationSuccess(account);
+            }, 400);
             
         } catch (error) {
             console.error('Error:', error);
@@ -2235,6 +2219,71 @@ function viewDocument(docName, btn) {
             confirmBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Confirm & Create Account';
             window.showAlert('Error creating account: ' + error.message);
         }
+    }
+    
+    function showAccountCreationSuccess(account) {
+        // Create a professional success modal
+        const html = `
+        <div class="modal fade" id="accountSuccessModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-body text-center py-5">
+                        <div style="font-size: 3rem; color: #10b981; margin-bottom: 1rem;">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <h4 class="modal-title mb-3 fw-bold text-success">Account Created Successfully!</h4>
+                        <p class="text-muted mb-4">The student account has been created and saved to the records.</p>
+                        
+                        <div class="card" style="background-color: #f0fdf4; border: 2px solid #10b981;">
+                            <div class="card-body text-start">
+                                <div class="mb-3">
+                                    <small class="text-muted d-block mb-1">Student ID</small>
+                                    <code style="font-size: 1.1rem; color: #059669; user-select: all; cursor: pointer;" class="d-block p-2 bg-white rounded border">${account.student_id}</code>
+                                </div>
+                                <div class="mb-3">
+                                    <small class="text-muted d-block mb-1">Username</small>
+                                    <code style="font-size: 1.1rem; color: #059669; user-select: all; cursor: pointer;" class="d-block p-2 bg-white rounded border">${account.username}</code>
+                                </div>
+                                <div class="mb-3">
+                                    <small class="text-muted d-block mb-1">Initial Password</small>
+                                    <code style="font-size: 1.1rem; color: #059669; user-select: all; cursor: pointer;" class="d-block p-2 bg-white rounded border">${account.initialPassword}</code>
+                                </div>
+                                <div class="pt-2 border-top">
+                                    <small class="text-muted">
+                                        <i class="bi bi-check me-1"></i>Credentials sent to: <strong>${account.email}</strong>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info mt-4 mb-0" role="alert">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <small>The account is now <strong>saved in the Early Registration Records</strong> and can be viewed, edited, or used for student login.</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top bg-light">
+                        <button type="button" class="btn btn-success w-100" data-bs-dismiss="modal" onclick="window.location.reload();">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Reload & Continue
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+        
+        // Append modal to body
+        const modalContainer = document.createElement('div');
+        modalContainer.innerHTML = html;
+        document.body.appendChild(modalContainer);
+        
+        // Show the modal
+        const successModal = new bootstrap.Modal(document.getElementById('accountSuccessModal'));
+        successModal.show();
+        
+        // Clean up when modal is hidden
+        document.getElementById('accountSuccessModal').addEventListener('hidden.bs.modal', function() {
+            modalContainer.remove();
+        });
     }
 
 
@@ -2267,6 +2316,7 @@ function viewDocument(docName, btn) {
         window.viewRegistration = viewRegistration;
         window.confirmLogout = confirmLogout;
         window.proceedLogout = proceedLogout;
+        window.confirmCreateAccount = confirmCreateAccount;
     } catch (e) {
         // ignore if window not available (very unlikely in browser)
     }
