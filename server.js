@@ -2464,11 +2464,21 @@ app.post('/api/create-student-account', async (req, res) => {
 
         const studentAccount = insertResult.rows[0];
 
+        // Update enrollment request status to 'approved' and set reviewed_at timestamp
+        const approveResult = await pool.query(
+            `UPDATE enrollment_requests 
+             SET status = 'approved', reviewed_at = CURRENT_TIMESTAMP 
+             WHERE id = $1
+             RETURNING status`,
+            [enrollmentRequestId]
+        );
+
         console.log('✅ Student account created:');
         console.log(`   - Student ID: ${studentAccount.student_id}`);
         console.log(`   - Username: ${studentAccount.username}`);
         console.log(`   - Email: ${studentAccount.email}`);
         console.log(`   - Enrollment Request ID: ${enrollmentRequestId}`);
+        console.log(`✅ Enrollment request status updated to: ${approveResult.rows[0].status}`);
 
         // Send success response with generated credentials
         res.json({
