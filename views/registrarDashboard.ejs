@@ -935,34 +935,24 @@
             
             <div class="mb-2">
               <label class="form-label fw-semibold small">Username / Student ID</label>
-              <div class="d-flex align-items-center gap-2">
-                <input type="text" class="form-control font-monospace" id="accountModalUsername" readonly>
-                <button class="btn btn-sm btn-outline-success" type="button" onclick="copyToClipboard('accountModalUsername')">
-                  <i class="bi bi-files me-1"></i>Copy
-                </button>
-              </div>
+              <input type="text" class="form-control font-monospace" id="accountModalUsername" readonly>
             </div>
             
             <div class="mb-2">
               <label class="form-label fw-semibold small">Initial Password</label>
-              <div class="d-flex align-items-center gap-2">
-                <input type="text" class="form-control font-monospace" id="accountModalPassword" readonly>
-                <button class="btn btn-sm btn-outline-success" type="button" onclick="copyToClipboard('accountModalPassword')">
-                  <i class="bi bi-files me-1"></i>Copy
-                </button>
-              </div>
+              <input type="text" class="form-control font-monospace" id="accountModalPassword" readonly>
             </div>
             
             <small class="text-muted">
-              <i class="bi bi-info-circle me-1"></i>Student should change password on first login
+              <i class="bi bi-info-circle me-1"></i>Student will receive these credentials via their enrollment token
             </small>
           </div>
         </div>
         
-        <!-- Email Alert -->
+        <!-- Token Delivery Alert -->
         <div class="alert alert-info" role="alert">
-          <i class="bi bi-envelope me-2"></i>
-          <strong>Email:</strong> Credentials will be sent to <span id="accountModalEmail" class="fw-semibold"></span>
+          <i class="bi bi-ticket me-2"></i>
+          <strong>Delivery:</strong> Credentials will be sent to the student via their enrollment token request
         </div>
       </div>
       <div class="modal-footer">
@@ -2036,28 +2026,31 @@ function viewDocument(docName, btn) {
     async function approveRequest(requestId) {
         try {
             // Get enrollment request data
-            const response = await fetch(`/api/enrollment-request/${requestId}`);
-            const data = await response.json();
+            const [enrollmentResponse, nextIdResponse] = await Promise.all([
+                fetch(`/api/enrollment-request/${requestId}`),
+                fetch('/api/next-student-id')
+            ]);
             
-            if (!data.success) {
+            const enrollmentData = await enrollmentResponse.json();
+            const nextIdData = await nextIdResponse.json();
+            
+            if (!enrollmentData.success || !nextIdData.success) {
                 window.showAlert('Error: Could not fetch enrollment details');
                 return;
             }
             
-            const enrollment = data.request; // Fix: data.request not data.enrollment
+            const enrollment = enrollmentData.request;
+            const nextStudentId = nextIdData.studentId;
             
             // Store the request ID for later confirmation
             window.currentEnrollmentRequestId = requestId;
             
             // Populate modal with enrollment data
             document.getElementById('accountModalStudentName').value = `${enrollment.first_name} ${enrollment.last_name}`;
-            document.getElementById('accountModalEmail').textContent = enrollment.gmail_address;
             
-            // Generate student ID (will be created on confirm)
-            // For now, show placeholder
-            const studentIdPlaceholder = `${new Date().getFullYear()}-#####`;
-            document.getElementById('accountModalUsername').value = studentIdPlaceholder;
-            document.getElementById('accountModalPassword').value = studentIdPlaceholder;
+            // Display the actual next student ID that will be generated
+            document.getElementById('accountModalUsername').value = nextStudentId;
+            document.getElementById('accountModalPassword').value = nextStudentId;
             
             // Show modal
             const modal = new bootstrap.Modal(document.getElementById('createAccountModal'));
@@ -2120,23 +2113,7 @@ function viewDocument(docName, btn) {
             window.showAlert('Error creating account: ' + error.message);
         }
     }
-    
-    function copyToClipboard(elementId) {
-        const element = document.getElementById(elementId);
-        const text = element.value;
-        
-        navigator.clipboard.writeText(text).then(() => {
-            // Show copied feedback
-            const btn = event.target.closest('button');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="bi bi-check me-1"></i>Copied!';
-            setTimeout(() => {
-                btn.innerHTML = originalText;
-            }, 2000);
-        }).catch(() => {
-            window.showAlert('Failed to copy to clipboard');
-        });
-    }
+
 
     async function rejectRequest(requestId) {
         try {

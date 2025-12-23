@@ -2349,6 +2349,33 @@ app.post('/add-registration', upload.single('signatureImage'), async (req, res) 
     }
 });
 
+// ============= GET NEXT STUDENT ID (for display in modal) =============
+app.get('/api/next-student-id', async (req, res) => {
+    // Verify registrar is authenticated
+    if (!req.session.user || req.session.user.role !== 'registrar') {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    try {
+        // Get the next sequence value without incrementing
+        const result = await pool.query("SELECT nextval('student_id_seq'::regclass) as next_id");
+        const nextId = result.rows[0].next_id;
+        
+        // Format: 2025-00001 (year - padded sequence number)
+        const currentYear = new Date().getFullYear();
+        const studentId = `${currentYear}-${String(nextId).padStart(5, '0')}`;
+        
+        res.json({ 
+            success: true, 
+            studentId: studentId,
+            sequenceNumber: nextId
+        });
+    } catch (err) {
+        console.error('Error getting next student ID:', err);
+        res.status(500).json({ success: false, error: 'Failed to get next student ID' });
+    }
+});
+
 // ============= STUDENT ACCOUNT CREATION ENDPOINT (for Registrar) =============
 app.post('/api/create-student-account', async (req, res) => {
     // Verify registrar is authenticated
