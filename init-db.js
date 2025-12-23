@@ -212,12 +212,28 @@ async function initializeDatabase() {
                 username VARCHAR(50) UNIQUE NOT NULL,
                 password_hash VARCHAR(255) NOT NULL,
                 email VARCHAR(100),
-                enrollment_request_id INTEGER REFERENCES enrollment_requests(id) ON DELETE SET NULL,
+                enrollment_request_id INTEGER,
                 account_status VARCHAR(50) DEFAULT 'active',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+        // Add foreign key constraint after both tables exist
+        try {
+            await pool.query(`
+                ALTER TABLE student_accounts 
+                ADD CONSTRAINT fk_student_accounts_enrollment_requests 
+                FOREIGN KEY (enrollment_request_id) 
+                REFERENCES enrollment_requests(id) 
+                ON DELETE SET NULL
+            `);
+        } catch (err) {
+            // Foreign key might already exist, that's okay
+            if (!err.message.includes('already exists')) {
+                console.warn('Warning adding foreign key:', err.message);
+            }
+        }
 
         // Create sequence for student ID generation if not exists
         await pool.query(`
