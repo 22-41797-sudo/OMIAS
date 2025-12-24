@@ -436,12 +436,14 @@
                 <table class="table table-bordered table-striped">
                     <thead>
                         <tr>
+                            <th>Source</th>
                             <th>SY</th>
                             <th>Grade</th>
                             <th>Enrollee Type</th>
                             <th>Learner Name</th>
                             <th>LRN</th>
                             <th>Contact No.</th>
+                            <th>Student Account</th>
                             <th>Reg. Date/Time</th>
                             <th>Action</th>
                         </tr>
@@ -450,13 +452,33 @@
                         <% if (typeof registrations !== 'undefined' && registrations.length > 0) { %>
                             <% registrations.forEach(function(reg) { %>
                                 <tr data-school-year="<%= reg.school_year %>" data-grade="<%= reg.grade_level %>" data-learner="<%= (reg.learner_name||'').toLowerCase() %>" data-lrn="<%= (reg.lrn||'').toString().toLowerCase() %>">
+                                    <td>
+                                        <% if (reg.record_type === 'enrollment_request') { %>
+                                            <span class="badge bg-success">Online</span>
+                                        <% } else { %>
+                                            <span class="badge bg-info">Paper</span>
+                                        <% } %>
+                                    </td>
                                     <td><%= reg.school_year %></td>
                                     <td><%= reg.grade_level %></td>
                                     <td><span class="badge bg-info"><%= reg.enrollee_type ? reg.enrollee_type.replace('-', ' ').replace('new entrant kinder', 'New Entrant - Kinder') : 'N/A' %></span></td>
                                     <td><%= reg.learner_name %></td>
                                     <td><%= reg.lrn || 'N/A' %></td>
                                     <td><%= reg.contact_number || 'N/A' %></td>
-                                                                        <td>
+                                    <td>
+                                        <% if (reg.student_id) { %>
+                                            <div class="small">
+                                                <strong><%= reg.student_id %></strong><br>
+                                                <code class="text-muted"><%= reg.username %></code><br>
+                                                <% if (reg.account_status === 'active') { %>
+                                                    <span class="badge bg-success">Active</span>
+                                                <% } %>
+                                            </div>
+                                        <% } else { %>
+                                            <span class="text-muted">-</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
                                                                                 <%= reg.created_at
                                                                                         ? new Date(reg.created_at).toLocaleString('en-PH', {
                                                                                                 year: 'numeric', month: '2-digit', day: '2-digit',
@@ -478,7 +500,7 @@
                             <% }) %>
                         <% } else { %>
                             <tr>
-                                <td colspan="7" class="text-center">No registration records found</td>
+                                <td colspan="10" class="text-center">No registration records found</td>
                             </tr>
                         <% } %>
                     </tbody>

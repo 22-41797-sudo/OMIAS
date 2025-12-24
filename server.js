@@ -2179,12 +2179,21 @@ app.get('/registrar', async (req, res) => {
     }
     
     try {
-        // Fetch all registration records
+        // Fetch all registration records (both old early_registration and new approved enrollment_requests)
         const result = await pool.query(`
             SELECT id, school_year, grade_level, 
                    COALESCE(last_name, '') || ', ' || COALESCE(first_name, '') || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') as learner_name,
-                   lrn, mother_name, contact_number, registration_date, created_at
+                   lrn, mother_name, contact_number, registration_date, created_at,
+                   NULL as student_id, NULL as username, NULL as account_status, 'early_registration' as record_type
             FROM early_registration 
+            UNION ALL
+            SELECT er.id, '' as school_year, er.grade_level,
+                   COALESCE(er.last_name, '') || ', ' || COALESCE(er.first_name, '') || ' ' || COALESCE(er.middle_name || '', '') as learner_name,
+                   '' as lrn, '' as mother_name, er.contact_number, er.registration_date, er.created_at,
+                   sa.student_id, sa.username, sa.account_status, 'enrollment_request' as record_type
+            FROM enrollment_requests er
+            LEFT JOIN student_accounts sa ON sa.enrollment_request_id = er.id
+            WHERE er.status = 'approved'
             ORDER BY created_at DESC
         `);
         
