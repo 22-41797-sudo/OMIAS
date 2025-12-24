@@ -2673,11 +2673,26 @@ app.get('/registration/:id', async (req, res) => {
     const regId = req.params.id;
     console.log('GET /registration/:id ->', regId);
     try {
-        const result = await pool.query('SELECT * FROM early_registration WHERE id = $1', [regId]);
-        if (result.rows.length === 0) {
-            return res.status(404).send('Registration not found');
+        // First try to find in early_registration (paper forms)
+        const earlyRegResult = await pool.query('SELECT * FROM early_registration WHERE id = $1', [regId]);
+        if (earlyRegResult.rows.length > 0) {
+            return res.render('registrationView', { registration: earlyRegResult.rows[0], source: 'early_registration' });
         }
-        res.render('registrationView', { registration: result.rows[0] });
+        
+        // If not found, try enrollment_requests (online forms)
+        const enrollmentResult = await pool.query(`
+            SELECT er.*, sa.student_id, sa.username, sa.account_status
+            FROM enrollment_requests er
+            LEFT JOIN student_accounts sa ON sa.enrollment_request_id = er.id
+            WHERE er.id = $1
+        `, [regId]);
+        
+        if (enrollmentResult.rows.length > 0) {
+            return res.render('registrationView', { registration: enrollmentResult.rows[0], source: 'enrollment_requests' });
+        }
+        
+        // Not found in either table
+        return res.status(404).send('Registration not found');
     } catch (err) {
         console.error('Error fetching registration:', err);
         res.status(500).send('Error fetching registration');
