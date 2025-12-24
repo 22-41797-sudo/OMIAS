@@ -210,6 +210,32 @@
                                 </div>
                             </div>
                         </div>
+    <!-- Document Viewer Modal -->
+    <div class="modal fade" id="documentViewerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-file-earmark me-2"></i>
+                        <span id="document_title">Document Viewer</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div id="document_viewer_content" style="max-height: 600px; overflow: auto;">
+                        <!-- Document will be displayed here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a id="document_download_btn" href="#" download class="btn btn-primary">
+                        <i class="bi bi-download me-2"></i>Download
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card">
         <div class="card-body">
             <h4 class="card-title mb-3"><%= registration.last_name %>, <%= registration.first_name %> <%= registration.middle_name %> <%= registration.ext_name %></h4>
@@ -236,6 +262,70 @@
             </ul>
         </div>
     </div>
+
+    <!-- Documents Section (only for online enrollments) -->
+    <% if (documents) { %>
+    <div class="card mt-4">
+        <div class="card-header bg-danger text-white fw-bold">
+            <i class="bi bi-file-earmark-text me-2"></i>Submitted Documents
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label text-muted small">Birth Certificate - PSA</label>
+                    <div id="view_birth_cert_psa" class="text-muted">
+                        <% if (documents.birth_cert_psa) { %>
+                            ✓ Submitted <button class="btn btn-sm btn-primary ms-2" onclick="viewDocument('birth_cert_psa', this)"><i class="bi bi-eye me-1"></i>View</button>
+                        <% } else { %>
+                            ✗ Not Submitted
+                        <% } %>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-muted small">ECCD Checklist</label>
+                    <div id="view_eccd_checklist" class="text-muted">
+                        <% if (documents.eccd_checklist) { %>
+                            ✓ Submitted <button class="btn btn-sm btn-primary ms-2" onclick="viewDocument('eccd_checklist', this)"><i class="bi bi-eye me-1"></i>View</button>
+                        <% } else { %>
+                            ✗ Not Submitted
+                        <% } %>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-muted small">Report Card (Previous)</label>
+                    <div id="view_report_card_previous" class="text-muted">
+                        <% if (documents.report_card_previous) { %>
+                            ✓ Submitted <button class="btn btn-sm btn-primary ms-2" onclick="viewDocument('report_card_previous', this)"><i class="bi bi-eye me-1"></i>View</button>
+                        <% } else { %>
+                            ✗ Not Submitted
+                        <% } %>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-muted small">SF 10 Original</label>
+                    <div id="view_sf10_original" class="text-muted">
+                        <% if (documents.sf10_original) { %>
+                            ✓ Submitted <button class="btn btn-sm btn-primary ms-2" onclick="viewDocument('sf10_original', this)"><i class="bi bi-eye me-1"></i>View</button>
+                        <% } else { %>
+                            ✗ Not Submitted
+                        <% } %>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-muted small">SF 10 Optional</label>
+                    <div id="view_sf10_optional" class="text-muted">
+                        <% if (documents.sf10_optional) { %>
+                            ✓ Submitted <button class="btn btn-sm btn-primary ms-2" onclick="viewDocument('sf10_optional', this)"><i class="bi bi-eye me-1"></i>View</button>
+                        <% } else { %>
+                            ✗ Not Submitted
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <% } %>
+
     <script>
                         // Keep reference to edit modal to re-open after e-sign modal actions
                         const editModalEl = document.getElementById('editModal');
@@ -347,6 +437,54 @@
                                 openedEsignFromEdit = false;
                             }
                         });
+
+                        // Document Viewer Function
+                        function viewDocument(docName, btn) {
+                            const documents = <%= JSON.stringify(documents || {}) %>;
+                            const docData = documents[docName];
+                            if (!docData) {
+                                alert('Document data not available');
+                                return;
+                            }
+
+                            const docTitles = {
+                                'birth_cert_psa': 'Birth Certificate - PSA',
+                                'eccd_checklist': 'ECCD Checklist',
+                                'report_card_previous': 'Report Card (Previous)',
+                                'sf10_original': 'SF 10 Original',
+                                'sf10_optional': 'SF 10 Optional'
+                            };
+
+                            const title = docTitles[docName] || docName;
+
+                            // Set document viewer modal
+                            document.getElementById('document_title').textContent = title;
+
+                            // Determine if it's an image or PDF
+                            if (docData.includes('image/')) {
+                                // Display as image
+                                document.getElementById('document_viewer_content').innerHTML = 
+                                    `<img src="${docData}" alt="${title}" style="max-width: 100%; max-height: 500px; border: 1px solid #ddd; border-radius: 8px;">`;
+                            } else if (docData.includes('pdf')) {
+                                // Display PDF
+                                document.getElementById('document_viewer_content').innerHTML = 
+                                    `<embed src="${docData}" type="application/pdf" width="100%" height="500px">`;
+                            } else {
+                                // Display as generic document
+                                document.getElementById('document_viewer_content').innerHTML = 
+                                    `<div class="alert alert-info">Document: ${title}</div>
+                                     <img src="${docData}" alt="${title}" style="max-width: 100%; max-height: 500px; border: 1px solid #ddd; border-radius: 8px;">`;
+                            }
+
+                            // Set download link
+                            const downloadBtn = document.getElementById('document_download_btn');
+                            downloadBtn.href = docData;
+                            downloadBtn.download = title.replace(/\s+/g, '_') + '.pdf';
+
+                            // Show modal
+                            const modal = new bootstrap.Modal(document.getElementById('documentViewerModal'));
+                            modal.show();
+                        }
     </script>
     <script src="/js/genericConfirm.js"></script>
 </div>

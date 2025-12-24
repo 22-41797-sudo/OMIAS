@@ -2676,10 +2676,14 @@ app.get('/registration/:id', async (req, res) => {
         // First try to find in early_registration (paper forms)
         const earlyRegResult = await pool.query('SELECT * FROM early_registration WHERE id = $1', [regId]);
         if (earlyRegResult.rows.length > 0) {
-            return res.render('registrationView', { registration: earlyRegResult.rows[0], source: 'early_registration' });
+            return res.render('registrationView', { 
+                registration: earlyRegResult.rows[0], 
+                source: 'early_registration',
+                documents: null
+            });
         }
         
-        // If not found, try enrollment_requests (online forms)
+        // If not found, try enrollment_requests (online forms) with document data
         const enrollmentResult = await pool.query(`
             SELECT er.*, sa.student_id, sa.username, sa.account_status
             FROM enrollment_requests er
@@ -2688,7 +2692,19 @@ app.get('/registration/:id', async (req, res) => {
         `, [regId]);
         
         if (enrollmentResult.rows.length > 0) {
-            return res.render('registrationView', { registration: enrollmentResult.rows[0], source: 'enrollment_requests' });
+            // Extract document data for viewing
+            const documents = {
+                birth_cert_psa: enrollmentResult.rows[0].birth_cert_psa,
+                eccd_checklist: enrollmentResult.rows[0].eccd_checklist,
+                report_card_previous: enrollmentResult.rows[0].report_card_previous,
+                sf10_original: enrollmentResult.rows[0].sf10_original,
+                sf10_optional: enrollmentResult.rows[0].sf10_optional
+            };
+            return res.render('registrationView', { 
+                registration: enrollmentResult.rows[0], 
+                source: 'enrollment_requests',
+                documents: documents
+            });
         }
         
         // Not found in either table
@@ -2744,8 +2760,17 @@ app.post('/registration/:id/edit', upload.single('signatureImage'), async (req, 
             newSignaturePath = signatureData;
         }
 
-        await pool.query(`
-            UPDATE early_registration SET
+        // Check if it's in early_registration or enrollment_requests
+        let isEarlyRegistration = true;
+        let checkResult = await pool.query('SELECT id FROM early_registration WHERE id = $1', [regId]);
+        
+        if (checkResult.rows.length === 0) {
+            // It's in enrollment_requests
+            isEarlyRegistration = false;
+        }
+
+        const updateQuery = `
+            UPDATE ${isEarlyRegistration ? 'early_registration' : 'enrollment_requests'} SET
                 printed_name = $1,
                 gmail_address = $2,
                 school_year = $3,
@@ -2772,7 +2797,9 @@ app.post('/registration/:id/edit', upload.single('signatureImage'), async (req, 
                 signature_image_path = COALESCE($24, signature_image_path),
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = $25
-        `, [
+        `;
+
+        await pool.query(updateQuery, [
             printedName, gmail, schoolYear, lrn || null, gradeLevel,
             lastName, givenName, middleName || null, extName || null,
             birthday, age, sex, religion || null, address,
@@ -2799,9 +2826,17 @@ app.post('/registration/:id/delete', async (req, res) => {
     try {
         await client.query('BEGIN');
         
-        // First, get the registration to find the signature image path
-        const result = await client.query('SELECT signature_image_path FROM early_registration WHERE id = $1', [regId]);
+        // Check if it's in early_registration first
+        let isEarlyRegistration = true;
+        let result = await client.query('SELECT signature_image_path FROM early_registration WHERE id = $1', [regId]);
         
+        if (result.rows.length === 0) {
+            // Try enrollment_requests
+            isEarlyRegistration = false;
+            result = await client.query('SELECT signature_image_path FROM enrollment_requests WHERE id = $1', [regId]);
+        }
+        
+        // Delete signature image if it exists
         if (result.rows.length > 0 && result.rows[0].signature_image_path) {
             let imagePath = result.rows[0].signature_image_path;
             // Try as absolute path
@@ -2826,11 +2861,17 @@ app.post('/registration/:id/delete', async (req, res) => {
             }
         }
         
-        // Delete from students table first (if exists) to avoid foreign key constraint
-        await client.query('DELETE FROM students WHERE enrollment_id = $1', [regId]);
-        
-        // Delete the registration record
-        await client.query('DELETE FROM early_registration WHERE id = $1', [regId]);
+        if (isEarlyRegistration) {
+            // Delete from students table first (if exists) to avoid foreign key constraint
+            await client.query('DELETE FROM students WHERE enrollment_id = $1', [regId]);
+            // Delete the registration record
+            await client.query('DELETE FROM early_registration WHERE id = $1', [regId]);
+        } else {
+            // Delete from student_accounts if it exists
+            await client.query('DELETE FROM student_accounts WHERE enrollment_request_id = $1', [regId]);
+            // Delete from enrollment_requests
+            await client.query('DELETE FROM enrollment_requests WHERE id = $1', [regId]);
+        }
         
         await client.query('COMMIT');
         
