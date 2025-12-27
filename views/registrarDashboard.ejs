@@ -1645,157 +1645,157 @@ function viewDocument(docName, btn) {
             if (location.hash !== `#${tabId}`) history.replaceState(null, '', `#${tabId}`);
         }
 
-        // Load student accounts when tab is clicked
-        // Global variable to store all accounts for search
-        let allStudentAccounts = [];
+// ===== STUDENT ACCOUNTS FUNCTIONS =====
+// Global variable to store all accounts for search
+let allStudentAccounts = [];
 
-        async function loadStudentAccounts() {
-            try {
-                const response = await fetch('/api/student-accounts');
-                const data = await response.json();
-                
-                if (!data.success) {
-                    return;
-                }
-                
-                allStudentAccounts = data.accounts || [];
-                renderStudentAccountsTable(allStudentAccounts);
-            } catch (err) {
-                console.error('Error loading student accounts:', err);
-            }
+async function loadStudentAccounts() {
+    try {
+        const response = await fetch('/api/student-accounts');
+        const data = await response.json();
+        
+        if (!data.success) {
+            return;
         }
+        
+        allStudentAccounts = data.accounts || [];
+        renderStudentAccountsTable(allStudentAccounts);
+    } catch (err) {
+        console.error('Error loading student accounts:', err);
+    }
+}
 
-        function renderStudentAccountsTable(accounts) {
-            const tableBody = document.getElementById('studentAccountsTableBody');
-            
-            if (!accounts || accounts.length === 0) {
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
-                            <i class="bi bi-inbox"></i> No student accounts found
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-            
-            let html = '';
-            accounts.forEach(account => {
-                const studentName = `${account.first_name || ''} ${account.last_name || ''}`.trim() || 'N/A';
-                const statusBadge = account.account_status === 'active' 
-                    ? '<span class="badge bg-success">Active</span>' 
-                    : account.account_status === 'suspended'
-                    ? '<span class="badge bg-danger">Suspended</span>'
-                    : '<span class="badge bg-secondary">Inactive</span>';
-                const createdDate = new Date(account.created_at).toLocaleDateString('en-PH');
-                
-                html += `
-                    <tr>
-                        <td><strong>${account.student_id}</strong></td>
-                        <td>${studentName}</td>
-                        <td><code style="user-select: all; cursor: pointer; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">${account.username}</code></td>
-                        <td>${account.email || account.gmail_address || '-'}</td>
-                        <td>${statusBadge}</td>
-                        <td>${createdDate}</td>
-                        <td style="text-align: center;">
-                            <button class="btn btn-sm btn-outline-primary me-1" title="Edit Account" onclick="editStudentAccount(${account.id})">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            tableBody.innerHTML = html;
-        }
+function renderStudentAccountsTable(accounts) {
+    const tableBody = document.getElementById('studentAccountsTableBody');
+    
+    if (!accounts || accounts.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox"></i> No student accounts found
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    accounts.forEach(account => {
+        const studentName = `${account.first_name || ''} ${account.last_name || ''}`.trim() || 'N/A';
+        const statusBadge = account.account_status === 'active' 
+            ? '<span class="badge bg-success">Active</span>' 
+            : account.account_status === 'suspended'
+            ? '<span class="badge bg-danger">Suspended</span>'
+            : '<span class="badge bg-secondary">Inactive</span>';
+        const createdDate = new Date(account.created_at).toLocaleDateString('en-PH');
+        
+        html += `
+            <tr>
+                <td><strong>${account.student_id}</strong></td>
+                <td>${studentName}</td>
+                <td><code style="user-select: all; cursor: pointer; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">${account.username}</code></td>
+                <td>${account.email || account.gmail_address || '-'}</td>
+                <td>${statusBadge}</td>
+                <td>${createdDate}</td>
+                <td style="text-align: center;">
+                    <button class="btn btn-sm btn-outline-primary me-1" title="Edit Account" onclick="editStudentAccount(${account.id})">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = html;
+}
 
-        function searchStudentAccounts() {
-            const searchInput = document.getElementById('studentAccountsSearch');
-            const searchTerm = searchInput.value.toLowerCase().trim();
-            
-            if (!searchTerm) {
-                renderStudentAccountsTable(allStudentAccounts);
-                return;
-            }
-            
-            const filtered = allStudentAccounts.filter(account => {
-                const studentName = `${account.first_name || ''} ${account.last_name || ''}`.toLowerCase();
-                const studentId = account.student_id.toLowerCase();
-                const username = account.username.toLowerCase();
-                const email = (account.email || account.gmail_address || '').toLowerCase();
-                
-                return studentId.includes(searchTerm) || 
-                       studentName.includes(searchTerm) || 
-                       username.includes(searchTerm) || 
-                       email.includes(searchTerm);
-            });
-            
-            renderStudentAccountsTable(filtered);
-        }
+function searchStudentAccounts() {
+    const searchInput = document.getElementById('studentAccountsSearch');
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    
+    if (!searchTerm) {
+        renderStudentAccountsTable(allStudentAccounts);
+        return;
+    }
+    
+    const filtered = allStudentAccounts.filter(account => {
+        const studentName = `${account.first_name || ''} ${account.last_name || ''}`.toLowerCase();
+        const studentId = account.student_id.toLowerCase();
+        const username = account.username.toLowerCase();
+        const email = (account.email || account.gmail_address || '').toLowerCase();
+        
+        return studentId.includes(searchTerm) || 
+               studentName.includes(searchTerm) || 
+               username.includes(searchTerm) || 
+               email.includes(searchTerm);
+    });
+    
+    renderStudentAccountsTable(filtered);
+}
 
-        function editStudentAccount(accountId) {
-            const account = allStudentAccounts.find(a => a.id === accountId);
-            if (!account) {
-                alert('Account not found');
-                return;
-            }
-            
-            // Populate edit form
-            document.getElementById('editStudentId').value = account.student_id;
-            document.getElementById('editUsername').value = account.username;
-            document.getElementById('editEmail').value = account.email || account.gmail_address || '';
-            document.getElementById('editAccountStatus').value = account.account_status || 'active';
-            document.getElementById('enablePasswordReset').checked = false;
-            document.getElementById('passwordResetSection').style.display = 'none';
-            
-            // Store the account ID for save operation
-            document.getElementById('editStudentAccountForm').dataset.accountId = accountId;
-            
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('editStudentAccountModal'));
-            modal.show();
-        }
+function editStudentAccount(accountId) {
+    const account = allStudentAccounts.find(a => a.id === accountId);
+    if (!account) {
+        alert('Account not found');
+        return;
+    }
+    
+    // Populate edit form
+    document.getElementById('editStudentId').value = account.student_id;
+    document.getElementById('editUsername').value = account.username;
+    document.getElementById('editEmail').value = account.email || account.gmail_address || '';
+    document.getElementById('editAccountStatus').value = account.account_status || 'active';
+    document.getElementById('enablePasswordReset').checked = false;
+    document.getElementById('passwordResetSection').style.display = 'none';
+    
+    // Store the account ID for save operation
+    document.getElementById('editStudentAccountForm').dataset.accountId = accountId;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('editStudentAccountModal'));
+    modal.show();
+}
 
-        async function saveEditStudent() {
-            const form = document.getElementById('editStudentAccountForm');
-            const accountId = form.dataset.accountId;
-            const email = document.getElementById('editEmail').value.trim();
-            const status = document.getElementById('editAccountStatus').value;
-            const resetPassword = document.getElementById('enablePasswordReset').checked;
+async function saveEditStudent() {
+    const form = document.getElementById('editStudentAccountForm');
+    const accountId = form.dataset.accountId;
+    const email = document.getElementById('editEmail').value.trim();
+    const status = document.getElementById('editAccountStatus').value;
+    const resetPassword = document.getElementById('enablePasswordReset').checked;
+    
+    if (!email) {
+        alert('Email is required');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/student-accounts/${accountId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: email,
+                account_status: status,
+                reset_password: resetPassword
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Student account updated successfully!');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editStudentAccountModal'));
+            modal.hide();
             
-            if (!email) {
-                alert('Email is required');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/student-accounts/${accountId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: email,
-                        account_status: status,
-                        reset_password: resetPassword
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('Student account updated successfully!');
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('editStudentAccountModal'));
-                    modal.hide();
-                    
-                    // Reload accounts
-                    loadStudentAccounts();
-                } else {
-                    alert('Error: ' + (data.error || 'Failed to update account'));
-                }
-            } catch (err) {
-                console.error('Error saving student account:', err);
-                alert('Error saving changes: ' + err.message);
-            }
+            // Reload accounts
+            loadStudentAccounts();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to update account'));
         }
+    } catch (err) {
+        console.error('Error saving student account:', err);
+        alert('Error saving changes: ' + err.message);
+    }
+}
 
         // Add search event listener when tab is loaded
         document.addEventListener('DOMContentLoaded', function() {
