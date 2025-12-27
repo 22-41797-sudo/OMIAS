@@ -2395,6 +2395,68 @@ app.get('/api/student-accounts', async (req, res) => {
     }
 });
 
+// ============= UPDATE STUDENT ACCOUNT =============
+app.put('/api/student-accounts/:accountId', async (req, res) => {
+    // Verify registrar is authenticated
+    if (!req.session.user || req.session.user.role !== 'registrar') {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const { accountId } = req.params;
+    const { email, account_status, reset_password } = req.body;
+
+    try {
+        // Validate email if provided
+        if (email && !email.includes('@')) {
+            return res.status(400).json({ success: false, error: 'Invalid email address' });
+        }
+
+        // Build dynamic update query
+        let updateQuery = 'UPDATE student_accounts SET updated_at = CURRENT_TIMESTAMP';
+        const params = [];
+        let paramCount = 1;
+
+        if (email) {
+            updateQuery += `, email = $${paramCount}`;
+            params.push(email);
+            paramCount++;
+        }
+
+        if (account_status) {
+            updateQuery += `, account_status = $${paramCount}`;
+            params.push(account_status);
+            paramCount++;
+        }
+
+        // If reset_password is true, generate new password
+        if (reset_password) {
+            const newPassword = generateRandomPassword();
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            updateQuery += `, password_hash = $${paramCount}`;
+            params.push(hashedPassword);
+            paramCount++;
+        }
+
+        updateQuery += ` WHERE id = $${paramCount} RETURNING *`;
+        params.push(parseInt(accountId));
+
+        const result = await pool.query(updateQuery, params);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Student account not found' });
+        }
+
+        res.json({
+            success: true,
+            message: 'Student account updated successfully',
+            account: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Error updating student account:', err);
+        res.status(500).json({ success: false, error: 'Failed to update student account' });
+    }
+});
+
 // ============= GET NEXT STUDENT ID (for display in modal) =============
 app.get('/api/next-student-id', async (req, res) => {
     // Verify registrar is authenticated

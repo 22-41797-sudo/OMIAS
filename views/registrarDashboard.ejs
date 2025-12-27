@@ -951,6 +951,22 @@
   <h2 class="dashboard-title mb-4">Student Accounts</h2>
   <p class="text-muted mb-4">View all created student accounts and their login credentials</p>
   
+  <!-- Search Bar -->
+  <div class="mb-4">
+    <div class="input-group">
+      <span class="input-group-text bg-white border-end-0">
+        <i class="bi bi-search"></i>
+      </span>
+      <input 
+        type="text" 
+        class="form-control border-start-0" 
+        id="studentAccountsSearch" 
+        placeholder="Search by Student ID, Name, Username, or Email..."
+        style="border-left: none;"
+      >
+    </div>
+  </div>
+
   <div class="table-section">
     <div class="table-responsive">
       <table class="table table-hover table-sm" id="studentAccountsTable" style="margin-bottom: 0; font-size: 0.9rem;">
@@ -1035,6 +1051,80 @@
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-success" id="confirmCreateAccountBtn" onclick="confirmCreateAccount()">
           <i class="bi bi-check-circle me-2"></i>Confirm & Create Account
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Student Account Modal -->
+<div class="modal fade" id="editStudentAccountModal" tabindex="-1" aria-labelledby="editStudentAccountModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="editStudentAccountModalLabel">
+          <i class="bi bi-pencil-square me-2"></i>Edit Student Account
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editStudentAccountForm">
+          <!-- Student ID (Read-only) -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Student ID</label>
+            <input type="text" class="form-control" id="editStudentId" readonly>
+          </div>
+
+          <!-- Username (Read-only) -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Username</label>
+            <input type="text" class="form-control" id="editUsername" readonly>
+          </div>
+
+          <!-- Email -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Email Address</label>
+            <input type="email" class="form-control" id="editEmail" placeholder="student@example.com">
+            <small class="text-muted">Email for account communications</small>
+          </div>
+
+          <!-- Account Status -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Account Status</label>
+            <select class="form-select" id="editAccountStatus">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="suspended">Suspended</option>
+            </select>
+          </div>
+
+          <!-- Password Reset Section -->
+          <div class="card bg-light border-warning mb-3">
+            <div class="card-body">
+              <h6 class="card-title fw-bold mb-3">
+                <i class="bi bi-key me-2"></i>Reset Password
+              </h6>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="enablePasswordReset">
+                <label class="form-check-label" for="enablePasswordReset">
+                  Generate new password for student
+                </label>
+              </div>
+              <div id="passwordResetSection" style="display: none; margin-top: 10px;">
+                <small class="text-muted d-block mb-2">A new password will be generated. The student will receive it in their confirmation email.</small>
+                <div class="alert alert-warning alert-sm py-2 px-3">
+                  <i class="bi bi-exclamation-triangle me-1"></i>
+                  Student must change password on first login.
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="saveEditStudentBtn" onclick="saveEditStudent()">
+          <i class="bi bi-check-circle me-2"></i>Save Changes
         </button>
       </div>
     </div>
@@ -1554,6 +1644,9 @@ function viewDocument(docName, btn) {
         }
 
         // Load student accounts when tab is clicked
+        // Global variable to store all accounts for search
+        let allStudentAccounts = [];
+
         async function loadStudentAccounts() {
             try {
                 const response = await fetch('/api/student-accounts');
@@ -1563,49 +1656,162 @@ function viewDocument(docName, btn) {
                     return;
                 }
                 
-                const tableBody = document.getElementById('studentAccountsTableBody');
-                
-                if (!data.accounts || data.accounts.length === 0) {
-                    tableBody.innerHTML = `
-                        <tr>
-                            <td colspan="7" class="text-center text-muted py-4">
-                                <i class="bi bi-inbox"></i> No student accounts created yet
-                            </td>
-                        </tr>
-                    `;
-                    return;
-                }
-                
-                let html = '';
-                data.accounts.forEach(account => {
-                    const studentName = `${account.first_name || ''} ${account.last_name || ''}`.trim() || 'N/A';
-                    const statusBadge = account.account_status === 'active' 
-                        ? '<span class="badge bg-success">Active</span>' 
-                        : '<span class="badge bg-secondary">Inactive</span>';
-                    const createdDate = new Date(account.created_at).toLocaleDateString('en-PH');
-                    
-                    html += `
-                        <tr>
-                            <td><strong>${account.student_id}</strong></td>
-                            <td>${studentName}</td>
-                            <td><code style="user-select: all; cursor: pointer; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">${account.username}</code></td>
-                            <td>${account.email || account.gmail_address || '-'}</td>
-                            <td>${statusBadge}</td>
-                            <td>${createdDate}</td>
-                            <td style="text-align: center;">
-                                <button class="btn btn-sm btn-outline-primary" title="View Account" onclick="alert('Account Details for ${account.student_id}')">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
-                
-                tableBody.innerHTML = html;
+                allStudentAccounts = data.accounts || [];
+                renderStudentAccountsTable(allStudentAccounts);
             } catch (err) {
                 console.error('Error loading student accounts:', err);
             }
         }
+
+        function renderStudentAccountsTable(accounts) {
+            const tableBody = document.getElementById('studentAccountsTableBody');
+            
+            if (!accounts || accounts.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox"></i> No student accounts found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            accounts.forEach(account => {
+                const studentName = `${account.first_name || ''} ${account.last_name || ''}`.trim() || 'N/A';
+                const statusBadge = account.account_status === 'active' 
+                    ? '<span class="badge bg-success">Active</span>' 
+                    : account.account_status === 'suspended'
+                    ? '<span class="badge bg-danger">Suspended</span>'
+                    : '<span class="badge bg-secondary">Inactive</span>';
+                const createdDate = new Date(account.created_at).toLocaleDateString('en-PH');
+                
+                html += `
+                    <tr>
+                        <td><strong>${account.student_id}</strong></td>
+                        <td>${studentName}</td>
+                        <td><code style="user-select: all; cursor: pointer; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">${account.username}</code></td>
+                        <td>${account.email || account.gmail_address || '-'}</td>
+                        <td>${statusBadge}</td>
+                        <td>${createdDate}</td>
+                        <td style="text-align: center;">
+                            <button class="btn btn-sm btn-outline-primary me-1" title="Edit Account" onclick="editStudentAccount(${account.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = html;
+        }
+
+        function searchStudentAccounts() {
+            const searchInput = document.getElementById('studentAccountsSearch');
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            
+            if (!searchTerm) {
+                renderStudentAccountsTable(allStudentAccounts);
+                return;
+            }
+            
+            const filtered = allStudentAccounts.filter(account => {
+                const studentName = `${account.first_name || ''} ${account.last_name || ''}`.toLowerCase();
+                const studentId = account.student_id.toLowerCase();
+                const username = account.username.toLowerCase();
+                const email = (account.email || account.gmail_address || '').toLowerCase();
+                
+                return studentId.includes(searchTerm) || 
+                       studentName.includes(searchTerm) || 
+                       username.includes(searchTerm) || 
+                       email.includes(searchTerm);
+            });
+            
+            renderStudentAccountsTable(filtered);
+        }
+
+        function editStudentAccount(accountId) {
+            const account = allStudentAccounts.find(a => a.id === accountId);
+            if (!account) {
+                alert('Account not found');
+                return;
+            }
+            
+            // Populate edit form
+            document.getElementById('editStudentId').value = account.student_id;
+            document.getElementById('editUsername').value = account.username;
+            document.getElementById('editEmail').value = account.email || account.gmail_address || '';
+            document.getElementById('editAccountStatus').value = account.account_status || 'active';
+            document.getElementById('enablePasswordReset').checked = false;
+            document.getElementById('passwordResetSection').style.display = 'none';
+            
+            // Store the account ID for save operation
+            document.getElementById('editStudentAccountForm').dataset.accountId = accountId;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('editStudentAccountModal'));
+            modal.show();
+        }
+
+        async function saveEditStudent() {
+            const form = document.getElementById('editStudentAccountForm');
+            const accountId = form.dataset.accountId;
+            const email = document.getElementById('editEmail').value.trim();
+            const status = document.getElementById('editAccountStatus').value;
+            const resetPassword = document.getElementById('enablePasswordReset').checked;
+            
+            if (!email) {
+                alert('Email is required');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/student-accounts/${accountId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: email,
+                        account_status: status,
+                        reset_password: resetPassword
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Student account updated successfully!');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editStudentAccountModal'));
+                    modal.hide();
+                    
+                    // Reload accounts
+                    loadStudentAccounts();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to update account'));
+                }
+            } catch (err) {
+                console.error('Error saving student account:', err);
+                alert('Error saving changes: ' + err.message);
+            }
+        }
+
+        // Add search event listener when tab is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('studentAccountsSearch');
+            if (searchInput) {
+                searchInput.addEventListener('keyup', searchStudentAccounts);
+                searchInput.addEventListener('change', searchStudentAccounts);
+            }
+
+            // Password reset toggle
+            const passwordResetCheckbox = document.getElementById('enablePasswordReset');
+            if (passwordResetCheckbox) {
+                passwordResetCheckbox.addEventListener('change', function() {
+                    const section = document.getElementById('passwordResetSection');
+                    section.style.display = this.checked ? 'block' : 'none';
+                });
+            }
+        });
 
         // Initialize from hash or default to dashboard
         (function initTabs(){
