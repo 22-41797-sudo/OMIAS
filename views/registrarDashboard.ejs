@@ -954,7 +954,7 @@
     
     <!-- Search Bar -->
     <div class="mb-4">
-      <div class="input-group">
+      <div class="input-group" style="max-width: 400px;">
         <span class="input-group-text bg-white border-end-0">
           <i class="bi bi-search"></i>
         </span>
@@ -962,24 +962,23 @@
           type="text" 
           class="form-control border-start-0" 
           id="studentAccountsSearch" 
-          placeholder="Search by Student ID, Name, Username, or Email..."
-          style="border-left: none;"
+          placeholder="Search ID, Name, Username, Email..."
         >
       </div>
     </div>
 
     <div class="table-section">
       <div class="table-responsive">
-        <table class="table table-hover table-sm" id="studentAccountsTable" style="margin-bottom: 0; font-size: 0.9rem;">
+        <table class="table table-bordered table-striped" id="studentAccountsTable">
           <thead class="table-light">
             <tr>
-              <th style="width: 12%;">Student ID</th>
-              <th style="width: 18%;">Student Name</th>
-              <th style="width: 14%;">Username</th>
-              <th style="width: 20%;">Email</th>
-              <th style="width: 12%;">Status</th>
-              <th style="width: 12%;">Created</th>
-              <th style="width: 12%; text-align: center;">Actions</th>
+              <th>Student ID</th>
+              <th>Student Name</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th style="text-align: center;">Actions</th>
             </tr>
           </thead>
           <tbody id="studentAccountsTableBody">
@@ -994,9 +993,9 @@
     </div>
 
     <!-- Password Reference Section -->
-    <div class="alert alert-info mt-3" style="font-size: 0.85rem;">
+    <div class="alert alert-info mt-4" style="font-size: 0.9rem;">
       <i class="bi bi-info-circle me-2"></i>
-      <strong>Initial passwords</strong> are shown in the account creation confirmation. Students can change their password after first login.
+      <strong>Tip:</strong> Initial passwords are shown in the account creation confirmation. Students can change their password after first login.
     </div>
   </div>
 </div>
