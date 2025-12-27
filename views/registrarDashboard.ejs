@@ -953,16 +953,16 @@
   
   <div class="table-section">
     <div class="table-responsive">
-      <table class="table table-hover" id="studentAccountsTable">
+      <table class="table table-hover table-sm" id="studentAccountsTable" style="margin-bottom: 0; font-size: 0.9rem;">
         <thead class="table-light">
           <tr>
-            <th>Student ID</th>
-            <th>Student Name</th>
-            <th>Username</th>
-            <th>Initial Password</th>
-            <th>Email</th>
-            <th>Status</th>
-            <th>Created</th>
+            <th style="width: 12%;">Student ID</th>
+            <th style="width: 18%;">Student Name</th>
+            <th style="width: 14%;">Username</th>
+            <th style="width: 20%;">Email</th>
+            <th style="width: 12%;">Status</th>
+            <th style="width: 12%;">Created</th>
+            <th style="width: 12%; text-align: center;">Actions</th>
           </tr>
         </thead>
         <tbody id="studentAccountsTableBody">
@@ -974,6 +974,12 @@
         </tbody>
       </table>
     </div>
+  </div>
+
+  <!-- Password Reference Section -->
+  <div class="alert alert-info mt-3" style="font-size: 0.85rem;">
+    <i class="bi bi-info-circle me-2"></i>
+    <strong>Initial passwords</strong> are shown in the account creation confirmation. Students can change their password after first login.
   </div>
 </div>
 
@@ -1582,15 +1588,15 @@ function viewDocument(docName, btn) {
                         <tr>
                             <td><strong>${account.student_id}</strong></td>
                             <td>${studentName}</td>
-                            <td><code>${account.username}</code></td>
-                            <td>
-                                <code style="user-select: all; cursor: pointer; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">
-                                    ${account.username}
-                                </code>
-                            </td>
+                            <td><code style="user-select: all; cursor: pointer; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">${account.username}</code></td>
                             <td>${account.email || account.gmail_address || '-'}</td>
                             <td>${statusBadge}</td>
                             <td>${createdDate}</td>
+                            <td style="text-align: center;">
+                                <button class="btn btn-sm btn-outline-primary" title="View Account" onclick="alert('Account Details for ${account.student_id}')">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </td>
                         </tr>
                     `;
                 });
