@@ -950,13 +950,15 @@
 
 <!-- Student Accounts Section -->
 <div id="studentAccounts" class="tab-content-section" style="display: none;">
-  <div class="page-wrap" style="max-width: 900px; margin: 0 auto; padding: 32px;">
-    <h2 class="dashboard-title mb-4">Student Accounts</h2>
-    <p class="text-muted mb-4">View all created student accounts and their login credentials</p>
+  <div class="page-wrap" style="max-width: 1100px; margin: 0 auto; padding: 40px;">
+    <div style="margin-bottom: 30px;">
+      <h2 class="dashboard-title mb-3">👤 Student Accounts</h2>
+      <p class="text-muted" style="font-size: 1rem; margin-bottom: 0;">View all created student accounts and their login credentials</p>
+    </div>
     
     <!-- Search Bar -->
-    <div class="mb-4">
-      <div class="input-group" style="max-width: 400px;">
+    <div class="mb-5">
+      <div class="input-group" style="max-width: 500px;">
         <span class="input-group-text bg-white border-end-0">
           <i class="bi bi-search"></i>
         </span>
@@ -965,27 +967,28 @@
           class="form-control border-start-0" 
           id="studentAccountsSearch" 
           placeholder="Search ID, Name, Username, Email..."
+          style="font-size: 0.95rem;"
         >
       </div>
     </div>
 
-    <div class="table-section">
+    <div class="table-section" style="padding: 24px;">
       <div class="table-responsive">
-        <table class="table table-bordered table-striped" id="studentAccountsTable">
+        <table class="table table-bordered table-striped mb-0" id="studentAccountsTable">
           <thead class="table-light">
             <tr>
-              <th>Student ID</th>
-              <th>Student Name</th>
-              <th>Username</th>
-              <th>Email</th>
-              <th>Status</th>
-              <th>Created</th>
-              <th style="text-align: center;">Actions</th>
+              <th style="font-weight: 700;">Student ID</th>
+              <th style="font-weight: 700;">Student Name</th>
+              <th style="font-weight: 700;">Username</th>
+              <th style="font-weight: 700;">Email</th>
+              <th style="font-weight: 700;">Status</th>
+              <th style="font-weight: 700;">Created</th>
+              <th style="font-weight: 700; text-align: center;">Actions</th>
             </tr>
           </thead>
           <tbody id="studentAccountsTableBody">
             <tr>
-              <td colspan="7" class="text-center text-muted py-4">
+              <td colspan="7" class="text-center text-muted py-5">
                 <i class="bi bi-inbox"></i> No student accounts created yet
               </td>
             </tr>
@@ -995,8 +998,8 @@
     </div>
 
     <!-- Password Reference Section -->
-    <div class="alert alert-info mt-4" style="font-size: 0.9rem;">
-      <i class="bi bi-info-circle me-2"></i>
+    <div class="alert alert-info mt-4" style="font-size: 0.95rem; border-radius: 10px;">
+      <i class="bi bi-lightbulb me-2"></i>
       <strong>Tip:</strong> Initial passwords are shown in the account creation confirmation. Students can change their password after first login.
     </div>
   </div>
@@ -1650,7 +1653,8 @@ function viewDocument(docName, btn) {
 // Global variable to store all accounts for search
 let allStudentAccounts = [];
 
-async function loadStudentAccounts() {
+// Expose to window for onclick handlers
+window.loadStudentAccounts = async function() {
     try {
         const response = await fetch('/api/student-accounts');
         const data = await response.json();
@@ -1664,7 +1668,7 @@ async function loadStudentAccounts() {
     } catch (err) {
         console.error('Error loading student accounts:', err);
     }
-}
+};
 
 function renderStudentAccountsTable(accounts) {
     const tableBody = document.getElementById('studentAccountsTableBody');
@@ -1734,7 +1738,8 @@ function searchStudentAccounts() {
     renderStudentAccountsTable(filtered);
 }
 
-function editStudentAccount(accountId) {
+// Expose to window for onclick handlers
+window.editStudentAccount = function(accountId) {
     const account = allStudentAccounts.find(a => a.id === accountId);
     if (!account) {
         alert('Account not found');
@@ -1755,9 +1760,10 @@ function editStudentAccount(accountId) {
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('editStudentAccountModal'));
     modal.show();
-}
+};
 
-async function saveEditStudent() {
+// Expose to window for onclick handlers
+window.saveEditStudent = async function() {
     const form = document.getElementById('editStudentAccountForm');
     const accountId = form.dataset.accountId;
     const email = document.getElementById('editEmail').value.trim();
@@ -1788,7 +1794,7 @@ async function saveEditStudent() {
             modal.hide();
             
             // Reload accounts
-            loadStudentAccounts();
+            window.loadStudentAccounts();
         } else {
             alert('Error: ' + (data.error || 'Failed to update account'));
         }
@@ -1796,7 +1802,7 @@ async function saveEditStudent() {
         console.error('Error saving student account:', err);
         alert('Error saving changes: ' + err.message);
     }
-}
+};
 
         // Add search event listener when tab is loaded
         document.addEventListener('DOMContentLoaded', function() {
@@ -1823,7 +1829,7 @@ async function saveEditStudent() {
             
             // Load student accounts when that tab is clicked
             if (hash === 'studentAccounts') {
-                loadStudentAccounts();
+                window.loadStudentAccounts();
             }
             
             // Bind clicks for in-page links in sidebar
@@ -1835,7 +1841,7 @@ async function saveEditStudent() {
                     
                     // Load student accounts when clicking that tab
                     if (id === 'studentAccounts') {
-                        loadStudentAccounts();
+                        window.loadStudentAccounts();
                     }
                 });
             });
@@ -1845,7 +1851,7 @@ async function saveEditStudent() {
                 if (h) {
                     showTab(h);
                     if (h === 'studentAccounts') {
-                        loadStudentAccounts();
+                        window.loadStudentAccounts();
                     }
                 }
             });
