@@ -2184,13 +2184,13 @@ app.get('/registrar', async (req, res) => {
             SELECT id, school_year, grade_level, 
                    COALESCE(last_name, '') || ', ' || COALESCE(first_name, '') || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') as learner_name,
                    lrn, mother_name, contact_number, registration_date, created_at,
-                   NULL as student_id, NULL as username, NULL as account_status, 'early_registration' as record_type
+                   NULL as student_id, NULL as username, NULL as account_status, 'early_registration' as record_type, NULL as enrollee_type
             FROM early_registration 
             UNION ALL
-            SELECT er.id, '' as school_year, er.grade_level,
+            SELECT er.id, er.school_year, er.grade_level,
                    COALESCE(er.last_name, '') || ', ' || COALESCE(er.first_name, '') || ' ' || COALESCE(er.middle_name || '', '') as learner_name,
-                   '' as lrn, '' as mother_name, er.contact_number, er.registration_date, er.created_at,
-                   sa.student_id, sa.username, sa.account_status, 'enrollment_request' as record_type
+                   er.lrn, er.mother_name, er.contact_number, er.registration_date, er.created_at,
+                   sa.student_id, sa.username, sa.account_status, 'enrollment_request' as record_type, er.enrollee_type
             FROM enrollment_requests er
             LEFT JOIN student_accounts sa ON sa.enrollment_request_id = er.id
             WHERE er.status = 'approved'
@@ -2265,11 +2265,39 @@ app.get('/registrar', async (req, res) => {
 // API endpoint for early registrations (for chart data)
 app.get('/api/early-registrations', async (req, res) => {
     try {
+        // Fetch approved enrollees from both old early_registration table and new enrollment_requests table
         const result = await pool.query(`
-            SELECT id, school_year, grade_level, 
-                   last_name || ', ' || first_name || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') as learner_name,
-                   lrn, current_address, contact_number, registration_date, created_at
+            -- From enrollment_requests (approved online enrollments)
+            SELECT 
+                id, 
+                school_year, 
+                grade_level, 
+                last_name || ', ' || first_name || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') as learner_name,
+                lrn, 
+                current_address, 
+                contact_number, 
+                registration_date, 
+                created_at,
+                status
+            FROM enrollment_requests 
+            WHERE status = 'approved'
+            
+            UNION ALL
+            
+            -- From early_registration (paper forms)
+            SELECT 
+                id, 
+                school_year, 
+                grade_level, 
+                last_name || ', ' || first_name || ' ' || COALESCE(middle_name || ' ', '') || COALESCE(ext_name, '') as learner_name,
+                lrn, 
+                current_address, 
+                contact_number, 
+                registration_date, 
+                created_at,
+                'approved' as status
             FROM early_registration 
+            
             ORDER BY created_at DESC
         `);
         
@@ -2281,63 +2309,137 @@ app.get('/api/early-registrations', async (req, res) => {
 });
 
 // Handle early registration form submission
-app.post('/add-registration', upload.single('signatureImage'), async (req, res) => {
+app.post('/add-registration', upload.any(), async (req, res) => {
     if (!req.session.user || req.session.user.role !== 'registrar') {
         return res.status(403).json({ error: 'Access denied' });
     }
 
     const {
         gmail, schoolYear, lrn, gradeLevel, lastName, givenName, middleName, extName,
-        birthday, age, sex, religion, address, ipCommunity, ipCommunitySpecify,
-        pwd, pwdSpecify, fatherName, motherName, guardianName, contactNumber, date,
-           signatureData, printedName
+        birthday, age, sex, religion, barangay, barangayOther, municipality, province,
+        ipCommunity, ipCommunitySpecify, pwd, pwdSpecify,
+        fatherLastName, fatherGivenName, fatherMiddleName, fatherExtName,
+        motherLastName, motherGivenName, motherMiddleName, motherExtName,
+        guardianLastName, guardianGivenName, guardianMiddleName, guardianExtName,
+        contactNumber, dateSigned, signaturePrintedName, signatureData, enrolleeType
     } = req.body;
 
     try {
         let signatureImagePath = null;
         
-        // Handle signature - store as base64 data URL for persistence
-        if (req.file) {
-            // Convert uploaded file to base64
-            const fileBuffer = fs.readFileSync(req.file.path);
-            const base64Data = fileBuffer.toString('base64');
-            const mimeType = req.file.mimetype || 'image/png';
-            signatureImagePath = `data:${mimeType};base64,${base64Data}`;
-            // Clean up temp file
-            fs.unlinkSync(req.file.path);
+        // Handle signature - look for signatureImage in files
+        if (req.files && req.files.length > 0) {
+            const signatureFile = req.files.find(f => f.fieldname === 'signatureImage');
+            if (signatureFile) {
+                // Convert uploaded file to base64
+                const fileBuffer = fs.readFileSync(signatureFile.path);
+                const base64Data = fileBuffer.toString('base64');
+                const mimeType = signatureFile.mimetype || 'image/png';
+                signatureImagePath = `data:${mimeType};base64,${base64Data}`;
+                // Clean up temp file
+                fs.unlinkSync(signatureFile.path);
+            }
+            // Clean up any other temp files that were uploaded
+            req.files.forEach(f => {
+                if (f.fieldname !== 'signatureImage' && fs.existsSync(f.path)) {
+                    fs.unlinkSync(f.path);
+                }
+            });
         } else if (signatureData) {
             // Handle canvas signature data (already base64 data URL)
             signatureImagePath = signatureData;
         }
 
-        // Insert into database
-        const insertQuery = `
-            INSERT INTO early_registration (
-                gmail_address, school_year, lrn, grade_level, last_name, first_name, 
-                middle_name, ext_name, birthday, age, sex, religion, current_address,
-                ip_community, ip_community_specify, pwd, pwd_specify, father_name, 
-                mother_name, guardian_name, contact_number, registration_date, 
-                printed_name, signature_image_path
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::date, $10::integer, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22::date, $23, $24)
-            RETURNING id
-        `;
+        // Build complete names for parents/guardians
+        const fatherName = [fatherGivenName, fatherLastName].filter(n => n && String(n).trim()).join(' ') || null;
+        const motherName = [motherGivenName, motherLastName].filter(n => n && String(n).trim()).join(' ') || null;
+        const guardianName = [guardianGivenName, guardianLastName].filter(n => n && String(n).trim()).join(' ') || null;
 
-        const values = [
-            gmail, schoolYear, lrn || null, gradeLevel, lastName, givenName,
-            middleName || null, extName || null, birthday, parseInt(age), sex,
-            religion || null, address, ipCommunity, ipCommunitySpecify || null,
-            pwd, pwdSpecify || null, fatherName || null, motherName || null,
-            guardianName || null, contactNumber || null, date, printedName, signatureImagePath
-        ];
+        // Build current address from barangay components
+        const currentAddress = [
+            barangayOther && barangay === 'Others' ? barangayOther : barangay,
+            municipality,
+            province
+        ].filter(a => a && String(a).trim()).join(', ') || 'N/A';
 
-        const result = await pool.query(insertQuery, values);
-        
-        // Return success response
-        res.json({ 
-            success: true, 
-            message: 'Registration added successfully',
-            id: result.rows[0].id 
-        });
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            // Insert into NEW enrollment_requests table with automatic approval status
+            // This allows registrar to manually enter students from office registrations
+            // and they appear immediately in the system without needing approval/rejection
+            const insertQuery = `
+                INSERT INTO enrollment_requests (
+                    gmail_address, school_year, lrn, grade_level, last_name, first_name, 
+                    middle_name, ext_name, birthday, age, sex, religion, current_address,
+                    ip_community, ip_community_specify, pwd, pwd_specify, father_name, 
+                    mother_name, guardian_name, contact_number, registration_date, 
+                    printed_name, signature_image_path, enrollee_type, status, created_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::date, $10::integer, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22::date, $23, $24, $25, $26, CURRENT_TIMESTAMP)
+                RETURNING id
+            `;
+
+            const values = [
+                gmail, schoolYear, lrn || null, gradeLevel, lastName, givenName,
+                middleName || null, extName || null, birthday, parseInt(age), sex,
+                religion || null, currentAddress, ipCommunity, ipCommunitySpecify || null,
+                pwd, pwdSpecify || null, fatherName, motherName,
+                guardianName, contactNumber || null, dateSigned, signaturePrintedName, signatureImagePath,
+                enrolleeType || null, 'approved'  // Automatically set status to 'approved' for office registrations
+            ];
+
+            const result = await client.query(insertQuery, values);
+            const enrollmentRequestId = result.rows[0].id;
+
+            // Create student account for office registration
+            const sequenceResult = await client.query('SELECT nextval(\'student_id_seq\') as next_id');
+            const nextSequenceNumber = sequenceResult.rows[0].next_id;
+
+            // Format: 2025-00001 (year - padded sequence number)
+            const currentYear = new Date().getFullYear();
+            const studentId = `${currentYear}-${String(nextSequenceNumber).padStart(5, '0')}`;
+            const username = studentId; // username is the same as student_id
+            const initialPassword = studentId; // initial password is the same as student_id
+
+            // Hash the password
+            const hashedPassword = await bcrypt.hash(initialPassword, 10);
+
+            // Create student account
+            const accountResult = await client.query(
+                `INSERT INTO student_accounts (student_id, username, password_hash, email, enrollment_request_id, account_status)
+                 VALUES ($1, $2, $3, $4, $5, 'active')
+                 RETURNING id, student_id, username, email`,
+                [studentId, username, hashedPassword, gmail, enrollmentRequestId]
+            );
+
+            await client.query('COMMIT');
+            const studentAccount = accountResult.rows[0];
+
+            console.log('Office Registration Created:');
+            console.log(`   - Enrollment Request ID: ${enrollmentRequestId}`);
+            console.log(`   - Student ID: ${studentAccount.student_id}`);
+            console.log(`   - Username: ${studentAccount.username}`);
+            console.log(`   - Email: ${studentAccount.email}`);
+            
+            // Return success response
+            res.json({ 
+                success: true, 
+                message: 'Registration added successfully! Student account created and student can now login.',
+                id: enrollmentRequestId,
+                studentAccount: {
+                    studentId: studentAccount.student_id,
+                    username: studentAccount.username,
+                    initialPassword: initialPassword
+                }
+            });
+
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
+        }
 
     } catch (err) {
         console.error('âŒ Error adding registration:', err);
@@ -2456,6 +2558,51 @@ app.put('/api/student-accounts/:accountId', async (req, res) => {
         res.status(500).json({ success: false, error: 'Failed to update student account' });
     }
 });
+
+// ============= DELETE STUDENT ACCOUNT ENDPOINT (for Registrar) =============
+app.delete('/api/student-accounts/:accountId', async (req, res) => {
+    // Verify registrar is authenticated
+    if (!req.session.user || req.session.user.role !== 'registrar') {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const { accountId } = req.params;
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // Get student account details before deletion
+        const accountResult = await client.query(
+            'SELECT id, username, email FROM student_accounts WHERE id = $1',
+            [parseInt(accountId)]
+        );
+
+        if (accountResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, error: 'Student account not found' });
+        }
+
+        const account = accountResult.rows[0];
+
+        // Delete from student_accounts
+        await client.query('DELETE FROM student_accounts WHERE id = $1', [parseInt(accountId)]);
+
+        await client.query('COMMIT');
+
+        res.json({
+            success: true,
+            message: `Student account "${account.username}" has been permanently deleted from the database.`
+        });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Error deleting student account:', err);
+        res.status(500).json({ success: false, error: 'Failed to delete student account: ' + err.message });
+    } finally {
+        client.release();
+    }
+});
+
 
 // ============= GET NEXT STUDENT ID (for display in modal) =============
 app.get('/api/next-student-id', async (req, res) => {
@@ -2971,11 +3118,89 @@ app.get('/api/registration/:id', async (req, res) => {
 });
 
 // JSON API: fetch a pending enrollment request (for editing missing details)
-app.get('/api/enrollment-request/:id', async (req, res) => {
-    if (!req.session.user || req.session.user.role !== 'registrar') {
-        return res.status(403).json({ error: 'Access denied' });
+// Student API: Get student's own dashboard data
+app.get('/api/student/dashboard', async (req, res) => {
+    if (!req.session.user || req.session.user.role !== 'student') {
+        return res.status(403).json({ error: 'You are not authenticated. Please log in again.' });
     }
+
+    const enrollmentRequestId = req.session.user.enrollmentRequestId;
+    
+    if (!enrollmentRequestId) {
+        return res.status(404).json({ error: 'No enrollment request ID found in session.' });
+    }
+
+    try {
+        const result = await pool.query(`
+            SELECT id, request_token, status,
+                   gmail_address, school_year, lrn, grade_level,
+                   last_name, first_name, middle_name, ext_name,
+                   birthday, age, sex, religion, current_address,
+                   ip_community, ip_community_specify, pwd, pwd_specify,
+                   father_name, mother_name, guardian_name, contact_number,
+                   registration_date, printed_name, signature_image_path,
+                   enrollee_type, birth_cert_psa, eccd_checklist, report_card_previous, sf10_original, sf10_optional,
+                   created_at
+            FROM enrollment_requests
+            WHERE id = $1
+        `, [enrollmentRequestId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Enrollment request not found.' });
+        }
+        
+        res.json({ success: true, enrollment: result.rows[0] });
+    } catch (err) {
+        console.error('Error fetching student dashboard data:', err);
+        res.status(500).json({ error: 'Error loading dashboard data' });
+    }
+});
+
+app.get('/api/enrollment-request/:id', async (req, res) => {
+    // Allow registrars to view any enrollment request, or students to view their own
     const requestId = req.params.id;
+    
+    console.log('📋 GET /api/enrollment-request/:id');
+    console.log('  Session user:', req.session.user);
+    console.log('  Requested ID:', requestId);
+    
+    // Check if user is authenticated
+    if (!req.session.user) {
+        console.log('  ❌ No session user found');
+        return res.status(403).json({ error: 'You are not authenticated. Please log in again.' });
+    }
+    
+    const isRegistrar = req.session.user.role === 'registrar';
+    const isStudent = req.session.user.role === 'student';
+    
+    // If student, verify they're accessing their own enrollment request
+    if (isStudent) {
+        const studentEnrollmentId = req.session.user.enrollmentRequestId;
+        const requestIdNum = parseInt(requestId);
+        
+        console.log('  Student enrollment ID from session:', studentEnrollmentId);
+        console.log('  Requested enrollment ID:', requestIdNum);
+        
+        // If student doesn't have enrollmentRequestId in session, deny
+        if (!studentEnrollmentId) {
+            console.log('  ❌ Student has no enrollmentRequestId in session');
+            return res.status(403).json({ error: 'Your enrollment ID is not set in the system. Please contact support.' });
+        }
+        
+        // Check if student is accessing their own record
+        if (studentEnrollmentId !== requestIdNum) {
+            console.log('  ❌ Student trying to access different enrollment record');
+            return res.status(403).json({ error: 'Access denied - you can only view your own enrollment' });
+        }
+        
+        console.log('  ✅ Student accessing their own enrollment');
+    } else if (!isRegistrar) {
+        console.log('  ❌ User is neither student nor registrar');
+        return res.status(403).json({ error: 'Access denied' });
+    } else {
+        console.log('  ✅ Registrar accessing enrollment');
+    }
+    
     try {
         const result = await pool.query(`
             SELECT id, request_token, status,
@@ -2993,7 +3218,7 @@ app.get('/api/enrollment-request/:id', async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Request not found' });
         }
-        res.json({ success: true, request: result.rows[0] });
+        res.json({ success: true, request: result.rows[0], enrollment: result.rows[0] });
     } catch (err) {
         console.error('Error fetching enrollment request:', err);
         res.status(500).json({ success: false, error: 'Error fetching enrollment request' });
@@ -4204,15 +4429,15 @@ app.post('/assign-section/:id', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // Check if this is an early_registration student (ID starts with 'ER')
+        // Check if this is an enrollment_requests student (ID starts with 'ER')
         if (String(studentIdentifier).startsWith('ER')) {
-            // Extract the actual early_registration ID
-            const earlyRegId = parseInt(String(studentIdentifier).substring(2));
+            // Extract the actual enrollment_requests ID
+            const enrollmentId = parseInt(String(studentIdentifier).substring(2));
 
-            // Get early_registration details
+            // Get enrollment_requests details (new system)
             const enrolleeResult = await client.query(`
-                SELECT * FROM early_registration WHERE id = $1
-            `, [earlyRegId]);
+                SELECT * FROM enrollment_requests WHERE id = $1
+            `, [enrollmentId]);
 
             if (enrolleeResult.rows.length === 0) {
                 await client.query('ROLLBACK');
@@ -4245,32 +4470,31 @@ app.post('/assign-section/:id', async (req, res) => {
 
             // Check if this enrollee is already in students table
             const existingStudent = await client.query(`
-                SELECT id FROM students WHERE enrollment_id = $1
-            `, [earlyRegId]);
+                SELECT id FROM students WHERE lrn = $1 AND school_year = $2
+            `, [enrollee.lrn, enrollee.school_year]);
 
             if (existingStudent.rows.length > 0) {
                 await client.query('ROLLBACK');
                 return res.status(400).json({ success: false, message: 'This enrollee has already been assigned to a section' });
             }
 
-            // Insert into students table (only columns that exist)
+            // Insert into students table from enrollment_requests
             const insertQuery = `
                 INSERT INTO students (
-                    enrollment_id, section_id,
-                    school_year, lrn, grade_level,
+                    lrn, school_year, grade_level,
                     last_name, first_name, middle_name, ext_name,
-                    birthday, age, sex, religion, current_address,
-                    guardian_name, enrollment_status, is_archived
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+                    birthday, age, sex, religion, current_address, contact_number,
+                    section_id, enrollment_status, is_archived
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                ON CONFLICT (lrn, school_year) DO UPDATE SET section_id = $14, enrollment_status = 'active'
                 RETURNING id
             `;
 
             const insertValues = [
-                earlyRegId, section,
-                enrollee.school_year, enrollee.lrn, enrollee.grade_level,
+                enrollee.lrn, enrollee.school_year, enrollee.grade_level,
                 enrollee.last_name, enrollee.first_name, enrollee.middle_name, enrollee.ext_name,
                 enrollee.birthday, enrollee.age, enrollee.sex, enrollee.religion, enrollee.current_address,
-                enrollee.guardian_name, 'active', false
+                enrollee.contact_number, section, 'active', false
             ];
 
             await client.query(insertQuery, insertValues);
@@ -4281,13 +4505,6 @@ app.post('/assign-section/:id', async (req, res) => {
                 SET current_count = current_count + 1
                 WHERE id = $1
             `, [section]);
-
-            // Mark the enrollee as processed
-            await client.query(`
-                UPDATE early_registration 
-                SET assigned_section = $1, updated_at = CURRENT_TIMESTAMP 
-                WHERE id = $2
-            `, [sectionData.section_name, earlyRegId]);
 
             await client.query('COMMIT');
             res.json({ 
@@ -4499,7 +4716,6 @@ app.post('/api/snapshots/dataset', async (req, res) => {
                 section_id INTEGER,
                 section_name TEXT,
                 grade_level TEXT,
-                count INTEGER,
                 adviser_name TEXT,
                 student_full_name TEXT,
                 current_address TEXT,
@@ -4678,13 +4894,9 @@ app.post('/api/sections/snapshots', async (req, res) => {
     const snapshotName = String(name).trim();
     const client = await pool.connect();
     try {
-        // Drop and recreate tables to ensure correct schema
-        await client.query('DROP TABLE IF EXISTS section_snapshot_items CASCADE');
-        await client.query('DROP TABLE IF EXISTS section_snapshot_groups CASCADE');
-
-        // Create groups table
+        // Create tables if they don't exist (but DO NOT DROP - preserve existing snapshots)
         await client.query(`
-            CREATE TABLE section_snapshot_groups (
+            CREATE TABLE IF NOT EXISTS section_snapshot_groups (
                 id SERIAL PRIMARY KEY,
                 snapshot_name TEXT NOT NULL UNIQUE,
                 created_by INTEGER,
@@ -4693,30 +4905,63 @@ app.post('/api/sections/snapshots', async (req, res) => {
             )
         `);
 
-        // Create items table
+        // Create items table if not exists
         await client.query(`
-            CREATE TABLE section_snapshot_items (
+            CREATE TABLE IF NOT EXISTS section_snapshot_items (
                 id SERIAL PRIMARY KEY,
                 group_id INTEGER NOT NULL REFERENCES section_snapshot_groups(id) ON DELETE CASCADE,
                 section_id INTEGER,
                 section_name TEXT,
                 grade_level TEXT,
-                count INTEGER,
                 adviser_name TEXT,
-                student_name TEXT,
-                last_name TEXT,
-                first_name TEXT,
+                student_full_name TEXT,
                 current_address TEXT,
                 barangay_extracted TEXT,
                 teacher_name TEXT,
+                sex TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
         await client.query('BEGIN');
 
-        // Insert group
-        const g = await client.query(`INSERT INTO section_snapshot_groups (snapshot_name, created_by) VALUES ($1, $2) RETURNING id, snapshot_name, created_at`, [snapshotName, req.session.user.id || null]);
+        // Handle duplicate snapshot names by auto-generating unique names
+        let finalSnapshotName = snapshotName;
+        let counter = 1;
+        const originalName = snapshotName;
+        
+        while (true) {
+            try {
+                // Try to insert with this name
+                const checkResult = await client.query(
+                    'SELECT id FROM section_snapshot_groups WHERE snapshot_name = $1 LIMIT 1',
+                    [finalSnapshotName]
+                );
+                
+                if (checkResult.rows.length === 0) {
+                    // Name is unique, we can use it
+                    break;
+                }
+                
+                // Name exists, try with a counter
+                finalSnapshotName = `${originalName} (${counter})`;
+                counter++;
+                
+                // Safety check - stop after 100 attempts
+                if (counter > 100) {
+                    throw new Error('Could not generate unique snapshot name');
+                }
+            } catch (err) {
+                if (counter > 100) throw err;
+                finalSnapshotName = `${originalName} (${counter})`;
+                counter++;
+            }
+        }
+
+        console.log('Using snapshot name:', finalSnapshotName);
+
+        // Insert group with the final unique name
+        const g = await client.query(`INSERT INTO section_snapshot_groups (snapshot_name, created_by) VALUES ($1, $2) RETURNING id, snapshot_name, created_at`, [finalSnapshotName, req.session.user.id || null]);
         const groupId = g.rows[0].id;
 
         // Get all students with their sections, sorted by section and name
@@ -4783,7 +5028,7 @@ app.post('/api/sections/snapshots', async (req, res) => {
         }
 
         await client.query('COMMIT');
-        res.json({ success: true, message: `Snapshot '${snapshotName}' saved with ${students.rows.length} students`, group: g.rows[0] });
+        res.json({ success: true, message: `Snapshot '${finalSnapshotName}' saved with ${students.rows.length} students`, group: g.rows[0] });
     } catch (err) {
         try { await client.query('ROLLBACK'); } catch (e) {}
         console.error('Error creating snapshot group:', err);
@@ -4799,7 +5044,7 @@ app.get('/api/sections/snapshots', async (req, res) => {
         return res.status(403).json({ success: false, message: 'Access denied' });
     }
     try {
-        // Ensure tables exist (but DO NOT drop them - we need to preserve data)
+        // Ensure tables exist with EXACT same schema as POST endpoint (but DO NOT drop them - we need to preserve data)
         await pool.query(`
             CREATE TABLE IF NOT EXISTS section_snapshot_groups (
                 id SERIAL PRIMARY KEY,
@@ -4816,14 +5061,12 @@ app.get('/api/sections/snapshots', async (req, res) => {
                 section_id INTEGER,
                 section_name TEXT,
                 grade_level TEXT,
-                count INTEGER,
                 adviser_name TEXT,
-                student_name TEXT,
-                last_name TEXT,
-                first_name TEXT,
+                student_full_name TEXT,
                 current_address TEXT,
                 barangay_extracted TEXT,
                 teacher_name TEXT,
+                sex TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
@@ -4843,7 +5086,7 @@ app.get('/api/sections/snapshots/:id/items', async (req, res) => {
     }
     const gid = req.params.id;
     try {
-        const items = await pool.query('SELECT id, section_id, section_name, grade_level, count, adviser_name FROM section_snapshot_items WHERE group_id = $1 ORDER BY grade_level, section_name', [gid]);
+        const items = await pool.query('SELECT id, section_id, section_name, grade_level, adviser_name FROM section_snapshot_items WHERE group_id = $1 AND student_full_name IS NULL GROUP BY section_name, grade_level, adviser_name, section_id ORDER BY grade_level, section_name', [gid]);
         res.json({ success: true, items: items.rows });
     } catch (err) {
         console.error('Error fetching snapshot items:', err);
@@ -4865,16 +5108,15 @@ app.get('/api/sections/snapshots/:id/students', async (req, res) => {
                 section_id,
                 section_name,
                 grade_level,
-                student_name,
-                last_name,
-                first_name,
+                student_full_name,
                 current_address,
                 barangay_extracted,
                 adviser_name,
-                teacher_name
+                teacher_name,
+                sex
             FROM section_snapshot_items 
-            WHERE group_id = $1 AND student_name IS NOT NULL
-            ORDER BY section_name, last_name, first_name
+            WHERE group_id = $1 AND student_full_name IS NOT NULL
+            ORDER BY section_name, student_full_name
         `, [gid]);
 
         // Get barangay count per section
@@ -4917,10 +5159,10 @@ app.get('/api/snapshots/:id/full-data', async (req, res) => {
         }
         const group = groupRes.rows[0];
 
-        // Get all items (sections and students)
+        // Get all items from the snapshot - both section summaries and student records
         const itemsRes = await pool.query(`
             SELECT 
-                id, group_id, section_name, grade_level, count, adviser_name,
+                id, group_id, section_name, grade_level, "count", adviser_name,
                 student_full_name, current_address, barangay_extracted, sex
             FROM section_snapshot_items 
             WHERE group_id = $1
@@ -4929,7 +5171,7 @@ app.get('/api/snapshots/:id/full-data', async (req, res) => {
 
         // Organize by section
         const sections = {};
-        const sectionOrder = []; // Keep track of section order
+        const sectionOrder = [];
 
         itemsRes.rows.forEach(item => {
             const sectionKey = `${item.grade_level}|${item.section_name}`;
@@ -4945,8 +5187,8 @@ app.get('/api/snapshots/:id/full-data', async (req, res) => {
                 sectionOrder.push(sectionKey);
             }
 
-            // Only add if it's a student record (has student_full_name)
-            if (item.student_full_name && item.student_full_name !== '-') {
+            // Only add if it's a student record (has student_full_name and is NOT just a section summary)
+            if (item.student_full_name && item.student_full_name !== '-' && item.student_full_name !== item.section_name) {
                 sections[sectionKey].students.push({
                     name: item.student_full_name,
                     barangay: item.barangay_extracted || 'Others',
@@ -4971,7 +5213,7 @@ app.get('/api/snapshots/:id/full-data', async (req, res) => {
         });
     } catch (err) {
         console.error('Error fetching full snapshot data:', err);
-        res.status(500).json({ success: false, message: 'Error fetching snapshot data' });
+        res.status(500).json({ success: false, message: 'Error fetching snapshot data: ' + err.message });
     }
 });
 
@@ -5420,19 +5662,19 @@ app.put('/api/students/:id/reassign', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // Check if this is an early_registration student (ID starts with 'ER')
+        // Check if this is an enrollment_requests student (ID starts with 'ER')
         if (String(studentId).startsWith('ER')) {
-            // Extract the actual early_registration ID
-            const earlyRegId = parseInt(String(studentId).substring(2));
+            // Extract the actual enrollment_requests ID
+            const enrollmentId = parseInt(String(studentId).substring(2));
 
-            // Get early_registration details
-            const earlyRegResult = await client.query('SELECT * FROM early_registration WHERE id = $1', [earlyRegId]);
-            if (earlyRegResult.rows.length === 0) {
+            // Get enrollment_requests details (new system)
+            const enrollmentResult = await client.query('SELECT * FROM enrollment_requests WHERE id = $1', [enrollmentId]);
+            if (enrollmentResult.rows.length === 0) {
                 await client.query('ROLLBACK');
-                return res.status(404).json({ success: false, message: 'Early registration record not found' });
+                return res.status(404).json({ success: false, message: 'Enrollment request not found' });
             }
 
-            const earlyReg = earlyRegResult.rows[0];
+            const enrollment = enrollmentResult.rows[0];
 
             // Verify new section exists and has capacity
             const newSectionResult = await client.query(`
@@ -5456,39 +5698,61 @@ app.put('/api/students/:id/reassign', async (req, res) => {
                 });
             }
 
-            // Insert into students table from early_registration
-            await client.query(`
-                INSERT INTO students (
-                    lrn, school_year, grade_level, last_name, first_name, middle_name, ext_name,
-                    birthday, age, sex, religion, current_address, contact_number,
-                    enrollment_status, section_id, ip_community, pwd
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-                ON CONFLICT DO NOTHING
-            `, [
-                earlyReg.lrn,
-                earlyReg.school_year,
-                earlyReg.grade_level,
-                earlyReg.last_name,
-                earlyReg.first_name,
-                earlyReg.middle_name || null,
-                earlyReg.ext_name || null,
-                earlyReg.birthday,
-                earlyReg.age,
-                earlyReg.sex,
-                earlyReg.religion || null,
-                earlyReg.current_address,
-                earlyReg.contact_number || null,
-                'active',
-                newSectionId,
-                'N/A',
-                'N/A'
-            ]);
+            // Insert into students table from enrollment_requests
+            // First check if student already exists
+            const existingStudent = await client.query(
+                'SELECT id FROM students WHERE lrn = $1 AND school_year = $2',
+                [enrollment.lrn, enrollment.school_year]
+            );
+
+            let studentRecordId;
+            if (existingStudent.rows.length > 0) {
+                // Update existing record
+                const updateResult = await client.query(`
+                    UPDATE students SET 
+                        section_id = $1, 
+                        enrollment_status = 'active',
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE lrn = $2 AND school_year = $3
+                    RETURNING id
+                `, [newSectionId, enrollment.lrn, enrollment.school_year]);
+                studentRecordId = updateResult.rows[0].id;
+            } else {
+                // Insert new record
+                const insertResult = await client.query(`
+                    INSERT INTO students (
+                        lrn, school_year, grade_level, last_name, first_name, middle_name, ext_name,
+                        birthday, age, sex, religion, current_address, contact_number,
+                        enrollment_status, section_id, ip_community, pwd
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+                    RETURNING id
+                `, [
+                    enrollment.lrn,
+                    enrollment.school_year,
+                    enrollment.grade_level,
+                    enrollment.last_name,
+                    enrollment.first_name,
+                    enrollment.middle_name || null,
+                    enrollment.ext_name || null,
+                    enrollment.birthday,
+                    enrollment.age,
+                    enrollment.sex,
+                    enrollment.religion || null,
+                    enrollment.current_address,
+                    enrollment.contact_number || null,
+                    'active',
+                    newSectionId,
+                    'N/A',
+                    'N/A'
+                ]);
+                studentRecordId = insertResult.rows[0].id;
+            }
 
             // Increment new section count
             await client.query('UPDATE sections SET current_count = current_count + 1 WHERE id = $1', [newSectionId]);
 
             await client.query('COMMIT');
-            res.json({ success: true, message: `Student enrolled and assigned to ${newSection.section_name}` });
+            res.json({ success: true, message: `Student assigned to ${newSection.section_name}` });
         } else {
             // Handle regular students table
             // Get current student info
@@ -5599,27 +5863,27 @@ app.get('/api/students/unassigned', async (req, res) => {
     }
 
     try {
-        // Query 1: Get unassigned students from students table (section_id IS NULL)
+        // Query 1: Get unassigned students from students table (section_id IS NULL) - INCLUDES ARCHIVED
         const studentsResult = await pool.query(`
             SELECT 
                 st.id,
                 st.lrn,
                 (st.last_name || ', ' || st.first_name) as full_name,
                 st.grade_level,
-                NULL::VARCHAR as sex,
-                NULL::INTEGER as age,
-                NULL::VARCHAR as contact_number,
+                COALESCE(st.sex, 'N/A') as sex,
+                COALESCE(st.age, 0) as age,
+                st.contact_number,
                 COALESCE(st.created_at, CURRENT_TIMESTAMP)::date as enrollment_date,
                 st.enrollment_status,
                 CASE WHEN st.is_archived IS NULL THEN false ELSE st.is_archived END as is_archived,
                 'students' as source
             FROM students st
-            WHERE st.section_id IS NULL 
-            ORDER BY st.grade_level, st.last_name, st.first_name
+            WHERE st.section_id IS NULL OR st.is_archived = true
+            ORDER BY st.is_archived, st.grade_level, st.last_name, st.first_name
         `);
 
-        // Query 2: Get newly approved students from early_registration (not yet added to students table)
-        const earlyRegResult = await pool.query(`
+        // Query 2: Get newly approved students from enrollment_requests (approved status, not yet added to students table)
+        const approvedEnrollmentsResult = await pool.query(`
             SELECT 
                 'ER' || er.id as id,
                 er.lrn,
@@ -5628,18 +5892,22 @@ app.get('/api/students/unassigned', async (req, res) => {
                 COALESCE(er.sex, 'N/A') as sex,
                 COALESCE(er.age, 0) as age,
                 er.contact_number,
-                er.registration_date as enrollment_date,
-                'active' as enrollment_status,
+                er.created_at as enrollment_date,
+                'approved' as enrollment_status,
                 false as is_archived,
-                'early_registration' as source
-            FROM early_registration er
-            LEFT JOIN students st ON st.lrn = er.lrn AND st.school_year = er.school_year
-            WHERE st.id IS NULL
+                'enrollment_requests' as source
+            FROM enrollment_requests er
+            WHERE er.status = 'approved'
+            AND NOT EXISTS (
+                SELECT 1 FROM students st 
+                WHERE st.lrn = er.lrn 
+                AND st.school_year = er.school_year
+            )
             ORDER BY er.grade_level, er.last_name, er.first_name
         `);
 
-        // Combine results: students first, then early_registration
-        const combinedResults = [...studentsResult.rows, ...earlyRegResult.rows];
+        // Combine results: students first (already in system), then newly approved enrollments
+        const combinedResults = [...studentsResult.rows, ...approvedEnrollmentsResult.rows];
 
         res.json(combinedResults);
     } catch (err) {
@@ -5660,25 +5928,25 @@ app.put('/api/students/:id/archive', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // Check if this is an early_registration student (starts with 'ER')
+        // Check if this is an enrollment_requests student (starts with 'ER')
         if (String(studentId).startsWith('ER')) {
-            // It's an early_registration record - cannot archive, must delete from early_registration
-            const earlyRegId = parseInt(String(studentId).substring(2));
-            const earlyRegResult = await client.query(
-                'SELECT first_name, last_name FROM early_registration WHERE id = $1',
-                [earlyRegId]
+            // It's an enrollment_requests record - cannot archive, must delete from enrollment_requests
+            const enrollmentId = parseInt(String(studentId).substring(2));
+            const enrollmentResult = await client.query(
+                'SELECT first_name, last_name FROM enrollment_requests WHERE id = $1',
+                [enrollmentId]
             );
             
-            if (earlyRegResult.rows.length === 0) {
+            if (enrollmentResult.rows.length === 0) {
                 await client.query('ROLLBACK');
                 return res.status(404).json({ success: false, message: 'Student not found' });
             }
             
-            const student = earlyRegResult.rows[0];
+            const student = enrollmentResult.rows[0];
             const fullName = `${student.last_name}, ${student.first_name}`;
             
-            // Delete from early_registration
-            await client.query('DELETE FROM early_registration WHERE id = $1', [earlyRegId]);
+            // Delete from enrollment_requests
+            await client.query('DELETE FROM enrollment_requests WHERE id = $1', [enrollmentId]);
             
             await client.query('COMMIT');
             res.json({ 
@@ -5781,25 +6049,25 @@ app.delete('/api/students/:id/delete', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // Check if this is an early_registration student (starts with 'ER')
+        // Check if this is an enrollment_requests student (starts with 'ER')
         if (String(studentId).startsWith('ER')) {
-            // It's an early_registration record - delete directly
-            const earlyRegId = parseInt(String(studentId).substring(2));
-            const earlyRegResult = await client.query(
-                'SELECT first_name, last_name FROM early_registration WHERE id = $1',
-                [earlyRegId]
+            // It's an enrollment_requests record - delete directly
+            const enrollmentId = parseInt(String(studentId).substring(2));
+            const enrollmentResult = await client.query(
+                'SELECT first_name, last_name FROM enrollment_requests WHERE id = $1',
+                [enrollmentId]
             );
             
-            if (earlyRegResult.rows.length === 0) {
+            if (enrollmentResult.rows.length === 0) {
                 await client.query('ROLLBACK');
                 return res.status(404).json({ success: false, message: 'Student not found' });
             }
             
-            const student = earlyRegResult.rows[0];
+            const student = enrollmentResult.rows[0];
             const fullName = `${student.last_name}, ${student.first_name}`;
             
-            // Permanently delete from early_registration
-            await client.query('DELETE FROM early_registration WHERE id = $1', [earlyRegId]);
+            // Permanently delete from enrollment_requests
+            await client.query('DELETE FROM enrollment_requests WHERE id = $1', [enrollmentId]);
             
             await client.query('COMMIT');
             res.json({ 

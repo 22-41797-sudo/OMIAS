@@ -917,7 +917,7 @@
             // Count reports by date
             const reportsByDate = {};
             filtered.forEach(r => {
-                const dateStr = new Date(r.report_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const dateStr = new Date(r.report_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                 reportsByDate[dateStr] = (reportsByDate[dateStr] || 0) + 1;
             });
 
@@ -926,16 +926,21 @@
                 return new Date(a) - new Date(b);
             });
 
-            // Create date range from Nov 25 to today
-            const startDate = new Date(2024, 10, 25); // Nov 25, 2024
+            // Get earliest date from reports, or use today if no reports
+            let startDate;
+            if (datesWithReports.length > 0) {
+                startDate = new Date(datesWithReports[0]);
+            } else {
+                startDate = new Date();
+            }
             const today = new Date();
             const allDates = [];
             for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
-                allDates.push(new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                allDates.push(new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
             }
 
             // Include start date and dates with reports
-            const displayDates = [allDates[0]]; // Start with Nov 25
+            const displayDates = [allDates[0]]; // Start with earliest date
             datesWithReports.forEach(date => {
                 if (!displayDates.includes(date)) {
                     displayDates.push(date);
@@ -1070,7 +1075,7 @@
             // Trends Chart - Show only dates with reports
             const reportsByDate = {};
             filtered.forEach(r => {
-                const dateStr = new Date(r.report_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const dateStr = new Date(r.report_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                 reportsByDate[dateStr] = (reportsByDate[dateStr] || 0) + 1;
             });
 
@@ -1079,16 +1084,21 @@
                 return new Date(a) - new Date(b);
             });
 
-            // Create date range from Nov 25 to today
-            const startDate = new Date(2024, 10, 25); // Nov 25, 2024
+            // Get earliest date from reports, or use today if no reports
+            let startDate;
+            if (datesWithReports.length > 0) {
+                startDate = new Date(datesWithReports[0]);
+            } else {
+                startDate = new Date();
+            }
             const today = new Date();
             const allDates = [];
             for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
-                allDates.push(new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                allDates.push(new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
             }
 
             // Include start date and dates with reports
-            const displayDates = [allDates[0]]; // Start with Nov 25
+            const displayDates = [allDates[0]]; // Start with earliest date
             datesWithReports.forEach(date => {
                 if (!displayDates.includes(date)) {
                     displayDates.push(date);

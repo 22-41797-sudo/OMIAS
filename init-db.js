@@ -565,6 +565,7 @@ async function initializeDatabase() {
         await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS registration_date TIMESTAMP');
         await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS printed_name VARCHAR(255)');
         await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS signature_image_path VARCHAR(500)');
+        await pool.query('ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS enrollee_type VARCHAR(50)');
         await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS request_token VARCHAR(20) UNIQUE');
         await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS contact_number VARCHAR(50)');
         await pool.query('ALTER TABLE document_requests ADD COLUMN IF NOT EXISTS additional_notes TEXT');

@@ -270,6 +270,11 @@
           </div>
 
           <div class="form-group">
+            <label for="reportDate">Report Date:</label>
+            <input type="date" id="reportDate" required />
+          </div>
+
+          <div class="form-group">
             <label for="reportNotes">Detailed Notes:</label>
             <textarea id="reportNotes" rows="4" placeholder="Provide details about the incident or behavior..." class="textarea-input"></textarea>
           </div>
@@ -783,6 +788,13 @@
       document.getElementById('reportStudentModalName').textContent = currentStudent.name;
       document.getElementById('reportModal').classList.remove('hidden');
       document.getElementById('reportForm').reset();
+      
+      // Set default date to today
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      document.getElementById('reportDate').value = `${year}-${month}-${day}`;
     });
 
     function closeReportModal() {
@@ -809,9 +821,10 @@
       
       const category = document.getElementById('reportCategory').value;
       const severity = document.getElementById('reportSeverityValue').value;
+      const reportDate = document.getElementById('reportDate').value;
       const notes = document.getElementById('reportNotes').value;
       
-      if (!category || !severity) {
+      if (!category || !severity || !reportDate) {
         showToast('Please fill in all required fields', 'warn');
         return;
       }
@@ -820,7 +833,7 @@
         const res = await fetch('/api/behavior-reports', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ studentId: currentStudent.id, sectionId: currentSectionId, category, severity, notes })
+          body: JSON.stringify({ studentId: currentStudent.id, sectionId: currentSectionId, category, severity, reportDate, notes })
         });
         const data = await res.json();
         if (!data.success) throw new Error(data.error || 'Failed');

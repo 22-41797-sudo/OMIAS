@@ -5131,7 +5131,9 @@ q<!DOCTYPE html>
                 
                 // Show current live data
                 try {
-                    const liveRes = await fetch('/api/enrollment/live-count');
+                    const liveRes = await fetch('/api/enrollment/live-count', {
+                        credentials: 'include'
+                    });
                     const liveData = await liveRes.json();
                     console.log('Live data response:', liveData);
                     if (liveData.success) {
@@ -5149,13 +5151,17 @@ q<!DOCTYPE html>
                 
                 // Also load snapshots for comparison - use full-data endpoint to get actual student counts
                 try {
-                    const res = await fetch('/api/sections/snapshots');
+                    const res = await fetch('/api/sections/snapshots', {
+                        credentials: 'include'
+                    });
                     const meta = await res.json();
                     console.log('Snapshots metadata:', meta);
                     if (meta && meta.success && Array.isArray(meta.groups)) {
                         const groups = meta.groups.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
                         console.log('Sorted groups:', groups);
-                        const fullDataResults = await Promise.all(groups.map(g => fetch(`/api/snapshots/${g.id}/full-data`).then(r => r.json()).catch((err) => {
+                        const fullDataResults = await Promise.all(groups.map(g => fetch(`/api/snapshots/${g.id}/full-data`, {
+                            credentials: 'include'
+                        }).then(r => r.json()).catch((err) => {
                             console.error('Error loading full snapshot data for group', g.id, err);
                             return null;
                         })));

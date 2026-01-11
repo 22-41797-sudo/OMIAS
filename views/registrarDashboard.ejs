@@ -259,16 +259,18 @@
 
         <div id="currentRegistrations" class="tab-content-section" style="display:none;">
         <div class="form-section mb-5" style="border-top: 6px solid #dc2626;">
-            <h4 class="mb-4 text-dark">Manually Add New Early Registration Record</h4>
+            <h4 class="mb-4 text-dark">Add New Student Registration</h4>
             <form id="enrollmentForm">
                 <!-- Alert for validation messages -->
                 <div id="formAlert" class="alert alert-danger d-none" role="alert"></div>
+                
                 <div class="row mb-3">
                     <div class="col-md-12">
                         <label class="form-label text-dark">Gmail Address Used for Registration</label>
                         <input type="email" class="form-control" name="gmail" required placeholder="Enter Gmail address">
                     </div>
                 </div>
+                
                 <div class="row mb-3">
                     <div class="col-md-4">
                         <label class="form-label text-dark">School Year</label>
@@ -276,65 +278,67 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label text-dark">LRN</label>
-                        <input type="text" class="form-control" name="lrn" placeholder="If applicable">
+                        <input type="text" class="form-control" name="lrn" maxlength="12" placeholder="Enter 12-digit LRN" pattern="[0-9]{0,12}" title="LRN must be 12 digits or less">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label text-dark">Grade Level to Enroll</label>
-                        <input type="text" class="form-control" name="gradeLevel" required>
+                        <input type="text" class="form-control" name="gradeLevel" required placeholder="e.g., Grade 1">
                     </div>
                 </div>
                 <hr>
-                <h5 class="mb-3 text-dark">3. Learner's Personal Information</h5>
+                
+                <h5 class="mb-3 text-dark">Learner's Personal Information</h5>
                 <div class="row mb-3">
                     <div class="col-md-3">
                         <label class="form-label text-dark">Last Name</label>
-                        <input type="text" class="form-control" name="lastName" required>
+                        <input type="text" class="form-control" name="lastName" required placeholder="Last Name">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label text-dark">First Name</label>
-                        <input type="text" class="form-control" name="givenName" required>
+                        <label class="form-label text-dark">Given Name</label>
+                        <input type="text" class="form-control" name="givenName" required placeholder="Given Name">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label text-dark">Middle Name</label>
-                        <input type="text" class="form-control" name="middleName">
+                        <input type="text" class="form-control" name="middleName" placeholder="Middle Name">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label text-dark">Ext. Name (if any)</label>
-                        <input type="text" class="form-control" name="extName">
+                        <label class="form-label text-dark">Extn. Name (if any)</label>
+                        <input type="text" class="form-control" name="extName" placeholder="e.g. Jr., Sr.">
                     </div>
                 </div>
+                
                 <div class="row mb-3">
-                    <div class="col-md-4">
-                        <label class="form-label text-dark">Birthday</label>
+                    <div class="col-md-3">
+                        <label class="form-label text-dark">Birthdate (mm/dd/yyyy)</label>
                         <input type="date" class="form-control" name="birthday" required>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label text-dark">Age</label>
-                        <input type="number" class="form-control" name="age" required>
+                        <input type="number" class="form-control" name="age" required placeholder="Age">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label text-dark">Sex</label>
-                        <select class="form-select" name="sex" required>
-                            <option value="">Select</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                        </select>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="sex" id="sexMale" value="Male" required>
+                                <label class="form-check-label text-dark" for="sexMale">Male</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="sex" id="sexFemale" value="Female">
+                                <label class="form-check-label text-dark" for="sexFemale">Female</label>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         <label class="form-label text-dark">Religion</label>
-                        <input type="text" class="form-control" name="religion">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label text-dark">Current Address</label>
-                        <input type="text" class="form-control" name="address" required>
+                        <input type="text" class="form-control" name="religion" placeholder="Religion">
                     </div>
                 </div>
+                
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label class="form-label text-dark fw-bold">Belonging to IP Community?</label>
-                        <div class="d-flex gap-4">
+                        <label class="form-label text-dark fw-bold">Belonging to any Indigenous Peoples (IP) Community?</label>
+                        <div class="d-flex gap-3 mb-2">
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="ipCommunity" id="ipNo" value="No" required>
                                 <label class="form-check-label text-dark" for="ipNo">No</label>
@@ -344,11 +348,11 @@
                                 <label class="form-check-label text-dark" for="ipYes">Yes</label>
                             </div>
                         </div>
-                        <input type="text" class="form-control mt-2" name="ipCommunitySpecify" placeholder="If Yes, specify IP Community">
+                        <input type="text" class="form-control" name="ipCommunitySpecify" placeholder="If yes, please specify">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label text-dark fw-bold">Person with Disability (PWD)?</label>
-                        <div class="d-flex gap-4">
+                        <label class="form-label text-dark fw-bold">Is the learner a person with disability (PWD)?</label>
+                        <div class="d-flex gap-3 mb-2">
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="pwd" id="pwdNo" value="No" required>
                                 <label class="form-check-label text-dark" for="pwdNo">No</label>
@@ -358,52 +362,214 @@
                                 <label class="form-check-label text-dark" for="pwdYes">Yes</label>
                             </div>
                         </div>
-                        <input type="text" class="form-control mt-2" name="pwdSpecify" placeholder="If Yes, specify disability">
+                        <input type="text" class="form-control" name="pwdSpecify" placeholder="If yes, please specify">
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label text-dark">Barangay</label>
+                        <select class="form-select" name="barangay">
+                            <option value="">Select Barangay</option>
+                            <option value="Mainaga">Mainaga</option>
+                            <option value="San Francisco">San Francisco</option>
+                            <option value="Calamias">Calamias</option>
+                            <option value="Others">Others</option>
+                        </select>
+                        <input type="text" class="form-control mt-2" name="barangayOther" placeholder="Enter Barangay name" style="display:none;">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-dark">Municipality/City</label>
+                        <input type="text" class="form-control" name="municipality" placeholder="Municipality/City">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-dark">Province</label>
+                        <input type="text" class="form-control" name="province" placeholder="Province">
                     </div>
                 </div>
                 <hr>
+                
                 <h5 class="mb-3 text-dark">Parent/Guardian Information</h5>
-                <div class="row mb-3">
-                    <div class="col-md-4">
-                        <label class="form-label text-dark">Father's Name</label>
-                        <input type="text" class="form-control" name="fatherName">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label text-dark">Mother's Maiden Name</label>
-                        <input type="text" class="form-control" name="motherName">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label text-dark">Legal Guardian's Name</label>
-                        <input type="text" class="form-control" name="guardianName">
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label text-dark">Contact Number</label>
-                        <input type="text" class="form-control" name="contactNumber">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label text-dark">Date</label>
-                        <input type="date" class="form-control" name="date" required>
-                    </div>
-                </div>
-                <hr>
-                <h5 class="mb-3 text-dark">Signature</h5>
-                    <div class="row mb-3">
-                        <div class="col-md-12">
-                            <label class="form-label text-dark">Printed Name</label>
-                            <input type="text" class="form-control" name="printedName" placeholder="Type Printed Name Here" required>
+                
+                <div class="mb-3">
+                    <label class="form-label text-dark fw-bold">Father's Name:</label>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label small">Last Name</label>
+                            <input type="text" class="form-control" name="fatherLastName" placeholder="Last Name">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Given Name</label>
+                            <input type="text" class="form-control" name="fatherGivenName" placeholder="Given Name">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Middle Name</label>
+                            <input type="text" class="form-control" name="fatherMiddleName" placeholder="Middle Name">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Extn. Name (if any)</label>
+                            <input type="text" class="form-control" name="fatherExtName" placeholder="Extension Name">
                         </div>
                     </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label text-dark fw-bold">Mother's Maiden Name:</label>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label small">Last Name</label>
+                            <input type="text" class="form-control" name="motherLastName" required placeholder="Last Name">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Given Name</label>
+                            <input type="text" class="form-control" name="motherGivenName" required placeholder="Given Name">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Middle Name</label>
+                            <input type="text" class="form-control" name="motherMiddleName" placeholder="Middle Name">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Extn. Name (if any)</label>
+                            <input type="text" class="form-control" name="motherExtName" placeholder="Extension Name">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label text-dark fw-bold">Legal Guardian's Name:</label>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label small">Last Name</label>
+                            <input type="text" class="form-control" name="guardianLastName" placeholder="Last Name">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Given Name</label>
+                            <input type="text" class="form-control" name="guardianGivenName" placeholder="Given Name">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Middle Name</label>
+                            <input type="text" class="form-control" name="guardianMiddleName" placeholder="Middle Name">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Extn. Name (if any)</label>
+                            <input type="text" class="form-control" name="guardianExtName" placeholder="Extension Name">
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="row mb-3">
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-dark fw-bold">Contact Number:</label>
+                        <input type="tel" class="form-control" name="contactNumber" placeholder="Contact Number">
+                    </div>
+                </div>
+                <hr>
+                
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label class="form-label text-dark fw-bold">Type of Enrollee:</label>
+                        <select class="form-select" name="enrolleeType" required>
+                            <option value="">-- Select Enrollee Type --</option>
+                            <option value="new-entrant-kinder">New Entrant - Kinder</option>
+                            <option value="transferee">Transferee</option>
+                            <option value="returnee">Returnee</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- New Entrant - Kinder Documents -->
+                <div id="newEntrantKinderDocs" class="enrollee-docs-section" style="display:none;">
+                    <h5 class="mb-3 text-dark">New Entrant - Kinder Required Documents</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-dark">Upload/Picture Birth Certificate - PSA:</label>
+                            <input type="file" class="form-control" name="birthCertificatePSA_NewKinder" accept="image/*,.pdf">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-dark">ECCD Checklist - Day Care Center:</label>
+                            <input type="file" class="form-control" name="eccdChecklist" accept="image/*,.pdf">
+                        </div>
+                    </div>
+                    <hr>
+                </div>
+
+                <!-- Transferee Documents -->
+                <div id="transfereeDocs" class="enrollee-docs-section" style="display:none;">
+                    <h5 class="mb-3 text-dark">Transferee Required Documents</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-dark">Upload/Picture Birth Certificate - PSA:</label>
+                            <input type="file" class="form-control" name="birthCertificatePSA_Transferee" accept="image/*,.pdf">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-dark">Report Card From the Previous Grade:</label>
+                            <input type="file" class="form-control" name="reportCardPrevious_Transferee" accept="image/*,.pdf">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-dark">SF 10 Original:</label>
+                            <input type="file" class="form-control" name="sf10Original_Transferee" accept="image/*,.pdf">
+                        </div>
+                    </div>
+                    <hr>
+                </div>
+
+                <!-- Returnee Documents -->
+                <div id="returneeDocs" class="enrollee-docs-section" style="display:none;">
+                    <h5 class="mb-3 text-dark">Returnee Required Documents</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-dark">Upload/Picture Birth Certificate - PSA:</label>
+                            <input type="file" class="form-control" name="birthCertificatePSA_Returnee" accept="image/*,.pdf">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-dark">Previous Report Card:</label>
+                            <input type="file" class="form-control" name="reportCardPrevious_Returnee" accept="image/*,.pdf">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-dark">SF 10 Original (Optional):</label>
+                            <input type="file" class="form-control" name="sf10Optional_Returnee" accept="image/*,.pdf">
+                        </div>
+                    </div>
+                    <hr>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-dark fw-bold">Date Signed:</label>
+                        <input type="date" class="form-control" name="dateSigned" required>
+                    </div>
+                </div>
+                <hr>
+                
+                <h5 class="mb-3 text-dark">E-Signature</h5>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-dark">Printed Name</label>
+                        <input type="text" class="form-control" name="signaturePrintedName" placeholder="Type Printed Name Here" required>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
                         <label class="form-label text-dark">Upload E-Signature (Image)</label>
                         <input type="file" class="form-control" name="signatureImage" accept="image/*">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label text-dark">Or draw your e-signature below:</label>
-                        <div class="d-flex align-items-center gap-2">
-                            <canvas id="signaturePad" width="300" height="80" style="background:#f8f9fa; border:2px solid #dc2626; border-radius:8px;"></canvas>
+                        <label class="form-label text-dark">Or Draw E-Signature</label>
+                        <div class="d-flex align-items-end gap-2">
+                            <div style="flex-grow:1;">
+                                <canvas id="signaturePad" width="300" height="80" style="background:#f8f9fa; border:2px solid #dc2626; border-radius:8px; width:100%;"></canvas>
+                            </div>
                             <button type="button" id="maximizeSignaturePad" class="btn btn-outline-danger btn-sm" title="Maximize">
                                 <i class="bi bi-arrows-fullscreen"></i>
                             </button>
@@ -412,12 +578,13 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-danger w-100 fw-bold">Add New Registration Record</button>
+                <button type="submit" class="btn btn-danger w-100 fw-bold">Add Registration</button>
             </form>
         </div>
         
         <div class="table-section">
-            <h4 class="mb-4">Early Registration Records</h4>
+            <h4 class="mb-4">All Registrations (Online & Office)</h4>
+            <p class="text-muted small mb-3"><strong>Online (Blue):</strong> Submitted through enrollment form • <strong>Office (Green):</strong> Manually entered by registrar - Auto-approved</p>
             <div class="table-responsive">
                 <!-- Filters: Year, Grade, Search -->
                 <div class="d-flex gap-2 align-items-center mb-3">
@@ -458,7 +625,7 @@
                                         <% if (reg.record_type === 'enrollment_request') { %>
                                             <span class="badge bg-success">Online</span>
                                         <% } else { %>
-                                            <span class="badge bg-info">Paper</span>
+                                            <span class="badge bg-success">Office</span>
                                         <% } %>
                                     </td>
                                     <td><%= reg.school_year %></td>
@@ -950,7 +1117,7 @@
 
 <!-- Student Accounts Section -->
 <div id="studentAccounts" class="tab-content-section" style="display: none;">
-  <div class="page-wrap" style="max-width: 1100px; margin: 0 auto; padding: 40px;">
+  <div class="page-wrap" style="max-width: none; width: calc(100% - 300px); margin-left: auto; padding: 40px; margin-right: 0;">
     <div style="margin-bottom: 30px;">
       <h2 class="dashboard-title mb-3">👤 Student Accounts</h2>
       <p class="text-muted" style="font-size: 1rem; margin-bottom: 0;">View all created student accounts and their login credentials</p>
@@ -1706,6 +1873,9 @@ function renderStudentAccountsTable(accounts) {
                     <button class="btn btn-sm btn-outline-primary me-1" title="Edit Account" onclick="editStudentAccount(${account.id})">
                         <i class="bi bi-pencil"></i>
                     </button>
+                    <button class="btn btn-sm btn-outline-danger" title="Delete Account" onclick="deleteStudentAccount(${account.id}, '${account.student_id}', '${account.username.replace(/'/g, "\\'")}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
                 </td>
             </tr>
         `;
@@ -1801,6 +1971,35 @@ window.saveEditStudent = async function() {
     } catch (err) {
         console.error('Error saving student account:', err);
         alert('Error saving changes: ' + err.message);
+    }
+};
+
+// Delete student account function
+window.deleteStudentAccount = async function(accountId, studentId, username) {
+    const confirmMessage = `Are you sure you want to permanently delete the student account for "${studentId} - ${username}"?\n\nThis action cannot be undone. The student will no longer be able to log in.`;
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/student-accounts/${accountId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Student account has been permanently deleted from the database.');
+            // Reload accounts
+            window.loadStudentAccounts();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to delete account'));
+        }
+    } catch (err) {
+        console.error('Error deleting student account:', err);
+        alert('Error deleting account: ' + err.message);
     }
 };
 
@@ -1979,13 +2178,13 @@ window.saveEditStudent = async function() {
             { selector: '[name="schoolYear"]', name: 'School Year' },
             { selector: '[name="gradeLevel"]', name: 'Grade Level' },
             { selector: '[name="lastName"]', name: 'Last Name' },
-            { selector: '[name="givenName"]', name: 'First Name' },
+            { selector: '[name="givenName"]', name: 'Given Name' },
             { selector: '[name="birthday"]', name: 'Birthday' },
             { selector: '[name="age"]', name: 'Age' },
             { selector: '[name="sex"]', name: 'Sex' },
-            { selector: '[name="address"]', name: 'Current Address' },
-            { selector: '[name="printedName"]', name: 'Printed Name' },
-            { selector: '[name="date"]', name: 'Date' }
+            { selector: '[name="enrolleeType"]', name: 'Type of Enrollee' },
+            { selector: '[name="signaturePrintedName"]', name: 'Printed Name' },
+            { selector: '[name="dateSigned"]', name: 'Date Signed' }
         ];
 
         const missing = [];
@@ -2086,6 +2285,62 @@ window.saveEditStudent = async function() {
             if (submitBtn) { submitBtn.textContent = originalText; submitBtn.disabled = false; }
         });
     });
+
+    // Barangay "Others" handler
+    const barangaySelect = document.querySelector('[name="barangay"]');
+    const barangayOtherInput = document.querySelector('[name="barangayOther"]');
+    
+    if (barangaySelect && barangayOtherInput) {
+        // Show/hide on change
+        barangaySelect.addEventListener('change', function() {
+            if (this.value === 'Others') {
+                barangayOtherInput.style.display = 'block';
+                barangayOtherInput.focus();
+            } else {
+                barangayOtherInput.style.display = 'none';
+                barangayOtherInput.value = ''; // Clear the input when not "Others"
+            }
+        });
+        
+        // Initialize on page load
+        if (barangaySelect.value === 'Others') {
+            barangayOtherInput.style.display = 'block';
+        }
+    }
+
+    // Auto-fill today's date for dateSigned field on page load
+    window.addEventListener('DOMContentLoaded', function() {
+        const dateSignedInput = document.querySelector('[name="dateSigned"]');
+        if (dateSignedInput && !dateSignedInput.value) {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            dateSignedInput.value = `${year}-${month}-${day}`;
+        }
+    });
+
+    // Enrollee Type Selection Handler
+    const enrolleeTypeSelect = document.querySelector('[name="enrolleeType"]');
+    if (enrolleeTypeSelect) {
+        enrolleeTypeSelect.addEventListener('change', function(e) {
+            const selectedType = e.target.value;
+            
+            // Hide all document sections
+            document.getElementById('newEntrantKinderDocs').style.display = 'none';
+            document.getElementById('transfereeDocs').style.display = 'none';
+            document.getElementById('returneeDocs').style.display = 'none';
+            
+            // Show relevant section based on selection
+            if (selectedType === 'new-entrant-kinder') {
+                document.getElementById('newEntrantKinderDocs').style.display = 'block';
+            } else if (selectedType === 'transferee') {
+                document.getElementById('transfereeDocs').style.display = 'block';
+            } else if (selectedType === 'returnee') {
+                document.getElementById('returneeDocs').style.display = 'block';
+            }
+        });
+    }
 
     // View registration function
     function viewRegistration(id) {
