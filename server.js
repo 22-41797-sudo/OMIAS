@@ -6165,6 +6165,8 @@ app.put('/api/students/:id/update-grade-level', async (req, res) => {
     const { newGradeLevel } = req.body;
     const userName = req.session.user.name || req.session.user.email || 'Unknown User';
     
+    console.log(`\n📚 GRADE UPDATE REQUEST: Student ${studentId}, New Grade: ${newGradeLevel}, Updated By: ${userName}`);
+    
     if (!newGradeLevel || newGradeLevel.trim() === '') {
         return res.status(400).json({ success: false, message: 'Grade level is required' });
     }
@@ -6189,14 +6191,18 @@ app.put('/api/students/:id/update-grade-level', async (req, res) => {
         const student = studentResult.rows[0];
         const oldGradeLevel = student.grade_level;
 
+        console.log(`   Current Grade in DB: ${oldGradeLevel}`);
+        console.log(`   Requested New Grade: ${newGradeLevel}`);
+
         // Don't update if grade is the same
         if (oldGradeLevel === newGradeLevel) {
             await client.query('ROLLBACK');
+            console.log(`   ⚠️  Grades match - no update needed`);
             return res.status(400).json({ success: false, message: 'New grade level is the same as current grade level' });
         }
 
         // Update student grade level with tracking info
-        await client.query(
+        const updateResult = await client.query(
             `UPDATE students 
              SET grade_level = $1, 
                  previous_grade_level = $2,
@@ -6206,6 +6212,8 @@ app.put('/api/students/:id/update-grade-level', async (req, res) => {
              WHERE id = $4`,
             [newGradeLevel, oldGradeLevel, userName, studentId]
         );
+        
+        console.log(`   ✅ UPDATE executed - ${updateResult.rowCount} row(s) updated`);
 
         // Log the change in grade_level_changes table (if it exists)
         try {
@@ -6214,12 +6222,14 @@ app.put('/api/students/:id/update-grade-level', async (req, res) => {
                  VALUES ($1, $2, $3, $4, NULL)`,
                 [studentId, oldGradeLevel, newGradeLevel, userName]
             );
+            console.log(`   ✅ Change logged to grade_level_changes table`);
         } catch (e) {
             // Table may not exist yet, that's okay - the main update succeeded
-            console.log('Grade level changes table not available, but student grade updated successfully');
+            console.log('   ⚠️  Grade level changes table not available');
         }
 
         await client.query('COMMIT');
+        console.log(`   ✅ TRANSACTION COMMITTED`);
 
         res.json({
             success: true,
@@ -6232,7 +6242,7 @@ app.put('/api/students/:id/update-grade-level', async (req, res) => {
 
     } catch (err) {
         await client.query('ROLLBACK');
-        console.error('Error updating student grade level:', err);
+        console.error('   ❌ Error updating student grade level:', err.message);
         res.status(500).json({ success: false, message: 'Error updating grade level: ' + err.message });
     } finally {
         client.release();
