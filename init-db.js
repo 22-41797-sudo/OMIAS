@@ -105,6 +105,9 @@ async function initializeDatabase() {
         await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS lrn VARCHAR(20)');
         await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS enrollment_id VARCHAR(50)');
         await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS student_id VARCHAR(50) UNIQUE');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS previous_grade_level VARCHAR(20)');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS grade_level_updated_date TIMESTAMP');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS grade_level_updated_by VARCHAR(100)');
 
         // Sections table
         await pool.query(`
@@ -515,6 +518,9 @@ async function initializeDatabase() {
         await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS religion VARCHAR(50)');
         await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS middle_name VARCHAR(100)');
         await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS school_year VARCHAR(50)');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS previous_grade_level VARCHAR(20)');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS grade_level_updated_date TIMESTAMP');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS grade_level_updated_by VARCHAR(100)');
 
         await pool.query('ALTER TABLE teachers ADD COLUMN IF NOT EXISTS username VARCHAR(255) UNIQUE');
         await pool.query('ALTER TABLE teachers ADD COLUMN IF NOT EXISTS password VARCHAR(255)');
