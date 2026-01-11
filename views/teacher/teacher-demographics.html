@@ -110,7 +110,7 @@
             <div class="table-responsive">
               <table class="table table-bordered table-striped" id="studentsTable">
                 <thead>
-                  <tr><th>Name</th><th>LRN</th><th>Sex</th><th>Age</th><th>Actions</th></tr>
+                  <tr><th>Name</th><th>LRN</th><th>Sex</th><th>Age</th><th>Grade Level</th><th>Actions</th></tr>
                 </thead>
                 <tbody></tbody>
               </table>
@@ -234,9 +234,57 @@
     </div>
   </div>
 
+  <!-- Edit Grade Level Modal -->
+  <div id="editGradeModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit Grade Level for <span id="editGradeStudentName">Student</span></h2>
+        <button class="modal-close" onclick="closeGradeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="editGradeForm">
+          <div class="form-group">
+            <label for="editGradeInput">Current Grade Level:</label>
+            <p style="font-weight: 600; color: #374151; margin: 8px 0;" id="currentGradeDisplay">-</p>
+          </div>
+
+          <div class="form-group">
+            <label for="editGradeInput">New Grade Level:</label>
+            <select id="editGradeInput" required>
+              <option value="">-- Select Grade Level --</option>
+              <option value="Pre-K">Pre-K</option>
+              <option value="Kinder">Kinder</option>
+              <option value="Grade 1">Grade 1</option>
+              <option value="Grade 2">Grade 2</option>
+              <option value="Grade 3">Grade 3</option>
+              <option value="Grade 4">Grade 4</option>
+              <option value="Grade 5">Grade 5</option>
+              <option value="Grade 6">Grade 6</option>
+              <option value="Grade 7">Grade 7</option>
+              <option value="Grade 8">Grade 8</option>
+              <option value="Grade 9">Grade 9</option>
+              <option value="Grade 10">Grade 10</option>
+              <option value="Grade 11">Grade 11</option>
+              <option value="Grade 12">Grade 12</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="gradeConfirmMessage" style="background: #eff6ff; border: 1px solid #3b82f6; padding: 12px; border-radius: 6px; display: none;">
+            <strong>Note:</strong> The ICT Coordinator will see this change and can reassign the student to an appropriate new section.
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="cta-button" onclick="closeGradeModal()">Cancel</button>
+        <button type="submit" class="cta-button secondary" form="editGradeForm">Save Grade Level</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Report Modal -->
   <div id="reportModal" class="modal hidden">
     <div class="modal-content">
+      <!-- Report Modal -->
       <div class="modal-header">
         <h2>Add Behavior Report for <span id="reportStudentModalName">Student</span></h2>
         <button class="modal-close" onclick="closeReportModal()">&times;</button>
@@ -440,7 +488,9 @@
           <td>${st.lrn || ''}</td>
           <td>${st.sex || ''}</td>
           <td>${st.age || ''}</td>
+          <td>${st.grade_level || '-'}</td>
           <td>
+            <button class="cta-button" onclick="openEditGradeModal(${st.id}, '${(st.full_name||'').replace(/'/g, "\\'")}', '${(st.grade_level||'').replace(/'/g, "\\'")}')">Edit Grade</button>
             <button class="cta-button" onclick="viewStudent(${st.id}, '${(st.full_name||'').replace(/'/g, "\\'")}')">View</button>
             <button class="cta-button" onclick="openReports(${st.id}, '${(st.full_name||'').replace(/'/g, "\\'")}')">Reports</button>
           </td>
@@ -802,6 +852,24 @@
       document.getElementById('reportForm').reset();
     }
 
+    // Grade Level Modal Functions
+    function openEditGradeModal(studentId, studentName, currentGrade) {
+      document.getElementById('editGradeStudentName').textContent = studentName;
+      document.getElementById('currentGradeDisplay').textContent = currentGrade || '-';
+      document.getElementById('editGradeInput').value = '';
+      document.getElementById('editGradeModal').classList.remove('hidden');
+      
+      // Store the student ID for the form submission
+      document.getElementById('editGradeForm').dataset.studentId = studentId;
+      document.getElementById('editGradeForm').dataset.studentName = studentName;
+      document.getElementById('editGradeForm').dataset.currentGrade = currentGrade;
+    }
+
+    function closeGradeModal() {
+      document.getElementById('editGradeModal').classList.add('hidden');
+      document.getElementById('editGradeForm').reset();
+    }
+
     // Logout confirmation modal functions
     function showLogoutConfirmation() {
       document.getElementById('logoutModal').classList.remove('hidden');
@@ -843,6 +911,45 @@
         await loadSectionReports();
       } catch (e) {
         showToast('Failed to save report: ' + e.message, 'error');
+      }
+    });
+
+    // Grade Level Form Handler
+    document.getElementById('editGradeForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const form = document.getElementById('editGradeForm');
+      const studentId = form.dataset.studentId;
+      const newGradeLevel = document.getElementById('editGradeInput').value;
+      const currentGrade = form.dataset.currentGrade;
+      const studentName = form.dataset.studentName;
+      
+      if (!newGradeLevel) {
+        showToast('Please select a new grade level', 'warn');
+        return;
+      }
+
+      if (newGradeLevel === currentGrade) {
+        showToast('New grade level is the same as current grade level', 'warn');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/students/${studentId}/update-grade-level`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newGradeLevel })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Failed to update grade level');
+        
+        showToast(`Grade level updated from ${currentGrade} to ${newGradeLevel}. The ICT Coordinator will be notified.`, 'success');
+        closeGradeModal();
+        
+        // Reload students to show updated grade level
+        await loadStudents();
+      } catch (e) {
+        showToast('Failed to update grade level: ' + e.message, 'error');
       }
     });
 

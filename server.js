@@ -6154,6 +6154,130 @@ app.put('/api/students/:id/recover', async (req, res) => {
     }
 });
 
+// Teacher: Update student grade level (with tracking)
+app.put('/api/students/:id/update-grade-level', async (req, res) => {
+    // Allow both teachers and ictcoor to update
+    if (!req.session.user || !['teacher', 'ictcoor'].includes(req.session.user.role)) {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    const studentId = req.params.id;
+    const { newGradeLevel } = req.body;
+    const userName = req.session.user.name || req.session.user.email || 'Unknown User';
+    
+    if (!newGradeLevel || newGradeLevel.trim() === '') {
+        return res.status(400).json({ success: false, message: 'Grade level is required' });
+    }
+
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN');
+
+        // Get current student info
+        const studentResult = await client.query(
+            `SELECT id, grade_level, last_name || ', ' || first_name as full_name 
+             FROM students WHERE id = $1`,
+            [studentId]
+        );
+
+        if (studentResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+
+        const student = studentResult.rows[0];
+        const oldGradeLevel = student.grade_level;
+
+        // Don't update if grade is the same
+        if (oldGradeLevel === newGradeLevel) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ success: false, message: 'New grade level is the same as current grade level' });
+        }
+
+        // Update student grade level with tracking info
+        await client.query(
+            `UPDATE students 
+             SET grade_level = $1, 
+                 previous_grade_level = $2,
+                 grade_level_updated_date = CURRENT_TIMESTAMP,
+                 grade_level_updated_by = $3,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $4`,
+            [newGradeLevel, oldGradeLevel, userName, studentId]
+        );
+
+        // Log the change in grade_level_changes table (if it exists)
+        try {
+            await client.query(
+                `INSERT INTO grade_level_changes (student_id, old_grade_level, new_grade_level, changed_by, teacher_id)
+                 VALUES ($1, $2, $3, $4, NULL)`,
+                [studentId, oldGradeLevel, newGradeLevel, userName]
+            );
+        } catch (e) {
+            // Table may not exist yet, that's okay - the main update succeeded
+            console.log('Grade level changes table not available, but student grade updated successfully');
+        }
+
+        await client.query('COMMIT');
+
+        res.json({
+            success: true,
+            message: `Student "${student.full_name}" grade level updated from ${oldGradeLevel} to ${newGradeLevel}`,
+            oldGradeLevel,
+            newGradeLevel,
+            updatedBy: userName,
+            updatedAt: new Date().toISOString()
+        });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Error updating student grade level:', err);
+        res.status(500).json({ success: false, message: 'Error updating grade level: ' + err.message });
+    } finally {
+        client.release();
+    }
+});
+
+// ICT Coordinator: Get students with recent grade level updates (for dashboard)
+app.get('/api/students/grade-updates/recent', async (req, res) => {
+    if (!req.session.user || req.session.user.role !== 'ictcoor') {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    const daysBack = req.query.days || 30; // Show updates from last 30 days
+
+    try {
+        const result = await pool.query(
+            `SELECT 
+                id,
+                CONCAT(last_name, ', ', first_name, ' ', COALESCE(middle_name, '')) as full_name,
+                lrn,
+                previous_grade_level,
+                grade_level,
+                grade_level_updated_date,
+                grade_level_updated_by,
+                section_id,
+                (SELECT section_name FROM sections WHERE id = students.section_id) as current_section
+             FROM students
+             WHERE grade_level_updated_date IS NOT NULL
+             AND grade_level_updated_date > CURRENT_TIMESTAMP - INTERVAL '1 day' * $1
+             ORDER BY grade_level_updated_date DESC
+             LIMIT 50`,
+            [daysBack]
+        );
+
+        res.json({
+            success: true,
+            count: result.rows.length,
+            updates: result.rows
+        });
+    } catch (err) {
+        console.error('Error fetching grade updates:', err);
+        res.status(500).json({ success: false, message: 'Error fetching grade updates' });
+    }
+});
+
 // ICT Coordinator: Permanently delete a student
 app.delete('/api/students/:id', async (req, res) => {
     if (!req.session.user || req.session.user.role !== 'ictcoor') {
