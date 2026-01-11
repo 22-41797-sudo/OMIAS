@@ -933,20 +933,26 @@
       }
       
       try {
+        console.log(`Updating student ${studentId} grade from ${currentGrade} to ${newGradeLevel}`);
         const res = await fetch(`/api/students/${studentId}/update-grade-level`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ newGradeLevel })
         });
         const data = await res.json();
+        console.log('Update response:', data);
         if (!data.success) throw new Error(data.message || 'Failed to update grade level');
         
         showToast(`Grade level updated from ${currentGrade} to ${newGradeLevel}. The ICT Coordinator will be notified.`, 'success');
         closeGradeModal();
         
-        // Reload students to show updated grade level
+        // Reload students to show updated grade level - add small delay to ensure DB write is committed
+        console.log('Loading students after update...');
+        await new Promise(resolve => setTimeout(resolve, 500));
         await loadStudents();
+        console.log('Students reloaded, current allStudents:', allStudents);
       } catch (e) {
+        console.error('Grade update error:', e);
         showToast('Failed to update grade level: ' + e.message, 'error');
       }
     });
