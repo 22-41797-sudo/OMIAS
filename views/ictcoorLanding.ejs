@@ -4422,6 +4422,13 @@ q<!DOCTYPE html>
                         const data = await r.json();
                         if (data.success) {
                             showToast(data.message, 'success');
+                            
+                            // Automatically show archived students after successful archive
+                            const showArchivedCheckbox = document.getElementById('showArchivedUnassignedCheckbox');
+                            if (showArchivedCheckbox) {
+                                showArchivedCheckbox.checked = true;
+                            }
+                            
                             loadUnassignedStudents();
                         } else {
                             showToast('Error: ' + (data.message || 'Failed to archive student'), 'error');
@@ -4535,6 +4542,12 @@ q<!DOCTYPE html>
                                         ? `Archived ${archivedCount} student(s), ${failedCount} failed.`
                                         : `Successfully archived all ${archivedCount} student(s).`;
                                     showToast(msg, failedCount > 0 ? 'warning' : 'success');
+                                    
+                                    // Automatically show archived students after successful archive
+                                    const showArchivedCheckbox = document.getElementById('showArchivedUnassignedCheckbox');
+                                    if (showArchivedCheckbox) {
+                                        showArchivedCheckbox.checked = true;
+                                    }
                                 }
                                 
                                 if (failedCount > 0) {
