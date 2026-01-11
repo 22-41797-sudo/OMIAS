@@ -10,7 +10,9 @@
         // Document Viewer Function - defined globally and early
         window.viewDocument = function(docName, btn) {
             try {
-                const documents = <%= JSON.stringify(documents || {}) %>;
+                // Get documents object from embedded JSON data
+                const documentsDataEl = document.getElementById('documentsData');
+                const documents = documentsDataEl ? JSON.parse(documentsDataEl.textContent) : {};
                 const docData = documents[docName];
                 if (!docData) {
                     alert('Document data not available');
@@ -66,6 +68,10 @@
     </script>
 </head>
 <body>
+    <!-- Embedded data for JavaScript (EJS template) -->
+    <script id="documentsData" type="application/json">
+        <%= JSON.stringify(documents || {}) %>
+    </script>
 <div class="container py-4">
     <h2 class="text-danger mb-4">Registration Details</h2>
     <a href="/registrar" class="btn btn-secondary mb-3">Back to Dashboard</a>
