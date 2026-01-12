@@ -245,7 +245,7 @@
         <form id="editGradeForm">
           <div class="form-group">
             <label for="editGradeInput">Current Grade Level:</label>
-            <p style="font-weight: 600; color: #374151; margin: 8px 0;" id="currentGradeDisplay">-</p>
+            <p class="current-grade-display" id="currentGradeDisplay">-</p>
           </div>
 
           <div class="form-group">
@@ -267,7 +267,7 @@
             </select>
           </div>
 
-          <div class="form-group" id="gradeConfirmMessage" style="background: #eff6ff; border: 1px solid #3b82f6; padding: 12px; border-radius: 6px; display: none;">
+          <div class="form-group grade-confirm-message" id="gradeConfirmMessage">
             <strong>Note:</strong> The ICT Coordinator will see this change and can reassign the student to an appropriate new section.
           </div>
         </form>
@@ -488,7 +488,7 @@
           <td>${st.age || ''}</td>
           <td>${st.grade_level || '-'}</td>
           <td>
-            <button class="cta-button" onclick="openEditGradeModal(${st.id}, '${(st.full_name||'').replace(/'/g, "\\'")}', '${(st.grade_level||'').replace(/'/g, "\\'")}')">Edit Grade</button>
+            <button class="cta-button" onclick="openEditGradeModal(${st.id}, '${(st.full_name||'').replace(/'/g, "\\'")}', '${(st.grade_level||'').replace(/'/g, "\\'")}')">Edit Grade Level</button>
             <button class="cta-button" onclick="viewStudent(${st.id}, '${(st.full_name||'').replace(/'/g, "\\'")}')">View</button>
             <button class="cta-button" onclick="openReports(${st.id}, '${(st.full_name||'').replace(/'/g, "\\'")}')">Reports</button>
           </td>
@@ -732,7 +732,11 @@
         return;
       }
       tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
-      const data = await safeFetchJson(`/api/teacher/sections/${currentSectionId}/students`);
+      // Add cache busting parameter to force fresh data
+      const cacheBreaker = `?_t=${Date.now()}`;
+      const data = await safeFetchJson(`/api/teacher/sections/${currentSectionId}/students${cacheBreaker}`, {
+        cache: 'no-store'
+      });
       if (!data.success) {
         tbody.innerHTML = '<tr><td colspan="5">Failed to load students</td></tr>';
         return;
@@ -947,9 +951,13 @@
         
         // Reload students to show updated grade level - add delay to ensure DB write is committed
         console.log('Loading students after update...');
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Clear allStudents and reload fresh from server
+        allStudents = [];
         await loadStudents();
-        console.log('Students reloaded, current allStudents:', allStudents);
+        console.log('Students reloaded after grade update');
+        console.log('Updated student in allStudents:', allStudents.find(s => s.id === studentId));
         
         // Close modal AFTER students are reloaded and rendered
         closeGradeModal();

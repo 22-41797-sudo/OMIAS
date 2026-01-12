@@ -3402,6 +3402,12 @@ q<!DOCTYPE html>
                                 day: 'numeric'
                             });
                             
+                            // Set GREEN background if student's grade level was changed by teacher
+                            if (student.needs_reassignment_due_to_grade_change) {
+                                row.style.backgroundColor = '#d4edda'; // Light green
+                                row.style.borderLeft = '4px solid #28a745'; // Green left border
+                            }
+                            
                             let actions = '';
                             if (!student.is_archived) {
                                 // Active unassigned: can assign or archive

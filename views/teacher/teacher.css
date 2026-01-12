@@ -325,3 +325,23 @@ td:last-child .cta-button { padding: 6px 10px; border-radius: 10px; font-size: 1
   display: flex;
   align-items: center;
 }
+
+/* Grade confirmation message styling */
+.grade-confirm-message {
+  background: #eff6ff;
+  border: 1px solid #3b82f6;
+  padding: 12px;
+  border-radius: 6px;
+  display: none;
+}
+
+.grade-confirm-message.show {
+  display: block;
+}
+
+/* Current grade display styling */
+.current-grade-display {
+  font-weight: 600;
+  color: #374151;
+  margin: 8px 0;
+}

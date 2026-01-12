@@ -4547,9 +4547,11 @@ app.post('/assign-section/:id', async (req, res) => {
                 });
             }
 
-            // Assign student to section
+            // Assign student to section and clear the reassignment flag
             await client.query(`
-                UPDATE students SET section_id = $1 WHERE id = $2
+                UPDATE students 
+                SET section_id = $1, needs_reassignment_due_to_grade_change = false 
+                WHERE id = $2
             `, [section, studentId]);
 
             // Increment section current_count
@@ -6161,7 +6163,7 @@ app.put('/api/students/:id/update-grade-level', async (req, res) => {
         return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
-    const studentId = req.params.id;
+    const studentId = parseInt(req.params.id);
     const { newGradeLevel } = req.body;
     const userName = req.session.user.name || req.session.user.email || 'Unknown User';
     
@@ -6171,20 +6173,15 @@ app.put('/api/students/:id/update-grade-level', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Grade level is required' });
     }
 
-    const client = await pool.connect();
-    
     try {
-        await client.query('BEGIN');
-
-        // Get current student info
-        const studentResult = await client.query(
+        // Get current student info (simple query, no transaction)
+        const studentResult = await pool.query(
             `SELECT id, grade_level, last_name || ', ' || first_name as full_name 
              FROM students WHERE id = $1`,
             [studentId]
         );
 
         if (studentResult.rows.length === 0) {
-            await client.query('ROLLBACK');
             return res.status(404).json({ success: false, message: 'Student not found' });
         }
 
@@ -6196,28 +6193,61 @@ app.put('/api/students/:id/update-grade-level', async (req, res) => {
 
         // Don't update if grade is the same
         if (oldGradeLevel === newGradeLevel) {
-            await client.query('ROLLBACK');
             console.log(`   ⚠️  Grades match - no update needed`);
             return res.status(400).json({ success: false, message: 'New grade level is the same as current grade level' });
         }
 
-        // Update student grade level with tracking info
-        const updateResult = await client.query(
+        // Update student grade level with tracking info - WITHOUT transaction
+        const updateResult = await pool.query(
             `UPDATE students 
              SET grade_level = $1, 
                  previous_grade_level = $2,
                  grade_level_updated_date = CURRENT_TIMESTAMP,
                  grade_level_updated_by = $3,
-                 updated_at = CURRENT_TIMESTAMP
-             WHERE id = $4`,
+                 updated_at = CURRENT_TIMESTAMP,
+                 needs_reassignment_due_to_grade_change = true
+             WHERE id = $4
+             RETURNING id, grade_level`,
             [newGradeLevel, oldGradeLevel, userName, studentId]
         );
         
         console.log(`   ✅ UPDATE executed - ${updateResult.rowCount} row(s) updated`);
+        
+        if (updateResult.rowCount === 0) {
+            console.log(`   ❌ WARNING: Update returned 0 rows!`);
+            return res.status(500).json({ success: false, message: 'Failed to update student grade level' });
+        }
+        
+        const updatedStudent = updateResult.rows[0];
+        console.log(`   ✅ VERIFIED: Grade level in DB is now: ${updatedStudent.grade_level}`);
+
+        // Remove student from their current section (if they have one)
+        const sectionCheckResult = await pool.query(
+            `SELECT section_id FROM students WHERE id = $1`,
+            [studentId]
+        );
+        
+        if (sectionCheckResult.rows[0]?.section_id) {
+            const oldSectionId = sectionCheckResult.rows[0].section_id;
+            
+            // Remove from section
+            await pool.query(
+                `UPDATE students SET section_id = NULL WHERE id = $1`,
+                [studentId]
+            );
+            
+            // Decrement section count
+            await pool.query(
+                `UPDATE sections SET current_count = current_count - 1 WHERE id = $1`,
+                [oldSectionId]
+            );
+            
+            console.log(`   ✅ Student removed from section ${oldSectionId} due to grade level change`);
+        }
 
         // Log the change in grade_level_changes table (if it exists)
         try {
-            await client.query(
+            await pool.query(
                 `INSERT INTO grade_level_changes (student_id, old_grade_level, new_grade_level, changed_by, teacher_id)
                  VALUES ($1, $2, $3, $4, NULL)`,
                 [studentId, oldGradeLevel, newGradeLevel, userName]
@@ -6227,9 +6257,6 @@ app.put('/api/students/:id/update-grade-level', async (req, res) => {
             // Table may not exist yet, that's okay - the main update succeeded
             console.log('   ⚠️  Grade level changes table not available');
         }
-
-        await client.query('COMMIT');
-        console.log(`   ✅ TRANSACTION COMMITTED`);
 
         res.json({
             success: true,
@@ -6241,11 +6268,8 @@ app.put('/api/students/:id/update-grade-level', async (req, res) => {
         });
 
     } catch (err) {
-        await client.query('ROLLBACK');
         console.error('   ❌ Error updating student grade level:', err.message);
         res.status(500).json({ success: false, message: 'Error updating grade level: ' + err.message });
-    } finally {
-        client.release();
     }
 });
 
