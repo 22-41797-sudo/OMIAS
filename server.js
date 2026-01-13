@@ -3156,6 +3156,74 @@ app.get('/api/student/dashboard', async (req, res) => {
     }
 });
 
+// ============= STUDENT CHANGE PASSWORD ENDPOINT =============
+app.post('/api/student/change-password', async (req, res) => {
+    if (!req.session.user || req.session.user.role !== 'student') {
+        return res.status(403).json({ success: false, error: 'You are not authenticated. Please log in again.' });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+    const studentId = req.session.user.studentId;
+
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ success: false, error: 'Current and new passwords are required.' });
+    }
+
+    if (currentPassword === newPassword) {
+        return res.status(400).json({ success: false, error: 'New password must be different from current password.' });
+    }
+
+    // Validate new password requirements
+    const passwordRegex = /^(?=.*[0-9]).{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+        return res.status(400).json({ 
+            success: false, 
+            error: 'Password must be at least 8 characters long and contain at least one number.' 
+        });
+    }
+
+    try {
+        // Fetch the student account to verify current password
+        const studentResult = await pool.query(
+            'SELECT id, password_hash FROM student_accounts WHERE student_id = $1',
+            [studentId]
+        );
+
+        if (studentResult.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Student account not found.' });
+        }
+
+        const student = studentResult.rows[0];
+
+        // Verify current password
+        const isPasswordValid = await bcrypt.compare(currentPassword, student.password_hash);
+
+        if (!isPasswordValid) {
+            return res.status(401).json({ success: false, error: 'Current password is incorrect.' });
+        }
+
+        // Hash the new password
+        const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+        // Update password in database
+        await pool.query(
+            'UPDATE student_accounts SET password_hash = $1, updated_at = NOW() WHERE student_id = $2',
+            [newPasswordHash, studentId]
+        );
+
+        console.log(`✅ Password changed successfully for student: ${studentId}`);
+
+        res.json({
+            success: true,
+            message: 'Password changed successfully! Please log in again with your new password.'
+        });
+
+    } catch (err) {
+        console.error('Error changing student password:', err);
+        res.status(500).json({ success: false, error: 'Failed to change password. Please try again.' });
+    }
+});
+
 app.get('/api/enrollment-request/:id', async (req, res) => {
     // Allow registrars to view any enrollment request, or students to view their own
     const requestId = req.params.id;

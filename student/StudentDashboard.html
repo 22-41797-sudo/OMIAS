@@ -495,6 +495,301 @@
             font-size: 20px;
             color: var(--primary-color);
         }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 450px;
+            width: 90%;
+            padding: 32px;
+            animation: slideUp 0.3s;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        @keyframes slideUp {
+            from { 
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to { 
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: var(--danger-color);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Poppins', sans-serif;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+
+        .form-group input::placeholder {
+            color: #999;
+        }
+
+        .password-requirements {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .password-requirements ul {
+            margin: 8px 0 0 20px;
+            padding: 0;
+        }
+
+        .password-requirements li {
+            margin: 4px 0;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-actions button {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-actions .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .modal-actions .btn-primary:hover {
+            background: var(--accent-color);
+        }
+
+        .modal-actions .btn-secondary {
+            background: #e5e7eb;
+            color: #333;
+        }
+
+        .modal-actions .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .change-password-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: background 0.3s;
+            margin-right: 8px;
+        }
+
+        .change-password-btn:hover {
+            background: var(--primary-color);
+        }
+
+        .modal .alert {
+            margin-bottom: 20px;
+        }
+
+        .password-strength {
+            margin-top: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .password-strength.weak {
+            color: var(--danger-color);
+        }
+
+        .password-strength.fair {
+            color: var(--warning-color);
+        }
+
+        .password-strength.good {
+            color: var(--success-color);
+        }
+
+        /* Logout Confirmation Modal */
+        .logout-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            animation: fadeIn 0.3s;
+        }
+
+        .logout-modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logout-modal-content {
+            background-color: white;
+            border-radius: 14px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+            padding: 40px 32px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            animation: slideUp 0.3s;
+        }
+
+        .logout-modal-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: var(--warning-color);
+        }
+
+        .logout-modal-content h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 12px;
+        }
+
+        .logout-modal-content p {
+            font-size: 15px;
+            color: #666;
+            margin-bottom: 28px;
+            line-height: 1.5;
+        }
+
+        .logout-modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .logout-modal-actions button {
+            padding: 11px 32px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            max-width: 160px;
+        }
+
+        .logout-modal-actions .btn-cancel {
+            background: #e5e7eb;
+            color: #333;
+        }
+
+        .logout-modal-actions .btn-cancel:hover {
+            background: #d1d5db;
+            transform: translateY(-2px);
+        }
+
+        .logout-modal-actions .btn-logout {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .logout-modal-actions .btn-logout:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -512,7 +807,8 @@
                 <div class="user-name" id="studentNameDisplay">Loading...</div>
                 <p class="subtitle-text">ID: <span id="studentIdHeader">-</span></p>
             </div>
-            <button class="logout-btn" onclick="logout()">Logout</button>
+            <button class="change-password-btn" onclick="openChangePasswordModal()">Change Password</button>
+            <button class="logout-btn" onclick="openLogoutConfirmation()">Logout</button>
         </div>
     </div>
 </header>
@@ -522,7 +818,6 @@
     <!-- Welcome Section -->
     <div class="welcome-section">
         <h2>Welcome to Your Student Dashboard</h2>
-        <p>View your enrollment status, submitted documents, and account information in one place.</p>
         <div class="student-name-display" id="welcomeStudentName">Loading...</div>
     </div>
 
@@ -591,24 +886,6 @@
                     <div class="info-label">Contact Number</div>
                     <div class="info-value" id="contactNumber">-</div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Enrollment Information Section -->
-        <div class="info-section">
-            <div class="section-header">
-                <i class="bi bi-clipboard-check icon-primary"></i>
-                <h3>Enrollment Information</h3>
-            </div>
-            <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-label">Enrollee Type</div>
-                    <div class="info-value" id="enrolleeType">-</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Submission Date</div>
-                    <div class="info-value" id="submissionDate">-</div>
-                </div>
                 <div class="info-item">
                     <div class="info-label">Age</div>
                     <div class="info-value" id="age">-</div>
@@ -624,6 +901,24 @@
                 <div class="info-item">
                     <div class="info-label">Religion</div>
                     <div class="info-value" id="religion">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enrollment Information Section -->
+        <div class="info-section hidden-element">
+            <div class="section-header">
+                <i class="bi bi-clipboard-check icon-primary"></i>
+                <h3>Enrollment Information</h3>
+            </div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Enrollee Type</div>
+                    <div class="info-value" id="enrolleeType">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Submission Date</div>
+                    <div class="info-value" id="submissionDate">-</div>
                 </div>
             </div>
         </div>
@@ -649,6 +944,78 @@
         </div>
     </div>
 
+</div>
+
+<!-- Logout Confirmation Modal -->
+<div id="logoutConfirmationModal" class="logout-modal">
+    <div class="logout-modal-content">
+        <div class="logout-modal-icon">👋</div>
+        <h2>Confirm Logout</h2>
+        <p>Are you sure you want to log out? You will need to log in again to access your dashboard.</p>
+        <div class="logout-modal-actions">
+            <button class="btn-cancel" onclick="closeLogoutConfirmation()">Cancel</button>
+            <button class="btn-logout" onclick="confirmLogout()">Yes, Logout</button>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div id="changePasswordModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Change Password</h2>
+            <button class="modal-close" onclick="closeChangePasswordModal()">&times;</button>
+        </div>
+
+        <div id="passwordAlert" class="alert hidden-element"></div>
+
+        <div class="password-requirements">
+            <strong>Password Requirements:</strong>
+            <ul>
+                <li>At least 8 characters long</li>
+                <li>At least one number (0-9)</li>
+            </ul>
+        </div>
+
+        <form id="changePasswordForm" onsubmit="handleChangePassword(event)">
+            <div class="form-group">
+                <label for="currentPassword">Current Password</label>
+                <input 
+                    type="password" 
+                    id="currentPassword" 
+                    placeholder="Enter your current password" 
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="newPassword">New Password</label>
+                <input 
+                    type="password" 
+                    id="newPassword" 
+                    placeholder="Enter your new password" 
+                    required
+                    oninput="checkPasswordStrength(this.value)"
+                >
+                <div id="passwordStrengthText" class="password-strength hidden-element"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirm New Password</label>
+                <input 
+                    type="password" 
+                    id="confirmPassword" 
+                    placeholder="Confirm your new password" 
+                    required
+                >
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" onclick="closeChangePasswordModal()">Cancel</button>
+                <button type="submit" class="btn-primary" id="submitBtn">Change Password</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>
@@ -833,6 +1200,178 @@
         localStorage.removeItem('enrollmentRequestId');
         window.location.href = '/student-login';
     }
+
+    function openLogoutConfirmation() {
+        document.getElementById('logoutConfirmationModal').classList.add('show');
+    }
+
+    function closeLogoutConfirmation() {
+        document.getElementById('logoutConfirmationModal').classList.remove('show');
+    }
+
+    function confirmLogout() {
+        logout();
+    }
+
+    // Change Password Functions
+    function openChangePasswordModal() {
+        document.getElementById('changePasswordModal').classList.add('show');
+        document.getElementById('changePasswordForm').reset();
+        document.getElementById('passwordAlert').classList.add('hidden-element');
+        document.getElementById('passwordStrengthText').classList.add('hidden-element');
+    }
+
+    function closeChangePasswordModal() {
+        document.getElementById('changePasswordModal').classList.remove('show');
+        document.getElementById('changePasswordForm').reset();
+        document.getElementById('passwordAlert').classList.add('hidden-element');
+        document.getElementById('passwordStrengthText').classList.add('hidden-element');
+    }
+
+    function checkPasswordStrength(password) {
+        const strengthText = document.getElementById('passwordStrengthText');
+        
+        if (!password) {
+            strengthText.classList.add('hidden-element');
+            return;
+        }
+
+        strengthText.classList.remove('hidden-element');
+
+        let strength = 0;
+        const requirements = {
+            length: password.length >= 8,
+            uppercase: /[A-Z]/.test(password),
+            number: /[0-9]/.test(password),
+            special: /[!@#$%^&*]/.test(password)
+        };
+
+        Object.values(requirements).forEach(met => {
+            if (met) strength++;
+        });
+
+        if (strength <= 1) {
+            strengthText.textContent = '🔴 Weak password';
+            strengthText.className = 'password-strength weak';
+        } else if (strength <= 2) {
+            strengthText.textContent = '🟡 Fair password';
+            strengthText.className = 'password-strength fair';
+        } else if (strength === 3) {
+            strengthText.textContent = '🟢 Good password';
+            strengthText.className = 'password-strength good';
+        } else {
+            strengthText.textContent = '🟢 Strong password';
+            strengthText.className = 'password-strength good';
+        }
+    }
+
+    async function handleChangePassword(event) {
+        event.preventDefault();
+
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const alertDiv = document.getElementById('passwordAlert');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Validation
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            showPasswordAlert('Please fill in all fields', 'error');
+            return;
+        }
+
+        if (currentPassword === newPassword) {
+            showPasswordAlert('New password must be different from current password', 'error');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            showPasswordAlert('New passwords do not match', 'error');
+            return;
+        }
+
+        // Validate password requirements
+        const passwordRegex = /^(?=.*[0-9]).{8,}$/;
+        if (!passwordRegex.test(newPassword)) {
+            showPasswordAlert('Password must be at least 8 characters long and contain at least one number', 'error');
+            return;
+        }
+
+        try {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Changing...';
+
+            const studentId = localStorage.getItem('studentId');
+            
+            const response = await fetch('/api/student/change-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    studentId: studentId,
+                    currentPassword: currentPassword,
+                    newPassword: newPassword
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                showPasswordAlert(result.error || 'Failed to change password', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Change Password';
+                return;
+            }
+
+            if (result.success) {
+                showPasswordAlert('Password changed successfully! You will be redirected to login.', 'success');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Change Password';
+                
+                setTimeout(() => {
+                    logout();
+                }, 2000);
+            } else {
+                showPasswordAlert(result.error || 'Failed to change password', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Change Password';
+            }
+        } catch (error) {
+            console.error('Error changing password:', error);
+            showPasswordAlert('An error occurred while changing password. Please try again.', 'error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Change Password';
+        }
+    }
+
+    function showPasswordAlert(message, type) {
+        const alertDiv = document.getElementById('passwordAlert');
+        alertDiv.className = `alert ${type}`;
+        
+        if (type === 'error') {
+            alertDiv.innerHTML = `<i class="bi bi-exclamation-circle"></i> <strong>Error:</strong> ${message}`;
+        } else if (type === 'success') {
+            alertDiv.innerHTML = `<i class="bi bi-check-circle"></i> <strong>Success:</strong> ${message}`;
+        }
+        
+        alertDiv.classList.remove('hidden-element');
+    }
+
+    // Close modal when clicking outside of it
+    window.addEventListener('click', (event) => {
+        const changePasswordModal = document.getElementById('changePasswordModal');
+        const logoutModal = document.getElementById('logoutConfirmationModal');
+        
+        if (event.target === changePasswordModal) {
+            closeChangePasswordModal();
+        }
+        
+        if (event.target === logoutModal) {
+            closeLogoutConfirmation();
+        }
+    });
 </script>
 
 </body>
