@@ -3351,16 +3351,11 @@ app.post('/update-request/:id', async (req, res) => {
 
 // Login POST route
 app.post('/login', async (req, res) => {
-    // Defensive check: ensure req.body exists and has required fields
-    if (!req.body || typeof req.body !== 'object') {
-        console.error('Error: req.body is undefined or not an object. Content-Type:', req.get('content-type'));
-        return res.status(400).json({ success: false, message: 'Request body is empty or malformed' });
-    }
-
-    const { username, password } = req.body;
+    const { username, password } = req.body || {};
 
     // Validate that username and password are provided
     if (!username || !password) {
+        console.error('Missing login credentials. Body:', req.body);
         return res.status(400).json({ success: false, message: 'Username and password are required' });
     }
 
