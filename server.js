@@ -3351,15 +3351,22 @@ app.post('/update-request/:id', async (req, res) => {
 
 // Login POST route
 app.post('/login', async (req, res) => {
-    console.log('🔐 Login attempt - Headers:', req.headers);
-    console.log('🔐 req.body:', req.body);
-    console.log('🔐 req.body type:', typeof req.body);
+    console.log('🔐 Login attempt');
+    console.log('   Content-Length:', req.get('content-length'));
+    console.log('   Content-Type:', req.get('content-type'));
+    console.log('   req.body:', req.body);
+    console.log('   req.body keys:', Object.keys(req.body || {}));
     
-    const { username, password } = req.body || {};
+    // Try to get username and password with multiple fallbacks
+    let username = req.body?.username || req.query?.username;
+    let password = req.body?.password || req.query?.password;
+    
+    console.log('   Extracted username:', username);
+    console.log('   Extracted password:', password ? '***' : 'undefined');
 
     // Validate that username and password are provided
     if (!username || !password) {
-        console.error('❌ Missing login credentials. Body:', req.body);
+        console.error('❌ Missing login credentials');
         return res.status(400).json({ success: false, message: 'Username and password are required' });
     }
 
