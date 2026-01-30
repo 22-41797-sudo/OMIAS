@@ -1326,6 +1326,7 @@ async function initializeSchemas() {
         await ensureBlockedIPsSchema().catch(e => console.error('Blocked IPs schema error:', e.message));
         await ensureTeachersArchiveSchema().catch(e => console.error('Teachers archive schema error:', e.message));
         await ensureEnrollmentRequestsSchema().catch(e => console.error('Enrollment requests schema error:', e.message));
+        await ensureStudentAccountsSchema().catch(e => console.error('Student accounts schema error:', e.message));
         await ensureMessagingSchema().catch(e => console.error('Messaging schema error:', e.message));
         await createPerformanceIndexes().catch(e => console.error('Performance indexes error:', e.message));
         
@@ -1559,6 +1560,57 @@ async function ensureEnrollmentRequestsSchema() {
         console.log('âœ… enrollment_requests schema ensured');
     } catch (err) {
         console.error('âŒ Failed ensuring enrollment_requests schema:', err.message);
+        // Don't throw - allow other schemas to initialize
+    }
+}
+
+async function ensureStudentAccountsSchema() {
+    const ddl = `
+    -- Ensure sequence exists first
+    CREATE SEQUENCE IF NOT EXISTS student_accounts_id_seq;
+    
+    CREATE TABLE IF NOT EXISTS student_accounts (
+        id INTEGER PRIMARY KEY DEFAULT nextval('student_accounts_id_seq'::regclass),
+        student_id VARCHAR(50) NOT NULL UNIQUE,
+        username VARCHAR(100) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        email VARCHAR(255),
+        enrollment_request_id INTEGER REFERENCES enrollment_requests(id),
+        account_status VARCHAR(20) DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_student_accounts_student_id ON student_accounts(student_id);
+    CREATE INDEX IF NOT EXISTS idx_student_accounts_username ON student_accounts(username);
+    CREATE INDEX IF NOT EXISTS idx_student_accounts_email ON student_accounts(email);
+    
+    -- Fix id column default if it's broken (set it to use the sequence)
+    ALTER TABLE student_accounts
+    ALTER COLUMN id SET DEFAULT nextval('student_accounts_id_seq'::regclass);
+    
+    -- Ensure sequence is owned by the table/column
+    ALTER SEQUENCE student_accounts_id_seq OWNED BY student_accounts.id;
+    
+    CREATE OR REPLACE FUNCTION update_student_accounts_updated_at()
+    RETURNS TRIGGER AS $$
+    BEGIN
+        NEW.updated_at = CURRENT_TIMESTAMP;
+        RETURN NEW;
+    END;$$ LANGUAGE plpgsql;
+    DO $$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trigger_update_student_accounts_updated_at') THEN
+            CREATE TRIGGER trigger_update_student_accounts_updated_at
+            BEFORE UPDATE ON student_accounts
+            FOR EACH ROW EXECUTE FUNCTION update_student_accounts_updated_at();
+        END IF;
+    END$$;
+    `;
+    try {
+        await pool.query(ddl);
+        console.log('✅ student_accounts schema ensured');
+    } catch (err) {
+        console.error('❌ Failed ensuring student_accounts schema:', err.message);
         // Don't throw - allow other schemas to initialize
     }
 }
