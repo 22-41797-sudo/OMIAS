@@ -1455,8 +1455,11 @@ async function ensureTeachersArchiveSchema() {
  */
 async function ensureEnrollmentRequestsSchema() {
     const ddl = `
+    -- Ensure sequence exists first
+    CREATE SEQUENCE IF NOT EXISTS enrollment_requests_id_seq;
+    
     CREATE TABLE IF NOT EXISTS enrollment_requests (
-        id SERIAL PRIMARY KEY,
+        id INTEGER PRIMARY KEY DEFAULT nextval('enrollment_requests_id_seq'::regclass),
         request_token VARCHAR(20) UNIQUE NOT NULL,
         status VARCHAR(20) DEFAULT 'pending',
         
@@ -1505,6 +1508,13 @@ async function ensureEnrollmentRequestsSchema() {
     );
     CREATE INDEX IF NOT EXISTS idx_request_token ON enrollment_requests(request_token);
     CREATE INDEX IF NOT EXISTS idx_status ON enrollment_requests(status);
+    
+    -- Fix id column default if it's broken (set it to use the sequence)
+    ALTER TABLE enrollment_requests
+    ALTER COLUMN id SET DEFAULT nextval('enrollment_requests_id_seq'::regclass);
+    
+    -- Ensure sequence is owned by the table/column
+    ALTER SEQUENCE enrollment_requests_id_seq OWNED BY enrollment_requests.id;
     
     -- Add missing columns if they don't exist
     ALTER TABLE enrollment_requests 
